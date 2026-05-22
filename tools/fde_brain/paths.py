@@ -74,6 +74,32 @@ class WorkspacePaths:
     def codex_entrypoint(self) -> Path:
         return self.root / "AGENTS.md"
 
+    @property
+    def logs_runs(self) -> Path:
+        return self.logs / "runs"
+
+    @property
+    def logs_decisions(self) -> Path:
+        return self.logs / "decisions"
+
+    @property
+    def logs_errors(self) -> Path:
+        return self.logs / "errors"
+
+    @property
+    def logs_promotions(self) -> Path:
+        return self.logs / "promotions"
+
+    @property
+    def registry_path(self) -> Path:
+        return self.normalized / "registry.json"
+
+    def raw_for(self, category: str) -> Path:
+        return self.raw / category
+
+    def normalized_for(self, category: str) -> Path:
+        return self.normalized / category
+
     def required_directories(self) -> list[Path]:
         return [
             self.pending,

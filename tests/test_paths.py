@@ -30,6 +30,23 @@ class WorkspacePathsTests(unittest.TestCase):
         self.assertIn("C:/workspace/AI Space/failed/technical-failures", required)
         self.assertIn("C:/workspace/FDE Brain", required)
 
+    def test_log_subpath_helpers(self) -> None:
+        root = Path("C:/workspace")
+        paths = WorkspacePaths(root)
+
+        self.assertEqual(paths.logs_runs, root / "AI Space" / "logs" / "runs")
+        self.assertEqual(paths.logs_decisions, root / "AI Space" / "logs" / "decisions")
+        self.assertEqual(paths.logs_errors, root / "AI Space" / "logs" / "errors")
+        self.assertEqual(paths.logs_promotions, root / "AI Space" / "logs" / "promotions")
+
+    def test_category_subpath_helpers(self) -> None:
+        root = Path("C:/workspace")
+        paths = WorkspacePaths(root)
+
+        self.assertEqual(paths.raw_for("pdf"), root / "AI Space" / "raw" / "pdf")
+        self.assertEqual(paths.normalized_for("image"), root / "AI Space" / "normalized" / "image")
+        self.assertEqual(paths.registry_path, root / "AI Space" / "normalized" / "registry.json")
+
     def test_ensure_directories_creates_all_required_directories(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
