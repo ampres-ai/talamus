@@ -5,6 +5,9 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from tools.fde_brain.paths import WorkspacePaths
 
 
