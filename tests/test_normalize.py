@@ -10,10 +10,14 @@ from tools.fde_brain.normalize import normalize_source
 from tools.fde_brain.paths import WorkspacePaths
 
 
-def _fake_pdf_reader(pages_text: list[str]):
+def _fake_pdf_reader(pages_text: list[str], outline: list | None = None):
     class _FakeReader:
         def __init__(self, _path: str) -> None:
             self.pages = [SimpleNamespace(extract_text=lambda t=t: t) for t in pages_text]
+            self.outline = outline or []
+
+        def get_destination_page_number(self, item):
+            return item.page - 1
 
     return _FakeReader
 
@@ -104,6 +108,51 @@ class NormalizePdfTests(unittest.TestCase):
             self.assertIn("## Page 1", content)
             self.assertIn("## Page 2", content)
             self.assertIn("parser: pypdf", content)
+
+    @patch(
+        "tools.fde_brain.normalize.PdfReader",
+        new_callable=lambda: _fake_pdf_reader(
+            pages_text=[
+                "Intro page text content here",
+                "Foo chapter text content here that is long enough",
+                "Foo continued more text here for the chapter range",
+                "Bar chapter text content here for the second chapter",
+                "Bar continued more text content for chapter two",
+            ],
+            outline=[
+                SimpleNamespace(title="Introduction", page=1),
+                SimpleNamespace(title="Chapter 1: Foo", page=2),
+                SimpleNamespace(title="Chapter 2: Bar", page=4),
+            ],
+        ),
+    )
+    def test_pdf_with_outline_uses_chapter_headings(self, _reader) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = WorkspacePaths(root)
+            paths.ensure_directories()
+            raw = paths.raw_for("pdf") / "2026-05-22-book.pdf"
+            raw.parent.mkdir(parents=True, exist_ok=True)
+            raw.write_bytes(b"%PDF-1.4 stub")
+
+            out = normalize_source(
+                raw_path=raw,
+                category="pdf",
+                raw_hash="sha256:book",
+                captured_at=datetime.now(timezone.utc),
+                paths=paths,
+            )
+
+            self.assertTrue(out.ok)
+            assert out.output_path is not None
+            content = out.output_path.read_text(encoding="utf-8")
+            self.assertIn("## Introduction", content)
+            self.assertIn("## Chapter 1: Foo", content)
+            self.assertIn("## Chapter 2: Bar", content)
+            self.assertNotIn("## Page 1", content)
+            self.assertIn("_Pages 1–1_", content)
+            self.assertIn("_Pages 2–3_", content)
+            self.assertIn("_Pages 4–5_", content)
 
     @patch("tools.fde_brain.normalize.PdfReader", new_callable=lambda: _fake_pdf_reader(["", ""]))
     def test_pdf_with_no_text_routes_to_review(self, _reader) -> None:

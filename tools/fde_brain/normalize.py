@@ -13,6 +13,7 @@ if __package__ in (None, ""):
 from pypdf import PdfReader
 
 from tools.fde_brain.categories import Category
+from tools.fde_brain.chapters import extract_chapters_from_pdf
 from tools.fde_brain.ocr import extract_text_from_image
 from tools.fde_brain.paths import WorkspacePaths
 
@@ -118,8 +119,25 @@ def _normalize_pdf(
 
     body_parts = [_frontmatter(raw_path, "pdf", raw_hash, captured_at, "pypdf", 1.0, paths.root)]
     body_parts.append(f"# {raw_path.stem}\n\n")
-    for idx, text in enumerate(pages_text, start=1):
-        body_parts.append(f"## Page {idx}\n\n{text}\n\n")
+
+    chapters = extract_chapters_from_pdf(reader)
+    if chapters:
+        for chapter in chapters:
+            section_text = "\n\n".join(
+                pages_text[i - 1]
+                for i in range(chapter.page_start, chapter.page_end + 1)
+                if 1 <= i <= len(pages_text) and pages_text[i - 1]
+            )
+            heading_prefix = "#" * (chapter.level + 1)
+            body_parts.append(
+                f"{heading_prefix} {chapter.title}\n\n"
+                f"_Pages {chapter.page_start}–{chapter.page_end}_\n\n"
+                f"{section_text}\n\n"
+            )
+    else:
+        for idx, text in enumerate(pages_text, start=1):
+            body_parts.append(f"## Page {idx}\n\n{text}\n\n")
+
     dest = paths.normalized_for("pdf") / f"{slug}.md"
     _write(dest, "".join(body_parts))
     return NormalizedOutput(ok=True, output_path=dest, routed_to="normalized", parser="pypdf")
