@@ -98,7 +98,7 @@ Required or preferred local engines:
 - Manual/development agent: Codex.
 - OCR: GLM-OCR locally through Ollama.
 - Retrieval graph: Graphify.
-- Graphify backend preference: `claude-cli`.
+- Graphify backend preference: `claude`.
 
 External API keys are optional fallbacks and are not required for V1.
 
@@ -404,7 +404,7 @@ Allowed uses:
 - `graphify query`
 - `graphify path`
 - `graphify explain`
-- `graphify extract --backend claude-cli`
+- `graphify extract --backend claude`
 - Graphify MCP where supported
 - HTML/wiki exports for debugging outside `FDE Brain`
 

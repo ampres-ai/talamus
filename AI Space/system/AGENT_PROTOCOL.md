@@ -70,7 +70,7 @@ Use two graphs:
 Preferred backend:
 
 ```powershell
-graphify extract <input> --backend claude-cli --out <output>
+graphify extract <input> --backend claude --out <output>
 ```
 
 ## Review And Failure Routing

@@ -30,7 +30,7 @@ def _as_posix_string(path: Path) -> str:
     return path.as_posix()
 
 
-def brain_graph_extract(root: Path, backend: str = "claude-cli") -> GraphifyCommand:
+def brain_graph_extract(root: Path, backend: str = "claude") -> GraphifyCommand:
     paths = WorkspacePaths(root)
     return GraphifyCommand(
         [
@@ -45,7 +45,7 @@ def brain_graph_extract(root: Path, backend: str = "claude-cli") -> GraphifyComm
     )
 
 
-def source_graph_extract(root: Path, backend: str = "claude-cli") -> GraphifyCommand:
+def source_graph_extract(root: Path, backend: str = "claude") -> GraphifyCommand:
     paths = WorkspacePaths(root)
     return GraphifyCommand(
         [
@@ -64,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Print Graphify commands for this workspace.")
     parser.add_argument("target", choices=["brain", "sources"], help="Graph to update.")
     parser.add_argument("--root", default=".", help="Workspace root. Defaults to current directory.")
-    parser.add_argument("--backend", default="claude-cli", help="Graphify backend. Defaults to claude-cli.")
+    parser.add_argument("--backend", default="claude", help="Graphify backend. Defaults to claude.")
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()

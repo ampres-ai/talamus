@@ -15,7 +15,7 @@ class GraphifyTests(unittest.TestCase):
                     "extract",
                     "C:/workspace/FDE Brain",
                     "--backend",
-                    "claude-cli",
+                    "claude",
                     "--out",
                     "C:/workspace/AI Space/graph/brain",
                 ]
@@ -32,7 +32,7 @@ class GraphifyTests(unittest.TestCase):
                 "extract",
                 "C:/workspace/AI Space/normalized",
                 "--backend",
-                "claude-cli",
+                "claude",
                 "--out",
                 "C:/workspace/AI Space/graph/sources",
             ],
