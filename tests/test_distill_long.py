@@ -129,6 +129,28 @@ class DistillLongTests(unittest.TestCase):
             self.assertIn("ddia.md", "\n".join(pattern.source_anchors))
 
     @patch("tools.fde_brain.distill_long.subprocess.run")
+    def test_handles_markdown_fenced_json_response(self, run_mock) -> None:
+        fenced = "```json\n" + json.dumps({"notes": [
+            {"title": "Foo", "type": "concept", "body": "B", "tags": [], "anchor_used": "chapter-1-foundations"},
+        ]}) + "\n```"
+        run_mock.side_effect = [
+            _proc(fenced),
+            _proc(fenced),
+            _proc(json.dumps({"notes": []})),
+            _proc(json.dumps({"notes": []})),
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            raw, normalized, paths = self._write_normalized(root)
+
+            result = distill_long_source(normalized, raw, paths, run_id="x")
+
+            self.assertTrue(result.ok, msg=result.error)
+            self.assertGreater(len(result.notes), 0)
+            titles = [n.title for n in result.notes]
+            self.assertIn("Foo", titles)
+
+    @patch("tools.fde_brain.distill_long.subprocess.run")
     def test_malformed_json_returns_error(self, run_mock) -> None:
         run_mock.return_value = _proc("not json at all")
         with tempfile.TemporaryDirectory() as tmp:

@@ -152,8 +152,18 @@ def _run_claude(prompt: str, timeout_sec: int) -> subprocess.CompletedProcess:
     )
 
 
+_FENCE_RE = re.compile(r"^```(?:json)?\s*\n?|\n?```\s*$", re.MULTILINE)
+
+
+def _strip_code_fence(response: str) -> str:
+    stripped = response.strip()
+    if stripped.startswith("```"):
+        stripped = _FENCE_RE.sub("", stripped).strip()
+    return stripped
+
+
 def _parse_notes_payload(stdout: str) -> list[dict]:
-    response = stdout.strip()
+    response = _strip_code_fence(stdout)
     if not response:
         return []
     data = json.loads(response)
