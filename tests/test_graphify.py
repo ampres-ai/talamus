@@ -44,6 +44,11 @@ class GraphifyTests(unittest.TestCase):
 
         self.assertEqual('graphify query "hello world" --budget 1500', command.to_powershell())
 
+    def test_command_formats_quoted_argument_for_powershell(self) -> None:
+        command = GraphifyCommand(["graphify", "query", 'has"quote'])
+
+        self.assertEqual('graphify query "has`"quote"', command.to_powershell())
+
 
 if __name__ == "__main__":
     unittest.main()

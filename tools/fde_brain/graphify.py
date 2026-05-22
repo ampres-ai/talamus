@@ -18,7 +18,7 @@ class GraphifyCommand:
     def to_powershell(self) -> str:
         rendered: list[str] = []
         for arg in self.args:
-            if any(char.isspace() for char in arg):
+            if any(char.isspace() for char in arg) or '"' in arg:
                 escaped = arg.replace('"', '`"')
                 rendered.append(f'"{escaped}"')
             else:
