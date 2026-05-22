@@ -65,6 +65,53 @@
       "captured_at": "2026-05-22T15:02:10.201989+00:00",
       "ingestion_run": "00db321f",
       "promoted_to": []
+    },
+    {
+      "raw_path": "AI Space/raw/pdf/2026-05-22-test-book.pdf",
+      "raw_hash": "sha256:860186114a75a264c4a05f87cd20a6a67d637c123a9b0525a847b1387b248b87",
+      "raw_size": 12696,
+      "normalized_paths": [
+        "AI Space/normalized/pdf/test-book.md"
+      ],
+      "category": "pdf",
+      "parser": "pypdf",
+      "captured_at": "2026-05-22T16:27:20.130150+00:00",
+      "ingestion_run": "965e57db",
+      "promoted_to": []
+    },
+    {
+      "raw_path": "AI Space/raw/pdf/2026-05-22-test-book.pdf",
+      "raw_hash": "sha256:860186114a75a264c4a05f87cd20a6a67d637c123a9b0525a847b1387b248b87",
+      "raw_size": 12696,
+      "normalized_paths": [
+        "AI Space/normalized/pdf/test-book.md"
+      ],
+      "category": "pdf",
+      "parser": "pypdf",
+      "captured_at": "2026-05-22T16:30:25.022902+00:00",
+      "ingestion_run": "3022c130",
+      "promoted_to": [
+        "FDE Brain/Foundations-of-Retrieval.md",
+        "FDE Brain/Chunking-Strategies.md",
+        "FDE Brain/Vector-Search.md",
+        "FDE Brain/Knowledge-Graph-Routing.md",
+        "FDE Brain/Hybrid-Retrieval.md",
+        "FDE Brain/Graph-Routing-Drift.md",
+        "FDE Brain/Provenance-and-Trust.md",
+        "FDE Brain/Fine-Grained-Citation.md",
+        "FDE Brain/Source-Hash-Invalidation.md",
+        "FDE Brain/Operational-Hygiene.md",
+        "FDE Brain/Decision-Logging.md",
+        "FDE Brain/Failure-Review-Queue.md",
+        "FDE Brain/Quarterly-Review.md",
+        "FDE Brain/Hybrid-Retrieval-Pattern.md",
+        "FDE Brain/Chunk-to-Natural-Boundaries.md",
+        "FDE Brain/Source-Hash-Provenance.md",
+        "FDE Brain/Operational-Ingestion-Hygiene.md",
+        "FDE Brain/Retrieval-Augmented-Generation-RAG.md",
+        "FDE Brain/Knowledge-Graph.md",
+        "FDE Brain/test-book-Overview.md"
+      ]
     }
   ]
 }

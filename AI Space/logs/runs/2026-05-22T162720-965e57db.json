@@ -1,0 +1,18 @@
+{
+  "run_id": "965e57db",
+  "started_at": "2026-05-22T16:27:20.130150+00:00",
+  "finished_at": "2026-05-22T16:27:40.050085+00:00",
+  "files": [
+    {
+      "pending_name": "test-book.pdf",
+      "raw_path": "AI Space/raw/pdf/2026-05-22-test-book.pdf",
+      "normalized_path": "AI Space/normalized/pdf/test-book.md",
+      "routed_to": "normalized",
+      "category": "pdf",
+      "error": null,
+      "promoted_to": []
+    }
+  ],
+  "commit_hash": null,
+  "overall_ok": true
+}
