@@ -126,6 +126,11 @@ def _promote_long(
     return written
 
 
+def _log(stage: str, message: str) -> None:
+    ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
+    print(f"[{ts}] [{stage}] {message}", flush=True)
+
+
 def _process_one(
     src: Path,
     paths: WorkspacePaths,
@@ -133,11 +138,20 @@ def _process_one(
     captured_at: datetime,
 ) -> FileOutcome:
     pending_name = src.name
+    size_mb = src.stat().st_size / 1024 / 1024
+    _log("ingest", f"start {pending_name} ({size_mb:.1f} MB)")
+
+    _log("ingest", "computing sha256 …")
     raw_hash, raw_size = _sha256_of(src)
+    _log("ingest", f"sha256 done ({raw_hash[:24]}…)")
+
     category = classify(src)
+    _log("ingest", f"classified as {category}")
 
     raw_path = _archive(src, paths, category, captured_at)
+    _log("ingest", f"archived -> {_rel(raw_path, paths.root)}")
 
+    _log("normalize", "starting …")
     normalized: NormalizedOutput = normalize_source(
         raw_path=raw_path,
         category=category,
@@ -145,17 +159,22 @@ def _process_one(
         captured_at=captured_at,
         paths=paths,
     )
+    _log("normalize", f"routed_to={normalized.routed_to} parser={normalized.parser}")
 
     promoted_paths: list[Path] = []
     if normalized.routed_to == "normalized" and normalized.output_path is not None:
         if category == "pdf" and _is_long_pdf_at(raw_path):
+            _log("distill", "long-pdf branch -> distill_v3")
             promoted_paths = _promote_long(
                 normalized.output_path, raw_path, paths, run_id
             )
+            _log("distill", f"promoted {len(promoted_paths)} notes")
         else:
+            _log("distill", "short branch -> distill_via_claude")
             promoted_paths = _promote_short(
                 normalized.output_path, raw_path, paths
             )
+            _log("distill", f"promoted {len(promoted_paths)} notes")
 
     promoted_rels = [
         rel for rel in (_rel(p, paths.root) for p in promoted_paths) if rel

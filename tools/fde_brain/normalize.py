@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import sys
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
@@ -114,19 +114,30 @@ def _normalize_pdf(
     captured_at: datetime,
     paths: WorkspacePaths,
 ) -> NormalizedOutput:
+    def _progress(stage: str, message: str) -> None:
+        ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        print(f"[{ts}] [{stage}] {message}", flush=True)
+
     try:
+        _progress("normalize", f"opening pdf …")
         reader = PdfReader(str(raw_path))
+        total_pages = len(reader.pages)
+        _progress("normalize", f"opened pdf ({total_pages} pages)")
         pages_text: list[str] = []
         ocr_used_pages = 0
         for idx, page in enumerate(reader.pages):
             pypdf_text = (page.extract_text() or "").strip()
             if page_has_visual_content(page):
+                _progress("normalize", f"page {idx+1}/{total_pages} OCR …")
                 ocr_text = _ocr_page_via_render(raw_path, idx)
                 if ocr_text:
                     ocr_used_pages += 1
                 pages_text.append(_combine_page_text(pypdf_text, ocr_text))
             else:
+                if (idx + 1) % 50 == 0 or idx == 0:
+                    _progress("normalize", f"page {idx+1}/{total_pages} text-only")
                 pages_text.append(pypdf_text)
+        _progress("normalize", f"all pages done ({ocr_used_pages} ocr'd of {total_pages})")
     except Exception as exc:
         dest = paths.failed / "technical-failures" / f"{_slug_from_raw(raw_path)}.md"
         body = (

@@ -217,8 +217,14 @@ def distill_v3(
     parsed_notes: list[dict] = []
     chunks_audit: list[dict] = []
 
+    def _progress(message: str) -> None:
+        ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        print(f"[{ts}] [distill] {message}", flush=True)
+
+    _progress(f"split into {len(chunks)} L1 chunks")
     try:
-        for chapter_title, anchor, body in chunks:
+        for ch_idx, (chapter_title, anchor, body) in enumerate(chunks, start=1):
+            _progress(f"chunk {ch_idx}/{len(chunks)} '{chapter_title[:60]}' …")
             prompt = DISTILL_CHUNK_PROMPT.format(
                 normalized_rel=normalized_rel,
                 chapter_title=chapter_title,
@@ -247,8 +253,10 @@ def distill_v3(
                 "notes_valid": len(valid_notes),
             })
             parsed_notes.extend(valid_notes)
+            _progress(f"chunk {ch_idx}/{len(chunks)} -> {len(valid_notes)} notes")
 
         if parsed_notes:
+            _progress(f"overview pass over {len(parsed_notes)} notes")
             titles_list = [{"title": n.get("title", ""), "type": n.get("type", "")} for n in parsed_notes if n.get("title")]
             overview_prompt = OVERVIEW_PROMPT.format(
                 source_title=source_slug,
@@ -338,4 +346,5 @@ def distill_v3(
     except OSError:
         pass
 
+    _progress(f"done: {len(promoted)} notes promoted")
     return DistillV3Result(ok=True, notes=promoted, raw_responses=raw_responses, audit=audit)
