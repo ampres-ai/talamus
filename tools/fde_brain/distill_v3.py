@@ -233,29 +233,49 @@ def distill_v3(
                 chapter_anchor=anchor,
                 chunk_body=body,
             )
-            proc = _run_claude(prompt, timeout_sec)
-            raw_responses.append(proc.stdout)
-            if proc.returncode != 0:
-                return DistillV3Result(
-                    ok=False, raw_responses=raw_responses,
-                    error=proc.stderr.strip() or f"claude exited {proc.returncode} on chunk '{chapter_title}'",
-                )
-            try:
-                notes = _parse_notes_payload(proc.stdout)
-            except json.JSONDecodeError as exc:
-                return DistillV3Result(
-                    ok=False, raw_responses=raw_responses,
-                    error=f"json decode failed on chunk '{chapter_title}': {exc}",
-                )
-            valid_notes = [n for n in notes if isinstance(n, dict) and n.get("type") in VALID_TYPES]
+            valid_notes: list[dict] = []
+            chunk_error: str | None = None
+            notes_returned = 0
+            attempts = 0
+            for attempts in range(1, 3):  # 1 initial + 1 retry
+                try:
+                    proc = _run_claude(prompt, timeout_sec)
+                except subprocess.TimeoutExpired:
+                    chunk_error = f"timeout after {timeout_sec}s (attempt {attempts})"
+                    continue
+                raw_responses.append(proc.stdout)
+                if proc.returncode != 0:
+                    chunk_error = (
+                        (proc.stderr.strip()[:200] if proc.stderr else "")
+                        or f"claude exit {proc.returncode}"
+                    )
+                    chunk_error = f"{chunk_error} (attempt {attempts})"
+                    continue
+                try:
+                    notes = _parse_notes_payload(proc.stdout)
+                except json.JSONDecodeError as exc:
+                    chunk_error = f"json decode: {exc} (attempt {attempts})"
+                    continue
+                notes_returned = len(notes)
+                valid_notes = [
+                    n for n in notes
+                    if isinstance(n, dict) and n.get("type") in VALID_TYPES
+                ]
+                chunk_error = None
+                break
             chunks_audit.append({
                 "chapter_title": chapter_title,
                 "anchor": anchor,
-                "notes_returned": len(notes),
+                "notes_returned": notes_returned,
                 "notes_valid": len(valid_notes),
+                "attempts": attempts,
+                "error": chunk_error,
             })
             parsed_notes.extend(valid_notes)
-            _progress(f"chunk {ch_idx}/{len(chunks)} -> {len(valid_notes)} notes")
+            if chunk_error:
+                _progress(f"chunk {ch_idx}/{len(chunks)} FAILED: {chunk_error}")
+            else:
+                _progress(f"chunk {ch_idx}/{len(chunks)} -> {len(valid_notes)} notes")
 
         if parsed_notes:
             _progress(f"overview pass over {len(parsed_notes)} notes")

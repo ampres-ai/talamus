@@ -151,24 +151,54 @@ class DistillV3Tests(unittest.TestCase):
         self.assertTrue(any(n.title == "Foo" for n in result.notes))
 
     @patch("tools.fde_brain.distill_v3.subprocess.run")
-    def test_malformed_json_returns_error(self, run_mock) -> None:
+    def test_malformed_json_records_audit_error_but_continues(self, run_mock) -> None:
         run_mock.return_value = _proc("not json at all")
         with tempfile.TemporaryDirectory() as tmp:
             normalized, paths = _setup_normalized(Path(tmp))
             result = distill_v3(normalized, paths, run_id="x")
 
-        self.assertFalse(result.ok)
-        self.assertIn("json", (result.error or "").lower())
+        self.assertTrue(result.ok)
+        self.assertEqual([], result.notes)
+        failures = [c for c in result.audit["chunks"] if c["error"]]
+        self.assertEqual(2, len(failures))
+        self.assertIn("json", failures[0]["error"].lower())
+        self.assertEqual(2, failures[0]["attempts"])
 
     @patch("tools.fde_brain.distill_v3.subprocess.run")
-    def test_timeout_returns_error(self, run_mock) -> None:
+    def test_timeout_records_audit_error_but_continues(self, run_mock) -> None:
         run_mock.side_effect = subprocess.TimeoutExpired(cmd="claude", timeout=5)
         with tempfile.TemporaryDirectory() as tmp:
             normalized, paths = _setup_normalized(Path(tmp))
             result = distill_v3(normalized, paths, run_id="x", timeout_sec=5)
 
-        self.assertFalse(result.ok)
-        self.assertIn("timeout", (result.error or "").lower())
+        self.assertTrue(result.ok)
+        self.assertEqual([], result.notes)
+        failures = [c for c in result.audit["chunks"] if c["error"]]
+        self.assertEqual(2, len(failures))
+        self.assertIn("timeout", failures[0]["error"].lower())
+
+    @patch("tools.fde_brain.distill_v3.subprocess.run")
+    def test_retry_succeeds_on_second_attempt(self, run_mock) -> None:
+        good = _chunk_response([
+            {"title": "Recovered Note", "type": "concept", "body": "B",
+             "tags": [], "source_anchors": ["AI Space/normalized/pdf/book.md#chapter-1-foundations"]},
+        ])
+        run_mock.side_effect = [
+            _proc("not json", returncode=1, stderr="rate limited"),  # chunk 1 attempt 1
+            _proc(good),  # chunk 1 attempt 2
+            _proc(_chunk_response([])),  # chunk 2 succeeds
+            _proc(_chunk_response([])),  # overview pass
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            normalized, paths = _setup_normalized(Path(tmp))
+            result = distill_v3(normalized, paths, run_id="x")
+
+        self.assertTrue(result.ok)
+        titles = [n.title for n in result.notes]
+        self.assertIn("Recovered Note", titles)
+        chunk1_audit = result.audit["chunks"][0]
+        self.assertEqual(2, chunk1_audit["attempts"])
+        self.assertIsNone(chunk1_audit["error"])
 
     @patch("tools.fde_brain.distill_v3.subprocess.run")
     def test_audit_log_written_to_logs_decisions(self, run_mock) -> None:
