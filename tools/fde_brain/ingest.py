@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import hashlib
 import re
 import shutil
@@ -13,12 +14,9 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from pypdf import PdfReader
-
 from tools.fde_brain.classify import classify
-from tools.fde_brain.distill import distill_via_claude
-from tools.fde_brain.distill_v3 import distill_v3
-from tools.fde_brain.length import is_long_pdf
+from tools.fde_brain.distill_local import DEFAULT_DISTILL_MODEL, distill_normalized_sections
+from tools.fde_brain.graphify import mark_graph_stale
 from tools.fde_brain.normalize import NormalizedOutput, normalize_source
 from tools.fde_brain.paths import WorkspacePaths
 from tools.fde_brain.preflight import run_preflight
@@ -76,48 +74,41 @@ def _title_to_filename(title: str) -> str:
     return cleaned or "note"
 
 
-def _is_long_pdf_at(raw_path: Path) -> bool:
-    try:
-        reader = PdfReader(str(raw_path))
-    except Exception:
-        return False
-    return is_long_pdf(reader)
-
-
-def _promote_short(
-    normalized_output_path: Path,
-    raw_path: Path,
-    paths: WorkspacePaths,
-) -> list[Path]:
-    distill_result = distill_via_claude(
-        normalized_path=normalized_output_path,
-        raw_path=raw_path,
-    )
-    if not (distill_result.ok and distill_result.promoted and distill_result.note_content):
-        return []
-    slug = distill_result.note_slug or normalized_output_path.stem
-    promoted_path = paths.fde_brain / f"{slug}.md"
-    paths.fde_brain.mkdir(parents=True, exist_ok=True)
-    promoted_path.write_text(distill_result.note_content, encoding="utf-8")
-    return [promoted_path]
-
-
-def _promote_long(
-    normalized_output_path: Path,
-    raw_path: Path,
+def _write_distill_review(
     paths: WorkspacePaths,
     run_id: str,
+    source_name: str,
+    review_items: list[dict],
+) -> None:
+    if not review_items:
+        return
+    paths.logs_decisions.mkdir(parents=True, exist_ok=True)
+    safe_source = _sanitize_name(source_name)
+    out = paths.logs_decisions / f"{run_id}-{safe_source}-distill-review.json"
+    payload = {"run_id": run_id, "source": source_name, "review_items": review_items}
+    out.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _promote_local(
+    normalized: NormalizedOutput,
+    paths: WorkspacePaths,
+    run_id: str,
+    model: str,
 ) -> list[Path]:
-    del raw_path  # V3 derives every locator from the normalized path
-    result = distill_v3(
-        normalized_path=normalized_output_path,
+    section_paths = list(normalized.section_paths)
+    if not section_paths:
+        return []
+    result = distill_normalized_sections(
+        section_paths=section_paths,
         paths=paths,
         run_id=run_id,
+        model=model,
     )
+    written: list[Path] = []
     if not result.ok:
         _log("distill", f"FAILED: {result.error}")
-        return []
-    written: list[Path] = []
+        return written
+    _write_distill_review(paths, run_id, normalized.package_dir.name if normalized.package_dir else "source", result.review_items)
     paths.fde_brain.mkdir(parents=True, exist_ok=True)
     for note in result.notes:
         filename = f"{_title_to_filename(note.title)}.md"
@@ -125,6 +116,18 @@ def _promote_long(
         promoted_path.write_text(note.content, encoding="utf-8")
         written.append(promoted_path)
     return written
+
+
+def _normalized_rel_paths(normalized: NormalizedOutput, root: Path) -> list[str]:
+    paths: list[Path] = []
+    if normalized.manifest_path:
+        paths.append(normalized.manifest_path)
+    paths.extend(normalized.section_paths)
+    if normalized.quality_report_path:
+        paths.append(normalized.quality_report_path)
+    if not paths and normalized.output_path:
+        paths.append(normalized.output_path)
+    return [rel for rel in (_rel(path, root) for path in paths) if rel]
 
 
 def _log(stage: str, message: str) -> None:
@@ -137,6 +140,7 @@ def _process_one(
     paths: WorkspacePaths,
     run_id: str,
     captured_at: datetime,
+    distill_model: str,
 ) -> FileOutcome:
     pending_name = src.name
     size_mb = src.stat().st_size / 1024 / 1024
@@ -164,18 +168,12 @@ def _process_one(
 
     promoted_paths: list[Path] = []
     if normalized.routed_to == "normalized" and normalized.output_path is not None:
-        if category == "pdf" and _is_long_pdf_at(raw_path):
-            _log("distill", "long-pdf branch -> distill_v3")
-            promoted_paths = _promote_long(
-                normalized.output_path, raw_path, paths, run_id
-            )
-            _log("distill", f"promoted {len(promoted_paths)} notes")
-        else:
-            _log("distill", "short branch -> distill_via_claude")
-            promoted_paths = _promote_short(
-                normalized.output_path, raw_path, paths
-            )
-            _log("distill", f"promoted {len(promoted_paths)} notes")
+        mark_graph_stale(paths.source_graph, f"normalized source changed: {pending_name}")
+        _log("distill", f"local section-level branch -> ollama/{distill_model}")
+        promoted_paths = _promote_local(normalized, paths, run_id, distill_model)
+        _log("distill", f"promoted {len(promoted_paths)} notes")
+        if promoted_paths:
+            mark_graph_stale(paths.brain_graph, f"FDE Brain notes changed: {pending_name}")
 
     promoted_rels = [
         rel for rel in (_rel(p, paths.root) for p in promoted_paths) if rel
@@ -185,7 +183,7 @@ def _process_one(
         raw_path=_rel(raw_path, paths.root) or raw_path.as_posix(),
         raw_hash=raw_hash,
         raw_size=raw_size,
-        normalized_paths=[_rel(normalized.output_path, paths.root) or ""] if normalized.output_path else [],
+        normalized_paths=_normalized_rel_paths(normalized, paths.root),
         category=category,
         parser=normalized.parser,
         captured_at=captured_at.isoformat(),
@@ -212,6 +210,21 @@ def _git(root: Path, args: list[str]) -> subprocess.CompletedProcess:
     )
 
 
+def _write_pre_ingest_checkpoint(paths: WorkspacePaths, run_id: str, started_at: str) -> Path:
+    paths.logs_decisions.mkdir(parents=True, exist_ok=True)
+    status = _git(paths.root, ["status", "--short"]).stdout.splitlines()
+    payload = {
+        "run_id": run_id,
+        "checkpointed_at": started_at,
+        "purpose": "pre-ingest workspace checkpoint",
+        "git_status_short": status,
+    }
+    safe = started_at.replace(":", "").split("+")[0].split(".")[0]
+    out = paths.logs_decisions / f"{safe}-{run_id}-pre-ingest-checkpoint.json"
+    out.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    return out
+
+
 def _commit_changes(root: Path, message: str) -> str | None:
     _git(root, ["add", "AI Space", "FDE Brain"])
     diff = _git(root, ["diff", "--cached", "--quiet"])
@@ -233,6 +246,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", default=".", help="Workspace root.")
     parser.add_argument("--no-commit", action="store_true", help="Skip the final git commit.")
     parser.add_argument("--dry-run", action="store_true", help="Plan only; do not write logs or commit.")
+    parser.add_argument("--distill-model", default=DEFAULT_DISTILL_MODEL, help="Ollama model for local section distillation.")
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
@@ -244,7 +258,7 @@ def main(argv: list[str] | None = None) -> int:
             print(issue, file=sys.stderr)
         return 1
 
-    preflight = run_preflight()
+    preflight = run_preflight(distill_model=args.distill_model)
     if not all(r.ok for r in preflight):
         for result in preflight:
             print(result.status_text(), file=sys.stderr)
@@ -258,9 +272,18 @@ def main(argv: list[str] | None = None) -> int:
         if p.is_file() and p.name != ".gitkeep"
     )
 
+    if args.dry_run:
+        for src in pending_files:
+            print(f"[dry-run] {src.name} -> would classify/archive/normalize/distill")
+        print(f"dry-run complete; {len(pending_files)} files discovered")
+        return 0
+
+    if pending_files and not args.dry_run:
+        _write_pre_ingest_checkpoint(paths, log.run_id, log.started_at)
+
     for src in pending_files:
         try:
-            outcome = _process_one(src, paths, log.run_id, captured_at)
+            outcome = _process_one(src, paths, log.run_id, captured_at, args.distill_model)
         except Exception as exc:
             outcome = FileOutcome(
                 pending_name=src.name,
@@ -278,15 +301,11 @@ def main(argv: list[str] | None = None) -> int:
 
     log.finished_at = datetime.now(timezone.utc).isoformat()
 
-    if args.dry_run:
-        print(f"dry-run complete; {len(log.files)} files processed")
-        return 0 if log.overall_ok else 1
+    write_run_log(paths, log)
 
     if not args.no_commit and log.files:
         commit_msg = f"chore(ai-pipeline): ingest pending batch {captured_at.strftime('%Y-%m-%d')}"
         log.commit_hash = _commit_changes(root, commit_msg)
-
-    write_run_log(paths, log)
 
     return 0 if log.overall_ok else 1
 

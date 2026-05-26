@@ -15,6 +15,9 @@ class ClassifyTests(unittest.TestCase):
     def test_pdf_extension(self) -> None:
         self.assertEqual("pdf", classify(Path("paper.pdf")))
 
+    def test_epub_extension(self) -> None:
+        self.assertEqual("epub", classify(Path("book.epub")))
+
     def test_image_extensions(self) -> None:
         self.assertEqual("image", classify(Path("screenshot.png")))
         self.assertEqual("image", classify(Path("photo.jpg")))

@@ -4,8 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.fde_brain.distill import DistillResult
-from tools.fde_brain.distill_v3 import DistillV3Result, PromotedNote
+from tools.fde_brain.distill_local import LocalDistillResult, LocalPromotedNote
 from tools.fde_brain.ingest import main
 from tools.fde_brain.paths import WorkspacePaths
 from tools.fde_brain.preflight import CheckResult
@@ -21,7 +20,7 @@ def _setup_workspace(root: Path) -> WorkspacePaths:
     return paths
 
 
-def _all_ok_preflight() -> list[CheckResult]:
+def _all_ok_preflight(*_args, **_kwargs) -> list[CheckResult]:
     return [
         CheckResult("Claude Code", True, "ok"),
         CheckResult("Codex CLI", True, "ok"),
@@ -33,12 +32,40 @@ def _all_ok_preflight() -> list[CheckResult]:
 
 
 class IngestIntegrationTests(unittest.TestCase):
-    @patch("tools.fde_brain.ingest.distill_via_claude")
+    @patch("tools.fde_brain.ingest.distill_normalized_sections")
+    @patch("tools.fde_brain.ingest.run_preflight", side_effect=_all_ok_preflight)
+    def test_dry_run_does_not_move_or_write_pending_files(self, _pf, distill_mock) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = _setup_workspace(root)
+            pending = paths.pending / "note.md"
+            pending.write_text("# Hello\nBody.", encoding="utf-8")
+
+            exit_code = main(["--root", str(root), "--dry-run"])
+
+            self.assertEqual(0, exit_code)
+            self.assertTrue(pending.exists())
+            raw_markdown = paths.raw_for("markdown")
+            self.assertFalse(raw_markdown.exists())
+            self.assertFalse(paths.registry_path.exists())
+            self.assertEqual([], [p for p in paths.logs_runs.iterdir() if p.name != ".gitkeep"])
+            distill_mock.assert_not_called()
+
+    @patch("tools.fde_brain.ingest.run_preflight", side_effect=_all_ok_preflight)
+    def test_preflight_uses_configured_distill_model(self, pf_mock) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _setup_workspace(root)
+
+            exit_code = main(["--root", str(root), "--no-commit", "--distill-model", "custom:model"])
+
+            self.assertEqual(0, exit_code)
+            pf_mock.assert_called_once_with(distill_model="custom:model")
+
+    @patch("tools.fde_brain.ingest.distill_normalized_sections")
     @patch("tools.fde_brain.ingest.run_preflight", side_effect=_all_ok_preflight)
     def test_markdown_passes_through_without_promotion(self, _pf, distill_mock) -> None:
-        distill_mock.return_value = DistillResult(
-            ok=True, promoted=False, note_content=None, note_slug=None, raw_response="NO_PROMOTION"
-        )
+        distill_mock.return_value = LocalDistillResult(ok=True, notes=[])
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             paths = _setup_workspace(root)
@@ -52,24 +79,37 @@ class IngestIntegrationTests(unittest.TestCase):
             raw_files = [p for p in raw_files if p.name != ".gitkeep"]
             self.assertEqual(1, len(raw_files))
             self.assertTrue(raw_files[0].name.endswith("note.md"))
-            self.assertTrue((paths.normalized_for("markdown") / "note.md").exists())
+            self.assertTrue((paths.normalized_for("markdown") / "note" / "manifest.json").exists())
+            self.assertTrue((paths.normalized_for("markdown") / "note" / "sections" / "001-hello.md").exists())
             self.assertTrue(paths.registry_path.exists())
             data = json.loads(paths.registry_path.read_text(encoding="utf-8"))
             self.assertEqual(1, len(data["entries"]))
+            self.assertGreaterEqual(len(data["entries"][0]["normalized_paths"]), 3)
             self.assertEqual([], list(paths.fde_brain.glob("*.md")))
+            self.assertTrue(paths.source_graph_stale.exists())
             log_files = list(paths.logs_runs.glob("*.json"))
             self.assertEqual(1, len(log_files))
 
-    @patch("tools.fde_brain.ingest.distill_via_claude")
+    @patch("tools.fde_brain.ingest.distill_normalized_sections")
     @patch("tools.fde_brain.ingest.run_preflight", side_effect=_all_ok_preflight)
     def test_markdown_with_promotion_writes_fde_brain_note(self, _pf, distill_mock) -> None:
         promoted_md = (
-            "---\ntype: concept\ntags: [demo]\nsources:\n  - x\n  - y\n"
-            "captured-at: 2026-05-22\n---\n\n# Demo\n\nSummary.\n"
+            "---\ntype: concept\nstatus: evergreen\naliases:\n  - Hello\n"
+            "tags:\n  - demo\nsources:\n  - raw_path: x\n    normalized_path: y\n"
+            "created: 2026-05-22\nupdated: 2026-05-22\n---\n\n# Hello\n\n"
+            "## Summary\n\nSummary.\n\n## Core Idea\n\nCore.\n\n## Practical Use\n\nUse.\n\n## Related\n\n- \n"
         )
-        distill_mock.return_value = DistillResult(
-            ok=True, promoted=True, note_content=promoted_md, note_slug="hello",
-            raw_response=promoted_md,
+        distill_mock.return_value = LocalDistillResult(
+            ok=True,
+            notes=[
+                LocalPromotedNote(
+                    title="Hello",
+                    type="concept",
+                    content=promoted_md,
+                    source_section=Path("x"),
+                    confidence=0.9,
+                )
+            ],
         )
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -79,16 +119,15 @@ class IngestIntegrationTests(unittest.TestCase):
             exit_code = main(["--root", str(root), "--no-commit"])
 
             self.assertEqual(0, exit_code)
-            promoted = paths.fde_brain / "hello.md"
+            promoted = paths.fde_brain / "Hello.md"
             self.assertTrue(promoted.exists())
             self.assertEqual(promoted_md, promoted.read_text(encoding="utf-8"))
+            self.assertTrue(paths.brain_graph_stale.exists())
 
-    @patch("tools.fde_brain.ingest.distill_via_claude")
+    @patch("tools.fde_brain.ingest.distill_normalized_sections")
     @patch("tools.fde_brain.ingest.run_preflight", side_effect=_all_ok_preflight)
     def test_unknown_extension_routes_to_review(self, _pf, distill_mock) -> None:
-        distill_mock.return_value = DistillResult(
-            ok=True, promoted=False, note_content=None, note_slug=None, raw_response="NO_PROMOTION"
-        )
+        distill_mock.return_value = LocalDistillResult(ok=True, notes=[])
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             paths = _setup_workspace(root)
@@ -101,12 +140,11 @@ class IngestIntegrationTests(unittest.TestCase):
             self.assertEqual(1, len(review_files))
             distill_mock.assert_not_called()
 
-    @patch("tools.fde_brain.ingest.distill_v3")
-    @patch("tools.fde_brain.ingest._is_long_pdf_at", return_value=True)
+    @patch("tools.fde_brain.ingest.distill_normalized_sections")
     @patch("tools.fde_brain.ingest.normalize_source")
     @patch("tools.fde_brain.ingest.run_preflight", side_effect=_all_ok_preflight)
-    def test_long_pdf_uses_multi_note_distill(
-        self, _pf, normalize_mock, _is_long, distill_long_mock
+    def test_pdf_uses_local_section_distill(
+        self, _pf, normalize_mock, distill_mock
     ) -> None:
         from tools.fde_brain.normalize import NormalizedOutput
 
@@ -116,24 +154,34 @@ class IngestIntegrationTests(unittest.TestCase):
             pdf_pending = paths.pending / "book.pdf"
             pdf_pending.write_bytes(b"%PDF-1.4 stub")
 
-            normalized_path = paths.normalized_for("pdf") / "book.md"
-            normalized_path.parent.mkdir(parents=True, exist_ok=True)
-            normalized_path.write_text("---\n---\n\n# stub\n", encoding="utf-8")
+            manifest_path = paths.normalized_for("pdf") / "book" / "manifest.json"
+            section_path = paths.normalized_for("pdf") / "book" / "sections" / "001-book.md"
+            manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            section_path.parent.mkdir(parents=True, exist_ok=True)
+            manifest_path.write_text("{}", encoding="utf-8")
+            section_path.write_text("---\n---\n\n# stub\n", encoding="utf-8")
             normalize_mock.return_value = NormalizedOutput(
-                ok=True, output_path=normalized_path, routed_to="normalized", parser="pypdf"
+                ok=True,
+                output_path=manifest_path,
+                routed_to="normalized",
+                parser="pypdf",
+                manifest_path=manifest_path,
+                section_paths=[section_path],
+                quality_report_path=paths.normalized_for("pdf") / "book" / "quality-report.json",
+                package_dir=paths.normalized_for("pdf") / "book",
             )
 
             notes = [
-                PromotedNote(title="Overview", type="overview", content="---\ntype: overview\n---\n\n# Overview\n", source_anchors=[]),
-                PromotedNote(title="Chapter Key Idea", type="chapter", content="---\ntype: chapter\n---\n\n# Chapter Key Idea\n", source_anchors=[]),
-                PromotedNote(title="Cool Pattern", type="pattern", content="---\ntype: pattern\n---\n\n# Cool Pattern\n", source_anchors=[]),
+                LocalPromotedNote(title="Overview", type="overview", content="---\ntype: overview\n---\n\n# Overview\n", source_section=section_path, confidence=0.9),
+                LocalPromotedNote(title="Chapter Key Idea", type="concept", content="---\ntype: concept\n---\n\n# Chapter Key Idea\n", source_section=section_path, confidence=0.9),
+                LocalPromotedNote(title="Cool Pattern", type="pattern", content="---\ntype: pattern\n---\n\n# Cool Pattern\n", source_section=section_path, confidence=0.9),
             ]
-            distill_long_mock.return_value = DistillV3Result(ok=True, notes=notes, raw_responses=[])
+            distill_mock.return_value = LocalDistillResult(ok=True, notes=notes, raw_responses=[])
 
             exit_code = main(["--root", str(root), "--no-commit"])
 
             self.assertEqual(0, exit_code)
-            distill_long_mock.assert_called_once()
+            distill_mock.assert_called_once()
             brain_notes = sorted(p.name for p in paths.fde_brain.glob("*.md"))
             self.assertEqual(["Chapter-Key-Idea.md", "Cool-Pattern.md", "Overview.md"], brain_notes)
 
@@ -141,13 +189,11 @@ class IngestIntegrationTests(unittest.TestCase):
             promoted = registry["entries"][0]["promoted_to"]
             self.assertEqual(3, len(promoted))
 
-    @patch("tools.fde_brain.ingest.distill_v3")
-    @patch("tools.fde_brain.ingest._is_long_pdf_at", return_value=False)
-    @patch("tools.fde_brain.ingest.distill_via_claude")
+    @patch("tools.fde_brain.ingest.distill_normalized_sections")
     @patch("tools.fde_brain.ingest.normalize_source")
     @patch("tools.fde_brain.ingest.run_preflight", side_effect=_all_ok_preflight)
-    def test_short_pdf_uses_single_note_distill(
-        self, _pf, normalize_mock, distill_mock, _is_long, distill_long_mock
+    def test_normalized_source_without_sections_does_not_distill(
+        self, _pf, normalize_mock, distill_mock
     ) -> None:
         from tools.fde_brain.normalize import NormalizedOutput
 
@@ -163,15 +209,11 @@ class IngestIntegrationTests(unittest.TestCase):
             normalize_mock.return_value = NormalizedOutput(
                 ok=True, output_path=normalized_path, routed_to="normalized", parser="pypdf"
             )
-            distill_mock.return_value = DistillResult(
-                ok=True, promoted=False, note_content=None, note_slug=None, raw_response="NO_PROMOTION"
-            )
 
             exit_code = main(["--root", str(root), "--no-commit"])
 
             self.assertEqual(0, exit_code)
-            distill_mock.assert_called_once()
-            distill_long_mock.assert_not_called()
+            distill_mock.assert_not_called()
 
     @patch("tools.fde_brain.ingest.run_preflight", side_effect=_all_ok_preflight)
     def test_empty_pending_no_changes(self, _pf) -> None:

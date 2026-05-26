@@ -1,4 +1,4 @@
-import tempfile
+﻿import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -44,8 +44,9 @@ class NormalizeMarkdownTests(unittest.TestCase):
             self.assertEqual("normalized", out.routed_to)
             assert out.output_path is not None
             self.assertTrue(out.output_path.exists())
-            self.assertTrue(str(out.output_path).startswith(str(paths.normalized_for("markdown"))))
-            content = out.output_path.read_text(encoding="utf-8")
+            self.assertTrue(str(out.package_dir).startswith(str(paths.normalized_for("markdown"))))
+            self.assertEqual(1, len(out.section_paths))
+            content = out.section_paths[0].read_text(encoding="utf-8")
             self.assertTrue(content.startswith("---\n"))
             self.assertIn("source-type: markdown", content)
             self.assertIn("source-hash: sha256:abc123", content)
@@ -73,8 +74,9 @@ class NormalizeTextTests(unittest.TestCase):
 
             self.assertTrue(out.ok)
             assert out.output_path is not None
-            self.assertEqual(paths.normalized_for("text"), out.output_path.parent)
-            self.assertIn("Plain text here.", out.output_path.read_text(encoding="utf-8"))
+            self.assertEqual(paths.normalized_for("text") / "doc", out.package_dir)
+            self.assertEqual(1, len(out.section_paths))
+            self.assertIn("Plain text here.", out.section_paths[0].read_text(encoding="utf-8"))
 
 
 class NormalizePdfTests(unittest.TestCase):
@@ -104,9 +106,9 @@ class NormalizePdfTests(unittest.TestCase):
             self.assertTrue(out.ok, msg=str(out))
             self.assertEqual("normalized", out.routed_to)
             assert out.output_path is not None
-            content = out.output_path.read_text(encoding="utf-8")
-            self.assertIn("## Page 1", content)
-            self.assertIn("## Page 2", content)
+            content = "\n".join(path.read_text(encoding="utf-8") for path in out.section_paths)
+            self.assertIn("# Page 1", content)
+            self.assertIn("# Page 2", content)
             self.assertIn("parser: pypdf", content)
 
     @patch(
@@ -145,14 +147,14 @@ class NormalizePdfTests(unittest.TestCase):
 
             self.assertTrue(out.ok)
             assert out.output_path is not None
-            content = out.output_path.read_text(encoding="utf-8")
-            self.assertIn("## Introduction", content)
-            self.assertIn("## Chapter 1: Foo", content)
-            self.assertIn("## Chapter 2: Bar", content)
-            self.assertNotIn("## Page 1", content)
-            self.assertIn("_Pages 1–1_", content)
-            self.assertIn("_Pages 2–3_", content)
-            self.assertIn("_Pages 4–5_", content)
+            content = "\n".join(path.read_text(encoding="utf-8") for path in out.section_paths)
+            self.assertIn("# Introduction", content)
+            self.assertIn("# Chapter 1: Foo", content)
+            self.assertIn("# Chapter 2: Bar", content)
+            self.assertNotIn("# Page 1", content)
+            self.assertIn("source-location: pages 1-1", content)
+            self.assertIn("source-location: pages 2-3", content)
+            self.assertIn("source-location: pages 4-5", content)
 
     def test_layout_aware_ocr_fallback_invokes_ocr_on_visual_pages(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -206,7 +208,7 @@ class NormalizePdfTests(unittest.TestCase):
             self.assertEqual("normalized", out.routed_to)
             self.assertEqual(1, ocr_mock.call_count)
             assert out.output_path is not None
-            content = out.output_path.read_text(encoding="utf-8")
+            content = "\n".join(path.read_text(encoding="utf-8") for path in out.section_paths)
             self.assertIn("Visual OCR text for page two", content)
             self.assertIn("Text only page one", content)
             self.assertIn("Final text only page", content)
@@ -284,7 +286,7 @@ class NormalizeImageTests(unittest.TestCase):
             self.assertTrue(out.ok)
             self.assertEqual("normalized", out.routed_to)
             assert out.output_path is not None
-            content = out.output_path.read_text(encoding="utf-8")
+            content = out.section_paths[0].read_text(encoding="utf-8")
             self.assertIn("## OCR", content)
             self.assertIn("OCR'd content here", content)
             self.assertIn("parser: glm-ocr", content)

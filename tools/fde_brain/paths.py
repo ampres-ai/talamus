@@ -43,6 +43,14 @@ class WorkspacePaths:
         return self.graph_root / "sources"
 
     @property
+    def brain_graph_stale(self) -> Path:
+        return self.brain_graph / ".stale"
+
+    @property
+    def source_graph_stale(self) -> Path:
+        return self.source_graph / ".stale"
+
+    @property
     def logs(self) -> Path:
         return self.ai_space / "logs"
 

@@ -59,6 +59,7 @@ If a locator is coarse, say so.
 - keep provenance inside the note
 
 Use `kepano/obsidian-skills@obsidian-markdown` as the authoring reference.
+For Codex, the skill is installed as `obsidian-markdown`; restart Codex after installation if the skill is not visible in the active skill list.
 
 ## Graphify
 
@@ -70,7 +71,13 @@ Use two graphs:
 Preferred backend:
 
 ```powershell
-graphify extract <input> --backend claude-cli --out <output>
+graphify extract <input> --backend ollama --model gemma4:e4b --max-concurrency 1 --out <output>
+```
+
+Manual Claude fallback is allowed only when explicitly requested:
+
+```powershell
+graphify extract <input> --backend claude --max-concurrency 1 --out <output>
 ```
 
 ## Review And Failure Routing

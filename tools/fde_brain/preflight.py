@@ -42,7 +42,7 @@ def _model_name_matches(installed: str, requested: str) -> bool:
     return installed_l == requested_l or installed_l.startswith(f"{requested_l}:")
 
 
-def check_ollama_model(model_name: str = "glm-ocr") -> CheckResult:
+def check_ollama_model(model_name: str = "glm-ocr", display_name: str = "GLM-OCR model") -> CheckResult:
     try:
         result = subprocess.run(
             ["ollama", "list"],
@@ -52,23 +52,24 @@ def check_ollama_model(model_name: str = "glm-ocr") -> CheckResult:
             timeout=15,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
-        return CheckResult("GLM-OCR model", False, f"could not run ollama list: {exc}")
+        return CheckResult(display_name, False, f"could not run ollama list: {exc}")
 
     if result.returncode != 0:
         detail = result.stderr.strip() or f"ollama list exited with {result.returncode}"
-        return CheckResult("GLM-OCR model", False, detail)
+        return CheckResult(display_name, False, detail)
 
     if any(_model_name_matches(name, model_name) for name in _ollama_model_names(result.stdout)):
-        return CheckResult("GLM-OCR model", True, f"{model_name} found in ollama list")
-    return CheckResult("GLM-OCR model", False, f"{model_name} not found in ollama list")
+        return CheckResult(display_name, True, f"{model_name} found in ollama list")
+    return CheckResult(display_name, False, f"{model_name} not found in ollama list")
 
 
-def run_preflight(glm_ocr_model: str = "glm-ocr") -> list[CheckResult]:
+def run_preflight(glm_ocr_model: str = "glm-ocr", distill_model: str = "gemma4:e4b") -> list[CheckResult]:
     return [
         check_cli("Claude Code", "claude"),
         check_cli("Codex CLI", "codex"),
         check_cli("Ollama", "ollama"),
         check_ollama_model(glm_ocr_model),
+        check_ollama_model(distill_model, "Gemma distillation model"),
         check_cli("Graphify", "graphify"),
         check_cli("Git", "git"),
     ]
@@ -77,9 +78,10 @@ def run_preflight(glm_ocr_model: str = "glm-ocr") -> list[CheckResult]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Check local engines for the FDE Brain pipeline.")
     parser.add_argument("--glm-ocr-model", default="glm-ocr", help="Ollama model name for GLM-OCR.")
+    parser.add_argument("--distill-model", default="gemma4:e4b", help="Ollama model name for local distillation.")
     args = parser.parse_args(argv)
 
-    results = run_preflight(args.glm_ocr_model)
+    results = run_preflight(args.glm_ocr_model, args.distill_model)
     for result in results:
         print(result.status_text())
 
