@@ -1,3 +1,4 @@
 pypdf>=4.0
 ollama>=0.4
 pypdfium2>=5.0
+openai>=1.0

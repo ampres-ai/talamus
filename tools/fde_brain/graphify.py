@@ -91,7 +91,9 @@ def source_graph_extract(root: Path, backend: str = DEFAULT_BACKEND, model: str 
 
 def run_graphify_command(command: GraphifyCommand, graph_dir: Path, timeout_sec: int = 1800) -> subprocess.CompletedProcess:
     result = subprocess.run(command.args, capture_output=True, text=True, timeout=timeout_sec, check=False)
-    if result.returncode == 0 and graph_json_path(graph_dir).exists():
+    combined_output = f"{result.stdout}\n{result.stderr}".lower()
+    semantic_failed = "semantic chunk" in combined_output and "failed" in combined_output
+    if result.returncode == 0 and graph_json_path(graph_dir).exists() and not semantic_failed:
         mark_graph_fresh(graph_dir)
     else:
         detail = result.stderr.strip() or result.stdout.strip() or f"exit {result.returncode}"

@@ -1,5 +1,7 @@
 import unittest
+from subprocess import CompletedProcess
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.fde_brain.graphify import (
     GraphifyCommand,
@@ -7,6 +9,7 @@ from tools.fde_brain.graphify import (
     graph_json_path,
     mark_graph_fresh,
     mark_graph_stale,
+    run_graphify_command,
     source_graph_extract,
 )
 
@@ -82,6 +85,28 @@ class GraphifyTests(unittest.TestCase):
         command = GraphifyCommand(["graphify", "query", 'has"quote'])
 
         self.assertEqual('graphify query "has`"quote"', command.to_powershell())
+
+    @patch("tools.fde_brain.graphify.subprocess.run")
+    def test_semantic_chunk_failures_keep_graph_stale_even_with_graph_json(self, run_mock) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            graph_dir = Path(tmp) / "graph"
+            graph_json_path(graph_dir).parent.mkdir(parents=True, exist_ok=True)
+            graph_json_path(graph_dir).write_text("{}", encoding="utf-8")
+            run_mock.return_value = CompletedProcess(
+                args=["graphify"],
+                returncode=0,
+                stdout="wrote graph.json",
+                stderr="WARNING: 5/5 semantic chunk(s) failed",
+            )
+
+            result = run_graphify_command(GraphifyCommand(["graphify"]), graph_dir)
+
+            self.assertEqual(0, result.returncode)
+            marker = graph_dir / ".stale"
+            self.assertTrue(marker.exists())
+            self.assertIn("semantic", marker.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
