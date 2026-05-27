@@ -85,7 +85,7 @@ python -m tools.fde_brain.graphify sources --root . --run
 Default Graphify extraction:
 
 ```powershell
-graphify extract <path> --backend ollama --model gemma4:e4b --max-concurrency 1 --out <graph-dir>
+graphify extract <path> --backend ollama --model gemma4:e4b --max-concurrency 1 --token-budget 12000 --api-timeout 1800 --out <graph-dir>
 ```
 
 Graphify writes graph files under:

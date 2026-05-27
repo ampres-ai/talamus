@@ -30,6 +30,10 @@ class GraphifyTests(unittest.TestCase):
                     "gemma4:e4b",
                     "--max-concurrency",
                     "1",
+                    "--token-budget",
+                    "12000",
+                    "--api-timeout",
+                    "1800",
                     "--out",
                     "C:/workspace/AI Space/graph/brain",
                 ]
@@ -51,11 +55,27 @@ class GraphifyTests(unittest.TestCase):
                 "gemma4:e4b",
                 "--max-concurrency",
                 "1",
+                "--token-budget",
+                "12000",
+                "--api-timeout",
+                "1800",
                 "--out",
                 "C:/workspace/AI Space/graph/sources",
             ],
             command.args,
         )
+
+    def test_extract_command_accepts_local_runtime_overrides(self) -> None:
+        command = brain_graph_extract(
+            Path("C:/workspace"),
+            token_budget=8000,
+            api_timeout=900,
+        )
+
+        self.assertIn("--token-budget", command.args)
+        self.assertIn("8000", command.args)
+        self.assertIn("--api-timeout", command.args)
+        self.assertIn("900", command.args)
 
     def test_graph_json_path_matches_graphify_output_layout(self) -> None:
         self.assertEqual(
@@ -107,6 +127,37 @@ class GraphifyTests(unittest.TestCase):
             marker = graph_dir / ".stale"
             self.assertTrue(marker.exists())
             self.assertIn("semantic", marker.read_text(encoding="utf-8"))
+
+    @patch("tools.fde_brain.graphify.subprocess.run")
+    def test_run_sets_graphify_out_to_managed_graph_dir(self, run_mock) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            graph_dir = Path(tmp) / "graph"
+            graph_json_path(graph_dir).parent.mkdir(parents=True, exist_ok=True)
+            graph_json_path(graph_dir).write_text("{}", encoding="utf-8")
+            run_mock.return_value = CompletedProcess(args=["graphify"], returncode=0, stdout="", stderr="")
+
+            run_graphify_command(GraphifyCommand(["graphify"]), graph_dir)
+
+            env = run_mock.call_args.kwargs["env"]
+            self.assertEqual(str((graph_dir / "graphify-out").resolve()), env["GRAPHIFY_OUT"])
+
+    @patch("tools.fde_brain.graphify.subprocess.run")
+    def test_timeout_keeps_graph_stale(self, run_mock) -> None:
+        import subprocess
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            graph_dir = Path(tmp) / "graph"
+            run_mock.side_effect = subprocess.TimeoutExpired(["graphify"], timeout=12, stderr="slow model")
+
+            result = run_graphify_command(GraphifyCommand(["graphify"]), graph_dir, timeout_sec=12)
+
+            self.assertEqual(124, result.returncode)
+            marker = graph_dir / ".stale"
+            self.assertTrue(marker.exists())
+            self.assertIn("timed out", marker.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

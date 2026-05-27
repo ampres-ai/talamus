@@ -17,6 +17,7 @@ import ollama
 from tools.fde_brain.distill_local import distill_normalized_sections
 from tools.fde_brain.graphify import mark_graph_stale
 from tools.fde_brain.graphify import graph_json_path
+from tools.fde_brain.graphify import stale_marker_path
 from tools.fde_brain.paths import WorkspacePaths
 
 
@@ -132,7 +133,7 @@ def _graph_query(paths: WorkspacePaths, question: str, layer: str, runner: Graph
         return None
     graph_dir = paths.brain_graph if layer == "brain" else paths.source_graph
     graph_json = graph_json_path(graph_dir)
-    if not graph_json.exists():
+    if not graph_json.exists() or stale_marker_path(graph_dir).exists():
         return None
     return runner(["graphify", "query", question, "--graph", graph_json.as_posix(), "--budget", "1600"])
 

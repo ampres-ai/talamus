@@ -79,6 +79,28 @@ class AskTests(unittest.TestCase):
         self.assertTrue(bundle.items)
         self.assertEqual("FDE Brain/Graph-Routed.md", bundle.items[0].path)
 
+    def test_context_bundle_ignores_stale_graph(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = WorkspacePaths(root)
+            paths.ensure_directories()
+            routed = paths.fde_brain / "Graph-Routed.md"
+            routed.write_text("# Graph Routed\n\nSelected only by Graphify.", encoding="utf-8")
+            keyword = paths.fde_brain / "Keyword-Hit.md"
+            keyword.write_text("# RAG\n\nRAG RAG RAG.", encoding="utf-8")
+            graph_json = paths.brain_graph / "graphify-out" / "graph.json"
+            graph_json.parent.mkdir(parents=True, exist_ok=True)
+            graph_json.write_text("{}", encoding="utf-8")
+            (paths.brain_graph / ".stale").write_text("stale", encoding="utf-8")
+
+            def runner(_args: list[str]) -> str:
+                return "Candidate: FDE Brain/Graph-Routed.md"
+
+            bundle = build_context_bundle(paths, "When should I use RAG?", graph_runner=runner)
+
+        self.assertTrue(bundle.items)
+        self.assertEqual("FDE Brain/Keyword-Hit.md", bundle.items[0].path)
+
     @patch("tools.fde_brain.ask.ollama.chat")
     def test_answer_question_with_gemma_reports_model_and_uses_citations(self, chat_mock) -> None:
         chat_mock.return_value = {"message": {"content": "Use RAG when knowledge changes. [1]"}}

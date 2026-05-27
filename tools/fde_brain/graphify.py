@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -14,6 +15,9 @@ from tools.fde_brain.paths import WorkspacePaths
 
 DEFAULT_BACKEND = "ollama"
 DEFAULT_MODEL = "gemma4:e4b"
+DEFAULT_TOKEN_BUDGET = 12000
+DEFAULT_API_TIMEOUT = 1800
+DEFAULT_RUN_TIMEOUT = 7200
 VALID_BACKENDS = {"gemini", "kimi", "claude", "openai", "deepseek", "ollama"}
 
 
@@ -64,7 +68,14 @@ def _validate_backend(backend: str) -> None:
         raise ValueError(f"invalid Graphify backend `{backend}`; expected one of: {valid}")
 
 
-def _extract_command(input_path: Path, output_dir: Path, backend: str, model: str | None) -> GraphifyCommand:
+def _extract_command(
+    input_path: Path,
+    output_dir: Path,
+    backend: str,
+    model: str | None,
+    token_budget: int = DEFAULT_TOKEN_BUDGET,
+    api_timeout: int = DEFAULT_API_TIMEOUT,
+) -> GraphifyCommand:
     _validate_backend(backend)
     args = [
         "graphify",
@@ -75,22 +86,71 @@ def _extract_command(input_path: Path, output_dir: Path, backend: str, model: st
     ]
     if model:
         args.extend(["--model", model])
-    args.extend(["--max-concurrency", "1", "--out", _as_posix_string(output_dir)])
+    args.extend([
+        "--max-concurrency",
+        "1",
+        "--token-budget",
+        str(token_budget),
+        "--api-timeout",
+        str(api_timeout),
+        "--out",
+        _as_posix_string(output_dir),
+    ])
     return GraphifyCommand(args)
 
 
-def brain_graph_extract(root: Path, backend: str = DEFAULT_BACKEND, model: str | None = DEFAULT_MODEL) -> GraphifyCommand:
+def brain_graph_extract(
+    root: Path,
+    backend: str = DEFAULT_BACKEND,
+    model: str | None = DEFAULT_MODEL,
+    token_budget: int = DEFAULT_TOKEN_BUDGET,
+    api_timeout: int = DEFAULT_API_TIMEOUT,
+) -> GraphifyCommand:
     paths = WorkspacePaths(root)
-    return _extract_command(paths.fde_brain, paths.brain_graph, backend, model)
+    return _extract_command(paths.fde_brain, paths.brain_graph, backend, model, token_budget, api_timeout)
 
 
-def source_graph_extract(root: Path, backend: str = DEFAULT_BACKEND, model: str | None = DEFAULT_MODEL) -> GraphifyCommand:
+def source_graph_extract(
+    root: Path,
+    backend: str = DEFAULT_BACKEND,
+    model: str | None = DEFAULT_MODEL,
+    token_budget: int = DEFAULT_TOKEN_BUDGET,
+    api_timeout: int = DEFAULT_API_TIMEOUT,
+) -> GraphifyCommand:
     paths = WorkspacePaths(root)
-    return _extract_command(paths.normalized, paths.source_graph, backend, model)
+    return _extract_command(paths.normalized, paths.source_graph, backend, model, token_budget, api_timeout)
 
 
-def run_graphify_command(command: GraphifyCommand, graph_dir: Path, timeout_sec: int = 1800) -> subprocess.CompletedProcess:
-    result = subprocess.run(command.args, capture_output=True, text=True, timeout=timeout_sec, check=False)
+def _timeout_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
+def run_graphify_command(
+    command: GraphifyCommand,
+    graph_dir: Path,
+    timeout_sec: int = DEFAULT_RUN_TIMEOUT,
+) -> subprocess.CompletedProcess:
+    env = os.environ.copy()
+    env["GRAPHIFY_OUT"] = str((graph_dir / "graphify-out").resolve())
+    try:
+        result = subprocess.run(
+            command.args,
+            capture_output=True,
+            text=True,
+            timeout=timeout_sec,
+            check=False,
+            env=env,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = _timeout_text(exc.stdout)
+        stderr = _timeout_text(exc.stderr) or f"Graphify timed out after {timeout_sec} seconds"
+        mark_graph_stale(graph_dir, f"refresh timed out after {timeout_sec} seconds: {stderr[:500]}")
+        return subprocess.CompletedProcess(command.args, 124, stdout=stdout, stderr=stderr)
+
     combined_output = f"{result.stdout}\n{result.stderr}".lower()
     semantic_failed = "semantic chunk" in combined_output and "failed" in combined_output
     if result.returncode == 0 and graph_json_path(graph_dir).exists() and not semantic_failed:
@@ -107,20 +167,38 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", default=".", help="Workspace root. Defaults to current directory.")
     parser.add_argument("--backend", default=DEFAULT_BACKEND, help="Graphify backend. Defaults to ollama.")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Graphify model. Defaults to gemma4:e4b.")
+    parser.add_argument(
+        "--token-budget",
+        type=int,
+        default=DEFAULT_TOKEN_BUDGET,
+        help=f"Per-chunk Graphify semantic token cap. Defaults to {DEFAULT_TOKEN_BUDGET}.",
+    )
+    parser.add_argument(
+        "--api-timeout",
+        type=int,
+        default=DEFAULT_API_TIMEOUT,
+        help=f"Per-request Graphify LLM timeout in seconds. Defaults to {DEFAULT_API_TIMEOUT}.",
+    )
+    parser.add_argument(
+        "--timeout-sec",
+        type=int,
+        default=DEFAULT_RUN_TIMEOUT,
+        help=f"Overall wrapper timeout in seconds. Defaults to {DEFAULT_RUN_TIMEOUT}.",
+    )
     parser.add_argument("--run", action="store_true", help="Run Graphify instead of only printing the command.")
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
     paths = WorkspacePaths(root)
     command = (
-        brain_graph_extract(root, args.backend, args.model)
+        brain_graph_extract(root, args.backend, args.model, args.token_budget, args.api_timeout)
         if args.target == "brain"
-        else source_graph_extract(root, args.backend, args.model)
+        else source_graph_extract(root, args.backend, args.model, args.token_budget, args.api_timeout)
     )
     graph_dir = paths.brain_graph if args.target == "brain" else paths.source_graph
     print(command.to_powershell())
     if args.run:
-        result = run_graphify_command(command, graph_dir)
+        result = run_graphify_command(command, graph_dir, timeout_sec=args.timeout_sec)
         if result.stdout:
             print(result.stdout)
         if result.stderr:

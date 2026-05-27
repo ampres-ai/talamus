@@ -71,7 +71,7 @@ Use two graphs:
 Preferred backend:
 
 ```powershell
-graphify extract <input> --backend ollama --model gemma4:e4b --max-concurrency 1 --out <output>
+graphify extract <input> --backend ollama --model gemma4:e4b --max-concurrency 1 --token-budget 12000 --api-timeout 1800 --out <output>
 ```
 
 Manual Claude fallback is allowed only when explicitly requested:
