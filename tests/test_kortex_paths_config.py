@@ -7,25 +7,27 @@ from kortex.paths import KortexPaths
 
 
 class KortexPathsConfigTests(unittest.TestCase):
-    def test_default_paths_are_generic(self) -> None:
-        paths = KortexPaths(Path("C:/project"))
+    def test_layout_separates_human_notes_from_managed_area(self) -> None:
+        paths = KortexPaths(Path("C:/brain"))
 
-        self.assertEqual(paths.project_root, Path("C:/project"))
-        self.assertEqual(paths.knowledge, Path("C:/project") / "knowledge")
-        self.assertEqual(paths.raw, Path("C:/project") / "knowledge" / "raw")
-        self.assertEqual(paths.normalized, Path("C:/project") / "knowledge" / "normalized")
-        self.assertEqual(paths.notes, Path("C:/project") / "knowledge" / "notes")
-        self.assertEqual(paths.graph, Path("C:/project") / "knowledge" / "graph")
-        self.assertEqual(paths.index, Path("C:/project") / "knowledge" / "index")
+        self.assertEqual(paths.project_root, Path("C:/brain"))
+        self.assertEqual(paths.notes, Path("C:/brain") / "notes")
+        self.assertEqual(paths.kortex_dir, Path("C:/brain") / ".kortex")
+        self.assertEqual(paths.raw, Path("C:/brain") / ".kortex" / "raw")
+        self.assertEqual(paths.normalized, Path("C:/brain") / ".kortex" / "normalized")
+        self.assertEqual(paths.cache, Path("C:/brain") / ".kortex" / "cache")
+        self.assertEqual(paths.notes_cache, Path("C:/brain") / ".kortex" / "cache" / "notes")
+        self.assertEqual(paths.graph_file, Path("C:/brain") / ".kortex" / "cache" / "graph.json")
+        self.assertEqual(paths.index_file, Path("C:/brain") / ".kortex" / "cache" / "bm25.json")
 
-    def test_ensure_directories_creates_beginner_layout(self) -> None:
+    def test_ensure_directories_creates_new_layout(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             paths = KortexPaths(Path(tmp))
 
             created = paths.ensure_directories()
 
             self.assertTrue(created)
-            for directory in paths.required_directories():
+            for directory in (paths.notes, paths.raw, paths.normalized, paths.notes_cache, paths.logs):
                 self.assertTrue(directory.is_dir(), directory)
 
     def test_default_config_is_beginner_friendly(self) -> None:

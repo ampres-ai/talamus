@@ -13,67 +13,43 @@ class KortexPaths:
         return self.project_root / "kortex.json"
 
     @property
-    def knowledge(self) -> Path:
-        return self.project_root / "knowledge"
+    def notes(self) -> Path:
+        return self.project_root / "notes"
 
     @property
-    def pending(self) -> Path:
-        return self.knowledge / "pending"
+    def kortex_dir(self) -> Path:
+        return self.project_root / ".kortex"
 
     @property
     def raw(self) -> Path:
-        return self.knowledge / "raw"
+        return self.kortex_dir / "raw"
 
     @property
     def normalized(self) -> Path:
-        return self.knowledge / "normalized"
+        return self.kortex_dir / "normalized"
 
     @property
-    def notes(self) -> Path:
-        return self.knowledge / "notes"
+    def cache(self) -> Path:
+        return self.kortex_dir / "cache"
 
     @property
-    def graph(self) -> Path:
-        return self.knowledge / "graph"
+    def notes_cache(self) -> Path:
+        return self.cache / "notes"
 
     @property
-    def index(self) -> Path:
-        return self.knowledge / "index"
+    def graph_file(self) -> Path:
+        return self.cache / "graph.json"
+
+    @property
+    def index_file(self) -> Path:
+        return self.cache / "bm25.json"
 
     @property
     def logs(self) -> Path:
-        return self.knowledge / "logs"
-
-    @property
-    def review(self) -> Path:
-        return self.knowledge / "review"
-
-    @property
-    def failed(self) -> Path:
-        return self.knowledge / "failed"
-
-    @property
-    def skills(self) -> Path:
-        return self.knowledge / "skills"
+        return self.kortex_dir / "logs"
 
     def required_directories(self) -> list[Path]:
-        return [
-            self.pending,
-            self.raw,
-            self.normalized,
-            self.notes,
-            self.graph,
-            self.index,
-            self.logs / "runs",
-            self.logs / "decisions",
-            self.logs / "errors",
-            self.logs / "retrieval",
-            self.review / "needs-human",
-            self.review / "low-confidence-normalization",
-            self.review / "missing-concepts",
-            self.failed / "technical-failures",
-            self.skills,
-        ]
+        return [self.notes, self.raw, self.normalized, self.cache, self.notes_cache, self.logs]
 
     def ensure_directories(self) -> list[Path]:
         created: list[Path] = []
@@ -81,7 +57,4 @@ class KortexPaths:
             if not directory.exists():
                 directory.mkdir(parents=True, exist_ok=True)
                 created.append(directory)
-            gitkeep = directory / ".gitkeep"
-            if not gitkeep.exists():
-                gitkeep.write_text("", encoding="utf-8")
         return created
