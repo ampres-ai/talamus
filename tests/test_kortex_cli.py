@@ -1,35 +1,38 @@
 import io
+import json
 import shutil
 import tempfile
 import unittest
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from kortex.cli import main
+from tests.support import FakeLLMProvider
 
 
 class KortexCliTests(unittest.TestCase):
-    def test_init_creates_project_layout_and_config(self) -> None:
+    def test_init_creates_new_layout_and_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            code = main(["init", "--root", tmp])
+            with redirect_stdout(io.StringIO()):
+                code = main(["init", "--root", tmp])
 
             self.assertEqual(0, code)
             self.assertTrue((Path(tmp) / "kortex.json").is_file())
-            self.assertTrue((Path(tmp) / "knowledge" / "raw").is_dir())
-            self.assertTrue((Path(tmp) / "knowledge" / "notes").is_dir())
+            self.assertTrue((Path(tmp) / "notes").is_dir())
+            self.assertTrue((Path(tmp) / ".kortex" / "cache").is_dir())
 
-    def test_status_returns_zero_after_init(self) -> None:
+    def test_status_and_doctor_return_zero_after_init(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual(0, main(["init", "--root", tmp]))
-
-            code = main(["status", "--root", tmp])
-
-            self.assertEqual(0, code)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["init", "--root", tmp]))
+                self.assertEqual(0, main(["status", "--root", tmp]))
+                self.assertEqual(0, main(["doctor", "--root", tmp]))
 
     def test_status_rejects_required_directory_replaced_by_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual(0, main(["init", "--root", tmp]))
-            raw_path = Path(tmp) / "knowledge" / "raw"
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["init", "--root", tmp]))
+            raw_path = Path(tmp) / ".kortex" / "raw"
             shutil.rmtree(raw_path)
             raw_path.write_text("not a directory", encoding="utf-8")
             stderr = io.StringIO()
@@ -40,17 +43,10 @@ class KortexCliTests(unittest.TestCase):
             self.assertEqual(1, code)
             self.assertIn("not a directory", stderr.getvalue())
 
-    def test_doctor_returns_zero_with_config_present(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual(0, main(["init", "--root", tmp]))
-
-            code = main(["doctor", "--root", tmp])
-
-            self.assertEqual(0, code)
-
     def test_doctor_reports_malformed_config_without_raising(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual(0, main(["init", "--root", tmp]))
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["init", "--root", tmp]))
             (Path(tmp) / "kortex.json").write_text("{invalid json", encoding="utf-8")
             stderr = io.StringIO()
 
@@ -59,6 +55,23 @@ class KortexCliTests(unittest.TestCase):
 
             self.assertEqual(1, code)
             self.assertIn("config error", stderr.getvalue())
+
+    def test_ingest_then_ask_with_injected_provider(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["init", "--root", tmp]))
+            source = Path(tmp) / "rag.md"
+            source.write_text("# RAG\nRAG collega il modello a fonti esterne.", encoding="utf-8")
+            extract_llm = FakeLLMProvider([json.dumps([
+                {"title": "Retrieval-Augmented Generation", "aliases": ["RAG"],
+                 "retrieval_text": "rag fonti esterne", "summary": "RAG collega a fonti.",
+                 "supported_claims": ["x"], "confidence": 0.9}
+            ])])
+            answer_llm = FakeLLMProvider(["RAG [1]."])
+
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["ingest", str(source), "--root", tmp], llm=extract_llm))
+                self.assertEqual(0, main(["ask", "Come collego fonti esterne?", "--root", tmp], llm=answer_llm))
 
 
 if __name__ == "__main__":
