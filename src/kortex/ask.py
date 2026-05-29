@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from kortex.adapters.llm import LLMProvider
 from kortex.graph import load_graph, query_graph
+from kortex.naming import note_filename
 from kortex.paths import KortexPaths
 from kortex.search import BM25Index
 
@@ -21,8 +22,7 @@ class ContextBundle:
 
 
 def _note_path(paths: KortexPaths, label: str):
-    filename = label.replace(" ", "-") + ".md"
-    return paths.notes / filename
+    return paths.notes / note_filename(label)
 
 
 def build_context_bundle(

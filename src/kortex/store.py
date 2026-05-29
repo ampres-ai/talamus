@@ -5,6 +5,7 @@ import json
 from kortex.graph import build_graph, save_graph
 from kortex.linking import NoteRegistry
 from kortex.models import CanonicalNote, ProposedLink, Relation, SourceRef
+from kortex.naming import note_filename, note_slug
 from kortex.paths import KortexPaths
 from kortex.search import BM25Index
 from kortex.storage.obsidian import render_obsidian_note
@@ -38,14 +39,13 @@ def load_notes(paths: KortexPaths) -> list[CanonicalNote]:
 
 def write_note(paths: KortexPaths, note: CanonicalNote) -> None:
     paths.notes_cache.mkdir(parents=True, exist_ok=True)
-    (paths.notes_cache / f"{note.note_id}.json").write_text(
+    (paths.notes_cache / f"{note_slug(note.note_id)}.json").write_text(
         json.dumps(note.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8"
     )
     registry = NoteRegistry.from_notes(load_notes(paths) + [note])
     markdown = render_obsidian_note(note, registry)
     paths.notes.mkdir(parents=True, exist_ok=True)
-    filename = note.title.replace(" ", "-") + ".md"
-    (paths.notes / filename).write_text(markdown, encoding="utf-8")
+    (paths.notes / note_filename(note.title)).write_text(markdown, encoding="utf-8")
 
 
 def rebuild_indexes(paths: KortexPaths) -> None:
@@ -57,5 +57,5 @@ def rebuild_indexes(paths: KortexPaths) -> None:
         haystack = " ".join(
             [note.title, " ".join(note.aliases), " ".join(note.tags), note.retrieval_text, note.summary]
         )
-        index.add(note.title.replace(" ", "-"), haystack)
+        index.add(note_slug(note.title), haystack)
     index.save(paths.index_file)
