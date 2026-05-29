@@ -1,9 +1,13 @@
 import unittest
 
-from kortex.adapters.llm import ClaudeCliProvider
+from kortex.adapters.llm import ClaudeCliProvider, _default_runner
 
 
 class LLMAdapterTests(unittest.TestCase):
+    def test_default_runner_errors_on_missing_command(self) -> None:
+        with self.assertRaises(RuntimeError):
+            _default_runner(["definitely-not-a-real-command-xyz"], "prompt")
+
     def test_claude_cli_builds_print_mode_command(self) -> None:
         captured = {}
 

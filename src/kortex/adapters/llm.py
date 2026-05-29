@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import subprocess
 from typing import Callable, Protocol
 
@@ -10,8 +11,11 @@ class LLMProvider(Protocol):
 
 
 def _default_runner(args: list[str], prompt: str) -> str:
+    executable = shutil.which(args[0])
+    if executable is None:
+        raise RuntimeError(f"command not found: {args[0]}")
     completed = subprocess.run(
-        args,
+        [executable, *args[1:]],
         input=prompt,
         capture_output=True,
         text=True,
