@@ -53,25 +53,36 @@ Decisioni-chiave (costose da aggiungere dopo, gratis da portare ora):
 - ogni relazione/fatto **porta i campi temporali fin da subito**, anche se la logica
   bi-temporale (invalidazione, interrogazioni nel tempo) arriva al Traguardo 3.
 
-## 3. Formato-verità su disco (il più costoso da cambiare — fissato con cura)
+## 3. Formato e verità su disco (deciso 2026-05-29, rivisto nel Traguardo 1)
 
-- **Verità = un file Markdown per scheda**, con frontmatter YAML che porta i campi
-  strutturati; il corpo porta la prosa + wikilink `[[...]]`. Tutto è ricostruibile
-  dal file. **Markdown standard**, indipendente da Obsidian.
-- **Layout di un "brain":**
-  - le **note** stanno in una cartella **in chiaro, leggibile e modificabile** (anche
-    da Obsidian);
-  - **`.kortex/`** (area gestita) contiene: grezzo, normalizzato, cache degli indici
-    (grafo / ricerca / ontologia), log, coda di revisione, fallimenti, config.
-- **Cache derivata = SQLite dentro `.kortex/`**, sempre **ricostruibile** dai
-  Markdown. La verità sono i file; la cache è usa-e-getta e serve solo a SDK/MCP/UI
-  per andare veloci.
-- **Un brain = una cartella** autocontenuta con questo layout. Esistono un brain
-  **globale** e brain **per-progetto**; un brain di progetto può leggere dal globale.
-- **Git**: commit automatici ai checkpoint; il grezzo non viene mai distrutto.
+> Revisione onesta: nella visione iniziale il Markdown era l'"unica verità". In fase
+> di costruzione abbiamo scelto un **modello ibrido**, più pragmatico (scelta di
+> Giovanni). Questa sezione descrive il modello effettivo, non quello iniziale.
 
-> Evolve l'attuale `paths.py` (oggi le note sono solo Markdown in stile Obsidian e
-> manca l'area `.kortex/`). I dettagli del passaggio sono nel Traguardo 1.
+- **Due rappresentazioni, due ruoli:**
+  - **Markdown in `notes/`** = la **vista umana**: in chiaro, leggibile e modificabile
+    a mano (anche da Obsidian). È ciò che editi. Porta un `id` stabile nel frontmatter.
+  - **Oggetto canonico in `.kortex/cache/notes/<id>.json`** = la **verità "macchina"**:
+    tiene i campi che l'umano non scrive a mano (provenienza/fonti, relazioni,
+    `retrieval_text`, confidenza).
+- **Riconciliazione esplicita con `kortex reindex`:** rilegge i `.md` e aggiorna la
+  cache prendendo dai file i **campi umani** (titolo, alias, tag, riassunto, sezioni)
+  e **preservando i campi macchina** dalla cache. Così le modifiche a mano contano,
+  senza perdere la provenienza. L'aggancio nota↔oggetto è l'`id` nel frontmatter.
+- **Indici derivati** (grafo e ricerca: oggi file `graph.json` e `bm25.json` in
+  `.kortex/cache/`; in futuro eventualmente SQLite/ontologia) sono **ricostruibili**
+  da `reindex`/ingest.
+- **Trade-off accettato:** se cancelli `.kortex/` perdi la provenienza (recuperabile
+  ri-ingerendo le fonti). Il Markdown da solo non ricostruisce i campi macchina —
+  è il prezzo della semplicità (niente parser YAML completo per ora).
+- **Layout di un "brain":** `notes/` in chiaro + `.kortex/` (grezzo, normalizzato,
+  cache, log). **Un brain = una cartella** autocontenuta; esistono un brain
+  **globale** e brain **per-progetto** (che può leggere dal globale).
+- **Git**: commit ai checkpoint; il grezzo non viene mai distrutto.
+
+> Evoluzione futura possibile: se servisse il "Markdown come unica verità" pieno
+> (ricostruire tutto dai soli `.md`), si aggiungerebbe un frontmatter completo + un
+> parser dedicato. Fuori dal traguardo attuale.
 
 ## 4. Giunti degli adattatori (le interfacce che abilitano i pivot)
 
@@ -106,7 +117,8 @@ Aggiungere verbi è lecito; cambiarne la semantica no.
 
 ## 6. Invarianti trasversali (vincolano ogni modulo)
 
-- verità = Markdown; derivato = ricostruibile; grezzo mai perso;
+- verità ibrida: Markdown = vista umana, JSON in `.kortex/` = verità macchina,
+  `reindex` riconcilia; indici derivati ricostruibili; grezzo mai perso;
 - provenienza obbligatoria; grafo/ontologia = indice, **non** verità;
 - local-first; **leggero** (lavoro pesante differito e incrementale, mai bloccante);
 - revisione **non bloccante**; git automatico ai checkpoint; **zero telemetria**.
