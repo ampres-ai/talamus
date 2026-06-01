@@ -9,6 +9,7 @@ from kortex.ask import answer_question
 from kortex.config import KortexConfig, load_config, save_config
 from kortex.ingest import ingest_file
 from kortex.paths import KortexPaths
+from kortex.store import reindex
 
 
 def _ensure_utf8_output() -> None:
@@ -78,10 +79,16 @@ def _cmd_ask(root: Path, question: str, llm) -> int:
     return 0
 
 
+def _cmd_reindex(root: Path) -> int:
+    result = reindex(KortexPaths(root))
+    print(f"reindicizzate {result['reindexed']} schede")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="kortex", description="Local-first knowledge compiler.")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("init", "status", "doctor"):
+    for name in ("init", "status", "doctor", "reindex"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--root", default=".", help="Project root. Defaults to current directory.")
     ingest = sub.add_parser("ingest")
@@ -103,6 +110,8 @@ def main(argv: list[str] | None = None, llm=None) -> int:
         return _cmd_status(root)
     if args.command == "doctor":
         return _cmd_doctor(root)
+    if args.command == "reindex":
+        return _cmd_reindex(root)
     provider = llm if llm is not None else ClaudeCliProvider()
     if args.command == "ingest":
         return _cmd_ingest(root, args.file, provider)

@@ -29,6 +29,7 @@ def render_obsidian_note(note: CanonicalNote, registry: NoteRegistry) -> str:
     links = resolve_links(note, registry)
     lines = [
         "---",
+        f"id: {note.note_id}",
         f"title: {note.title}",
         "aliases:",
         _yaml_list(note.aliases),
