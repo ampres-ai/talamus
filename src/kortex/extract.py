@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from kortex.adapters.llm import LLMProvider
-from kortex.models import CanonicalNote, Relation, SourceRef
+from kortex.models import CanonicalNote, ProposedLink, Relation, SourceRef
 from kortex.normalize import NormalizedPackage, NormalizedSection
 
 _PROMPT = """Sei un bibliotecario esperto: trasformi il testo in SCHEDE di conoscenza chiare e
@@ -24,6 +24,10 @@ concetto riutilizzabile, con questi campi:
 - "relations": lista di {{"source","relation","target","confidence"}} verso ALTRI
   concetti citati (es. uses, is-a, contrasts-with, part-of). Compilala con cura:
   serve a costruire la mappa della conoscenza.
+- "proposed_links": lista di {{"anchor","target","reason"}}. "anchor" = una frase che
+  compare LETTERALMENTE nel corpo della scheda; "target" = il titolo di un'altra
+  scheda a cui rimandare. Proponi link solo verso concetti che meritano una scheda
+  propria; il sistema scarta da solo i link verso schede inesistenti.
 - "supported_claims": frasi sostenute dal testo (lista).
 - "confidence": numero 0..1.
 
@@ -80,6 +84,15 @@ def extract_notes(package: NormalizedPackage, llm: LLMProvider) -> list[Canonica
             if str(r.get("target", "")).strip()
         ]
         claims = [str(c) for c in candidate.get("supported_claims", [])]
+        proposed = [
+            ProposedLink(
+                anchor=str(p.get("anchor", "")),
+                target=str(p.get("target", "")),
+                reason=str(p.get("reason", "")),
+            )
+            for p in candidate.get("proposed_links", [])
+            if str(p.get("anchor", "")).strip() and str(p.get("target", "")).strip()
+        ]
         summary = str(candidate.get("summary", f"{title}."))
         body_sections = {str(k): str(v) for k, v in candidate.get("body_sections", {}).items()}
         if not body_sections:
@@ -93,7 +106,7 @@ def extract_notes(package: NormalizedPackage, llm: LLMProvider) -> list[Canonica
             summary=summary,
             retrieval_text=str(candidate.get("retrieval_text", title)),
             body_sections=body_sections,
-            proposed_links=[],
+            proposed_links=proposed,
             relations=relations,
             sources=[_section_source(primary_section, package, claims)],
             confidence=float(candidate.get("confidence", 0.8)),

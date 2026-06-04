@@ -31,5 +31,28 @@ class IngestTests(unittest.TestCase):
             self.assertTrue(paths.graph_file.is_file())
 
 
+    def test_ingest_resolves_same_batch_wikilinks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = KortexPaths(root)
+            paths.ensure_directories()
+            source = root / "doc.md"
+            source.write_text("# Doc\nRAG e Vector Store.", encoding="utf-8")
+            llm = FakeLLMProvider([json.dumps([
+                {"title": "RAG", "retrieval_text": "rag", "summary": "RAG.",
+                 "body_sections": {"definizione": "RAG usa un Vector Store per recuperare."},
+                 "proposed_links": [{"anchor": "Vector Store", "target": "Vector Store", "reason": "infra"}],
+                 "supported_claims": ["x"], "confidence": 0.9},
+                {"title": "Vector Store", "retrieval_text": "vector", "summary": "VS.",
+                 "body_sections": {"definizione": "Memorizza embeddings."},
+                 "supported_claims": ["y"], "confidence": 0.9},
+            ])])
+
+            ingest_file(paths, source, llm)
+
+            rag_md = (paths.notes / "RAG.md").read_text(encoding="utf-8")
+            self.assertIn("[[Vector Store", rag_md)
+
+
 if __name__ == "__main__":
     unittest.main()

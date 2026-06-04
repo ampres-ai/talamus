@@ -39,15 +39,23 @@ def load_notes(paths: KortexPaths) -> list[CanonicalNote]:
     return notes
 
 
-def write_note(paths: KortexPaths, note: CanonicalNote) -> None:
+def write_note_json(paths: KortexPaths, note: CanonicalNote) -> None:
     paths.notes_cache.mkdir(parents=True, exist_ok=True)
     (paths.notes_cache / f"{note_slug(note.note_id)}.json").write_text(
         json.dumps(note.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8"
     )
-    registry = NoteRegistry.from_notes(load_notes(paths) + [note])
+
+
+def render_note_markdown(paths: KortexPaths, note: CanonicalNote, registry: NoteRegistry) -> None:
     markdown = render_obsidian_note(note, registry)
     paths.notes.mkdir(parents=True, exist_ok=True)
     (paths.notes / note_filename(note.title)).write_text(markdown, encoding="utf-8")
+
+
+def write_note(paths: KortexPaths, note: CanonicalNote) -> None:
+    write_note_json(paths, note)
+    registry = NoteRegistry.from_notes(load_notes(paths) + [note])
+    render_note_markdown(paths, note, registry)
 
 
 def rebuild_indexes(paths: KortexPaths) -> None:
