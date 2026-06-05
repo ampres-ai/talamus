@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from kortex.session import compress_transcript, normalize_session
+from kortex.session import compress_transcript, normalize_session, session_worth_remembering
 
 
 class SessionTests(unittest.TestCase):
@@ -39,6 +39,15 @@ class SessionTests(unittest.TestCase):
     def test_normalize_session_without_diff_has_one_section(self) -> None:
         package = normalize_session("raw/s.jsonl", "user: ciao", "")
         self.assertEqual(1, len(package.sections))
+
+    def test_gate_true_with_diff(self) -> None:
+        self.assertTrue(session_worth_remembering("ok", "diff --git a/x b/x\n+riga"))
+
+    def test_gate_true_with_long_transcript(self) -> None:
+        self.assertTrue(session_worth_remembering("x" * 500, ""))
+
+    def test_gate_false_for_trivial_chat(self) -> None:
+        self.assertFalse(session_worth_remembering("ok lancia i test", ""))
 
 
 if __name__ == "__main__":

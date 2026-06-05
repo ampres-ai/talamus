@@ -65,6 +65,13 @@ def compress_transcript(text: str) -> str:
     return text.strip()
 
 
+def session_worth_remembering(transcript: str, diff: str = "", min_chars: int = 400) -> bool:
+    """Gate euristico (niente LLM): vale se c'è un diff non vuoto o un transcript sostanzioso."""
+    if diff.strip():
+        return True
+    return len(transcript.strip()) >= min_chars
+
+
 def normalize_session(raw_path: str, transcript: str, diff: str = "") -> NormalizedPackage:
     convo = compress_transcript(transcript)
     payload = convo + ("\n\n" + diff if diff.strip() else "")
