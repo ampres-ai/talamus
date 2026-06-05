@@ -7,7 +7,7 @@ from pathlib import Path
 from kortex.adapters.llm import ClaudeCliProvider
 from kortex.ask import answer_question
 from kortex.config import KortexConfig, load_config, save_config
-from kortex.ingest import ingest_file
+from kortex.ingest import ingest_file, remember_session
 from kortex.paths import KortexPaths
 from kortex.recall import read_note_text, recall_context, search_notes
 from kortex.store import reindex
@@ -80,6 +80,17 @@ def _cmd_ask(root: Path, question: str, llm) -> int:
     return 0
 
 
+def _cmd_remember(root: Path, transcript_file: str, diff_file: str | None, llm) -> int:
+    transcript = Path(transcript_file).read_text(encoding="utf-8")
+    diff = Path(diff_file).read_text(encoding="utf-8") if diff_file else ""
+    result = remember_session(KortexPaths(root), transcript, diff, llm)
+    if result["skipped"]:
+        print("sessione saltata (sotto la soglia del gate)")
+    else:
+        print(f"ricordate {result['notes_written']} schede dalla sessione")
+    return 0
+
+
 def _cmd_reindex(root: Path) -> int:
     result = reindex(KortexPaths(root))
     print(f"reindicizzate {result['reindexed']} schede")
@@ -131,6 +142,10 @@ def build_parser() -> argparse.ArgumentParser:
     recall = sub.add_parser("recall")
     recall.add_argument("question")
     recall.add_argument("--root", default=".")
+    remember = sub.add_parser("remember")
+    remember.add_argument("--transcript", required=True)
+    remember.add_argument("--diff", default=None)
+    remember.add_argument("--root", default=".")
     return parser
 
 
@@ -157,6 +172,8 @@ def main(argv: list[str] | None = None, llm=None) -> int:
         return _cmd_ingest(root, args.file, provider)
     if args.command == "ask":
         return _cmd_ask(root, args.question, provider)
+    if args.command == "remember":
+        return _cmd_remember(root, args.transcript, args.diff, provider)
     raise ValueError(f"unknown command {args.command}")
 
 

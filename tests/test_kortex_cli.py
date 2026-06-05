@@ -101,6 +101,21 @@ class KortexCliTests(unittest.TestCase):
                 self.assertEqual(0, main(["recall", "come collego fonti esterne?", "--root", tmp]))
             self.assertIn("Retrieval-Augmented Generation", out.getvalue())
 
+    def test_remember_command_captures_session(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["init", "--root", tmp]))
+            transcript = Path(tmp) / "t.md"
+            transcript.write_text("x" * 500, encoding="utf-8")
+            llm = FakeLLMProvider([json.dumps([
+                {"title": "Sessione", "retrieval_text": "x", "summary": "s",
+                 "supported_claims": ["x"], "confidence": 0.9}
+            ])])
+            out = io.StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(0, main(["remember", "--transcript", str(transcript), "--root", tmp], llm=llm))
+            self.assertIn("ricordate", out.getvalue())
+
     def test_read_missing_note_returns_one(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             with redirect_stdout(io.StringIO()):
