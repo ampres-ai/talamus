@@ -72,6 +72,29 @@ Some local desktop clients prefer HTTP over stdio: start the server with
 > `"command": "python", "args": ["-m", "kortex.mcp_server", "--root", "<brain>"]`
 > with `PYTHONPATH=src` in the server's environment.
 
+## Capture sessions (Claude Code hook)
+
+Kortex can turn your agent work sessions into notes. Set `KORTEX_ROOT` to your brain
+and register the hook script on Claude Code's `SessionEnd` event (in your settings):
+
+```json
+{
+  "hooks": {
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "python /path/to/kortex/scripts/kortex-session-hook.py" } ] }
+    ]
+  }
+}
+```
+
+At session end the hook reads the transcript, captures `git diff`, and calls
+`kortex remember` — which compiles the session into source-grounded notes (a
+heuristic gate skips trivial sessions). You can also run it by hand:
+
+```powershell
+python -m kortex.cli remember --transcript <transcript.jsonl> --diff <changes.diff> --root <brain>
+```
+
 ## Retrieval Principle
 
 The graph is an index, not source truth. Kortex uses the graph to route a
