@@ -80,5 +80,34 @@ class KortexCliTests(unittest.TestCase):
                 self.assertEqual(0, main(["ask", "Come collego fonti esterne?", "--root", tmp], llm=answer_llm))
 
 
+    def test_search_read_recall_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["init", "--root", tmp]))
+            source = Path(tmp) / "rag.md"
+            source.write_text("# RAG\nRAG collega il modello a fonti esterne.", encoding="utf-8")
+            extract_llm = FakeLLMProvider([json.dumps([
+                {"title": "Retrieval-Augmented Generation", "aliases": ["RAG"],
+                 "retrieval_text": "rag fonti esterne", "summary": "RAG collega a fonti.",
+                 "supported_claims": ["x"], "confidence": 0.9}
+            ])])
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["ingest", str(source), "--root", tmp], llm=extract_llm))
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(0, main(["search", "fonti esterne", "--root", tmp]))
+                self.assertEqual(0, main(["read", "Retrieval-Augmented Generation", "--root", tmp]))
+                self.assertEqual(0, main(["recall", "come collego fonti esterne?", "--root", tmp]))
+            self.assertIn("Retrieval-Augmented Generation", out.getvalue())
+
+    def test_read_missing_note_returns_one(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["init", "--root", tmp]))
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(1, main(["read", "Inesistente", "--root", tmp]))
+
+
 if __name__ == "__main__":
     unittest.main()

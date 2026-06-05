@@ -9,6 +9,7 @@ from kortex.ask import answer_question
 from kortex.config import KortexConfig, load_config, save_config
 from kortex.ingest import ingest_file
 from kortex.paths import KortexPaths
+from kortex.recall import read_note_text, recall_context, search_notes
 from kortex.store import reindex
 
 
@@ -85,6 +86,30 @@ def _cmd_reindex(root: Path) -> int:
     return 0
 
 
+def _cmd_search(root: Path, query: str) -> int:
+    results = search_notes(KortexPaths(root), query)
+    if not results:
+        print("nessuna scheda pertinente")
+        return 0
+    for item in results:
+        print(f"- {item['title']}: {item['summary']}")
+    return 0
+
+
+def _cmd_read(root: Path, title: str) -> int:
+    text = read_note_text(KortexPaths(root), title)
+    if text is None:
+        print(f"scheda non trovata: {title}", file=sys.stderr)
+        return 1
+    print(text)
+    return 0
+
+
+def _cmd_recall(root: Path, question: str) -> int:
+    print(recall_context(KortexPaths(root), question))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="kortex", description="Local-first knowledge compiler.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -97,6 +122,15 @@ def build_parser() -> argparse.ArgumentParser:
     ask = sub.add_parser("ask")
     ask.add_argument("question")
     ask.add_argument("--root", default=".")
+    search = sub.add_parser("search")
+    search.add_argument("query")
+    search.add_argument("--root", default=".")
+    read = sub.add_parser("read")
+    read.add_argument("title")
+    read.add_argument("--root", default=".")
+    recall = sub.add_parser("recall")
+    recall.add_argument("question")
+    recall.add_argument("--root", default=".")
     return parser
 
 
@@ -112,6 +146,12 @@ def main(argv: list[str] | None = None, llm=None) -> int:
         return _cmd_doctor(root)
     if args.command == "reindex":
         return _cmd_reindex(root)
+    if args.command == "search":
+        return _cmd_search(root, args.query)
+    if args.command == "read":
+        return _cmd_read(root, args.title)
+    if args.command == "recall":
+        return _cmd_recall(root, args.question)
     provider = llm if llm is not None else ClaudeCliProvider()
     if args.command == "ingest":
         return _cmd_ingest(root, args.file, provider)
