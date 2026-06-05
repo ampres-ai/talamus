@@ -65,6 +65,9 @@ Then register it in Claude Code's `.mcp.json` (point `--root` at your brain):
 Tools exposed: `search` (find relevant notes), `read_note` (read one note),
 `recall` (get the relevant context for a question — the agent reasons over it).
 
+Some local desktop clients prefer HTTP over stdio: start the server with
+`kortex-mcp --http --root <brain>` (binds `127.0.0.1:8000`, stays on your machine).
+
 > Running from source (not pip-installed)? Use
 > `"command": "python", "args": ["-m", "kortex.mcp_server", "--root", "<brain>"]`
 > with `PYTHONPATH=src` in the server's environment.

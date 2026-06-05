@@ -45,13 +45,29 @@ def recall(question: str) -> str:
     return recall_context(_paths(), question)
 
 
-def main() -> None:
-    global _root
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="kortex-mcp", description="Server MCP di lettura per il brain Kortex.")
     parser.add_argument("--root", default=".", help="Cartella del brain Kortex.")
-    args = parser.parse_args()
+    parser.add_argument(
+        "--http",
+        action="store_true",
+        help="Servi su HTTP locale invece di stdio (per client desktop che lo richiedono).",
+    )
+    parser.add_argument("--host", default="127.0.0.1", help="Host per --http (predefinito: locale).")
+    parser.add_argument("--port", type=int, default=8000, help="Porta per --http.")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    global _root
+    args = _build_parser().parse_args(argv)
     _root = Path(args.root).resolve()
-    server.run()
+    if args.http:
+        server.settings.host = args.host
+        server.settings.port = args.port
+        server.run(transport="streamable-http")
+    else:
+        server.run()
 
 
 if __name__ == "__main__":
