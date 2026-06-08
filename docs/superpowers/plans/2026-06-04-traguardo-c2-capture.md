@@ -4,7 +4,7 @@
 
 **Goal:** Chiudere il giro *leggi → lavora → ricorda*: le sessioni di lavoro degli agenti (transcript + git diff) diventano note nel brain, con un gate a soglie per il costo e un tool MCP `remember`, più uno script hook per la cattura automatica.
 
-**Architecture:** Un nuovo "source type sessione": `session.py` comprime meccanicamente il transcript (niente LLM) e produce un `NormalizedPackage` che passa per l'estrattore esistente. Un gate euristico decide se vale la pena. `remember_session` orchestra (gate → archivia raw → normalizza → compila), riusando il core di `ingest`. Esposto via CLI `kortex remember` e via MCP `remember`. Uno script hook Claude Code (`Stop`/`SessionEnd`) cattura e chiama `remember`.
+**Architecture:** Un nuovo "source type sessione": `session.py` comprime meccanicamente il transcript (niente LLM) e produce un `NormalizedPackage` che passa per l'estrattore esistente. Un gate euristico decide se vale la pena. `remember_session` orchestra (gate → archivia raw → normalizza → compila), riusando il core di `ingest`. Esposto via CLI `talamus remember` e via MCP `remember`. Uno script hook Claude Code (`Stop`/`SessionEnd`) cattura e chiama `remember`.
 
 **Tech Stack:** Python 3.13, `unittest`, `mcp` (extra), `claude-cli` per l'estrazione.
 
@@ -20,7 +20,7 @@
 
 ### Task 1: Normalizzatore di sessione + compressione transcript
 
-**Files:** Create `src/kortex/session.py`; Test `tests/test_kortex_session.py`.
+**Files:** Create `src/talamus/session.py`; Test `tests/test_talamus_session.py`.
 
 - `compress_transcript(text: str) -> str`: se il testo è JSONL (righe JSON con ruolo/contenuto), estrae i turni utente/assistente e **comprime i blocchi tool** in righe compatte (es. `[tool Edit: auth.py]`); altrimenti passthrough ripulito.
 - `normalize_session(raw_path: str, transcript: str, diff: str) -> NormalizedPackage`: produce sezioni `conversazione` (transcript compresso) e, se presente, `modifiche` (il diff), con hash/provenienza. Riusa `NormalizedSection`/`NormalizedPackage`.
@@ -29,7 +29,7 @@ TDD: JSONL con tool-call → compresso; testo semplice → passthrough; pacchett
 
 ### Task 2: Gate euristico
 
-**Files:** Modify `src/kortex/session.py`; Test `tests/test_kortex_session.py`.
+**Files:** Modify `src/talamus/session.py`; Test `tests/test_talamus_session.py`.
 
 - `session_worth_remembering(transcript: str, diff: str, min_chars: int = 400) -> bool`: True se `diff.strip()` non vuoto OPPURE `len(transcript) >= min_chars`. Niente LLM.
 
@@ -37,24 +37,24 @@ TDD: sessione con diff → True; transcript lungo senza diff → True; chiacchie
 
 ### Task 3: Core condiviso di compilazione + `remember_session`
 
-**Files:** Modify `src/kortex/ingest.py`; Test `tests/test_kortex_ingest.py`.
+**Files:** Modify `src/talamus/ingest.py`; Test `tests/test_talamus_ingest.py`.
 
 - Estrai `_compile_package(paths, package, llm) -> int`: `extract_notes` → `write_note_json` per tutte → render con registro dell'intero lotto → `rebuild_indexes`. `ingest_file` lo usa.
 - `remember_session(paths, transcript, diff, llm) -> dict`: applica il gate; se non vale ritorna `{"skipped": True}`; altrimenti archivia raw (transcript + diff), `normalize_session`, `_compile_package`. Ritorna `{"notes_written": n, "skipped": False}`.
 
 TDD: sessione valida (con FakeLLM) → note scritte; sessione banale → skipped.
 
-### Task 4: CLI `kortex remember`
+### Task 4: CLI `talamus remember`
 
-**Files:** Modify `src/kortex/cli.py`; Test `tests/test_kortex_cli.py`.
+**Files:** Modify `src/talamus/cli.py`; Test `tests/test_talamus_cli.py`.
 
-- `kortex remember --transcript <file> [--diff <file>] --root <brain>`: legge i file, chiama `remember_session` col provider LLM (default claude-cli, iniettabile nei test). Stampa il riepilogo (incl. "saltata" se gated out).
+- `talamus remember --transcript <file> [--diff <file>] --root <brain>`: legge i file, chiama `remember_session` col provider LLM (default claude-cli, iniettabile nei test). Stampa il riepilogo (incl. "saltata" se gated out).
 
 TDD: con FakeLLM, remember di una sessione valida → exit 0 + note; sessione banale → exit 0 + "saltata".
 
 ### Task 5: Tool MCP `remember`
 
-**Files:** Modify `src/kortex/mcp_server.py`; Test `tests/test_kortex_mcp_server.py`.
+**Files:** Modify `src/talamus/mcp_server.py`; Test `tests/test_talamus_mcp_server.py`.
 
 - `@server.tool() remember(text: str) -> str`: l'agente salva un'intuizione al volo. Normalizza `text` (riusa `normalize_text`) e compila (`_compile_package`) col provider LLM. Ritorna un riepilogo.
 - Il server ora usa anche un LLM provider (claude-cli) per `remember`; resta opzionale (solo extra mcp).
@@ -63,9 +63,9 @@ TDD: il set di tool registrati include `remember` (oltre a search/read_note/reca
 
 ### Task 6: Script hook Claude Code + documentazione
 
-**Files:** Create `scripts/kortex-session-hook.py`; Modify `README.md`.
+**Files:** Create `scripts/talamus-session-hook.py`; Modify `README.md`.
 
-- Script che legge il transcript della sessione (path fornito dall'hook) + esegue `git diff` nella repo, poi chiama `kortex remember`. Best-effort, non blocca in caso d'errore.
+- Script che legge il transcript della sessione (path fornito dall'hook) + esegue `git diff` nella repo, poi chiama `talamus remember`. Best-effort, non blocca in caso d'errore.
 - README: come registrare l'hook `Stop`/`SessionEnd` in Claude Code che lancia lo script.
 
 ### Task 7: Verifica completa + smoke reale
@@ -73,7 +73,7 @@ TDD: il set di tool registrati include `remember` (oltre a search/read_note/reca
 **Files:** none salvo difetti.
 
 - Suite completa verde.
-- Smoke: una sessione di esempio (transcript JSONL + diff) → `kortex remember` reale (claude-cli) → leggere le note generate e giudicarne il valore (Scommessa A lato sessioni).
+- Smoke: una sessione di esempio (transcript JSONL + diff) → `talamus remember` reale (claude-cli) → leggere le note generate e giudicarne il valore (Scommessa A lato sessioni).
 
 ---
 

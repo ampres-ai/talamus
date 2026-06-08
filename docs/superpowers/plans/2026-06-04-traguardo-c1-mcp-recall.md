@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans. Steps use checkbox (`- [ ]`).
 
-**Goal:** Dare agli agenti (Claude Code) la possibilità di LEGGERE dal brain Kortex durante una sessione, tramite un server MCP locale con tre strumenti: `search`, `read_note`, `recall`.
+**Goal:** Dare agli agenti (Claude Code) la possibilità di LEGGERE dal brain Talamus durante una sessione, tramite un server MCP locale con tre strumenti: `search`, `read_note`, `recall`.
 
-**Architecture:** Una sottile SDK di lettura (`kortex/recall.py`) costruita sul recupero esistente (graph-first + BM25 + `build_context_bundle`). Un server MCP (`kortex/mcp_server.py`) basato sull'SDK ufficiale `mcp` (FastMCP) che espone le tre funzioni come strumenti. L'SDK `mcp` è una **dipendenza opzionale** (`pip install kortex[mcp]`): il core resta senza dipendenze. Solo lettura, nessuna scrittura.
+**Architecture:** Una sottile SDK di lettura (`talamus/recall.py`) costruita sul recupero esistente (graph-first + BM25 + `build_context_bundle`). Un server MCP (`talamus/mcp_server.py`) basato sull'SDK ufficiale `mcp` (FastMCP) che espone le tre funzioni come strumenti. L'SDK `mcp` è una **dipendenza opzionale** (`pip install talamus[mcp]`): il core resta senza dipendenze. Solo lettura, nessuna scrittura.
 
 **Tech Stack:** Python 3.13, `unittest`, `mcp` (FastMCP, extra opzionale), trasporto stdio.
 
@@ -14,7 +14,7 @@
 
 ### Task 1: SDK di lettura (`recall.py`)
 
-**Files:** Create `src/kortex/recall.py`; Test `tests/test_kortex_recall.py`.
+**Files:** Create `src/talamus/recall.py`; Test `tests/test_talamus_recall.py`.
 
 - `search_notes(paths, query, limit=5) -> list[dict]`: candidati graph-first, fallback BM25; ogni dict = {title, summary}.
 - `read_note_text(paths, title) -> str | None`: contenuto Markdown della scheda (match per filename, fallback case-insensitive sul titolo).
@@ -27,14 +27,14 @@ TDD: costruire un brain (write_note + rebuild_indexes), poi verificare i tre com
 **Files:** Modify `pyproject.toml`.
 
 - `[project.optional-dependencies] mcp = ["mcp>=1.0"]`.
-- `[project.scripts] kortex-mcp = "kortex.mcp_server:main"`.
+- `[project.scripts] talamus-mcp = "talamus.mcp_server:main"`.
 - Verifica: `tomllib` legge nome script e dipendenza.
 
 ### Task 3: Server MCP (`mcp_server.py`)
 
-**Files:** Create `src/kortex/mcp_server.py`; Test `tests/test_kortex_mcp_server.py`.
+**Files:** Create `src/talamus/mcp_server.py`; Test `tests/test_talamus_mcp_server.py`.
 
-- FastMCP("kortex") con tre `@server.tool()`: `search`, `read_note`, `recall`, ciascuno chiama `recall.py`.
+- FastMCP("talamus") con tre `@server.tool()`: `search`, `read_note`, `recall`, ciascuno chiama `recall.py`.
 - Root del brain da `--root` (default `.`) in `main()`, poi `server.run()` (stdio).
 - Import isolato di `mcp` dentro il modulo, così importarlo senza l'extra dà un errore chiaro, e il resto del pacchetto non dipende da `mcp`.
 - TDD: test `skipUnless(mcp installato)` che importa il modulo e verifica che i tre strumenti siano registrati.
@@ -45,7 +45,7 @@ TDD: costruire un brain (write_note + rebuild_indexes), poi verificare i tre com
 
 - Smoke: avviare il server e, con un client MCP stdio in-process, elencare gli strumenti e chiamare `search` su un brain di prova.
 - Documentare lo snippet `.mcp.json` per Claude Code:
-  `{"mcpServers":{"kortex":{"command":"kortex-mcp","args":["--root","<path-al-brain>"]}}}`.
+  `{"mcpServers":{"talamus":{"command":"talamus-mcp","args":["--root","<path-al-brain>"]}}}`.
 
 ---
 
