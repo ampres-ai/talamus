@@ -68,9 +68,10 @@ def parse_note_markdown(text: str) -> dict:
             body_sections[name.lower().replace(" ", "_")] = content
 
     for line in body.splitlines():
-        if _HEADING.match(line):
+        heading = _HEADING.match(line)
+        if heading:
             flush()
-            current_heading = _HEADING.match(line).group(1)
+            current_heading = heading.group(1)
             buffer = []
             continue
         h1 = _H1.match(line)

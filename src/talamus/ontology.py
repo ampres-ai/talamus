@@ -11,9 +11,15 @@ RELATION_TYPES = ("uses", "is-a", "part-of", "contrasts-with", "depends-on", "re
 
 # Pattern per parole chiave; il primo che combacia vince (l'ordine conta).
 _RELATION_PATTERNS: list[tuple[str, tuple[str, ...]]] = [
-    ("is-a", ("is-a", "is a", "isa", "tipo di", "è un", "e un", "sottotipo", "kind of", "subclass")),
+    (
+        "is-a",
+        ("is-a", "is a", "isa", "tipo di", "è un", "e un", "sottotipo", "kind of", "subclass"),
+    ),
     ("part-of", ("part-of", "part of", "parte di", "fa parte", "componente di")),
-    ("contrasts-with", ("contrast", "a differenza", "differisce", "si contrappone", "opposto", "invece di")),
+    (
+        "contrasts-with",
+        ("contrast", "a differenza", "differisce", "si contrappone", "opposto", "invece di"),
+    ),
     ("depends-on", ("depend", "dipende", "richiede", "requires", "needs", "si basa", "basato su")),
     ("uses", ("uses", "use", "usa", "utilizza", "sfrutta", "impiega")),
 ]
@@ -72,7 +78,9 @@ def neighbors(ontology: dict, concept_title: str) -> list[dict]:
 
 def save_ontology(path: Path, ontology: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(ontology, indent=2, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+    path.write_text(
+        json.dumps(ontology, indent=2, ensure_ascii=False, sort_keys=True), encoding="utf-8"
+    )
 
 
 def load_ontology(paths: TalamusPaths) -> dict:

@@ -14,7 +14,8 @@ from talamus.store import load_notes, rebuild_indexes, render_note_markdown, wri
 
 
 def _compile_package(paths: TalamusPaths, package: NormalizedPackage, llm: LLMProvider) -> int:
-    """Estrae le note dal pacchetto, le scrive e risolve i wikilink a lotto, ricostruisce gli indici."""
+    """Estrae le note dal pacchetto, le scrive e risolve i wikilink a lotto,
+    ricostruisce gli indici."""
     notes = extract_notes(package, llm)
     # Fase 1: persisti tutti gli oggetti canonici, così l'intero lotto è noto.
     for note in notes:
@@ -54,7 +55,8 @@ def remember_session(paths: TalamusPaths, transcript: str, diff: str, llm: LLMPr
 
 
 def ingest_text(paths: TalamusPaths, text: str, llm: LLMProvider, name: str = "insight") -> dict:
-    """Ingerisce un frammento di testo (es. un'intuizione che l'agente vuole ricordare) come scheda."""
+    """Ingerisce un frammento di testo (es. un'intuizione che l'agente vuole
+    ricordare) come scheda."""
     paths.ensure_directories()
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:8]
     raw_path = paths.raw / f"{name}-{digest}.md"

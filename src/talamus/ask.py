@@ -50,7 +50,9 @@ def build_context_bundle(
         path = _note_path(paths, title)
         if not path.is_file():
             continue
-        items.append({"route": "graph", "path": path.as_posix(), "content": path.read_text(encoding="utf-8")})
+        items.append(
+            {"route": "graph", "path": path.as_posix(), "content": path.read_text(encoding="utf-8")}
+        )
     if items:
         return ContextBundle(question=question, items=items)
 
@@ -58,7 +60,9 @@ def build_context_bundle(
         path = paths.notes / f"{result['id']}.md"
         if not path.is_file():
             continue
-        items.append({"route": "bm25", "path": path.as_posix(), "content": path.read_text(encoding="utf-8")})
+        items.append(
+            {"route": "bm25", "path": path.as_posix(), "content": path.read_text(encoding="utf-8")}
+        )
     return ContextBundle(question=question, items=items)
 
 
@@ -74,12 +78,15 @@ CONTESTO:
 
 
 def answer_question(paths: TalamusPaths, question: str, llm: LLMProvider) -> str:
-    graph = load_graph(paths.graph_file) if paths.graph_file.is_file() else {"nodes": {}, "edges": []}
+    graph = (
+        load_graph(paths.graph_file) if paths.graph_file.is_file() else {"nodes": {}, "edges": []}
+    )
     search = BM25Index.load(paths.index_file) if paths.index_file.is_file() else BM25Index()
     bundle = build_context_bundle(paths, graph, search, question)
     if not bundle.items:
         return "Nessun contesto trovato nel brain per questa domanda."
     context = "\n\n".join(
-        f"[{idx}] {item['path']}\n{item['content']}" for idx, item in enumerate(bundle.items, start=1)
+        f"[{idx}] {item['path']}\n{item['content']}"
+        for idx, item in enumerate(bundle.items, start=1)
     )
     return llm.complete(_ANSWER_PROMPT.format(question=question, context=context))

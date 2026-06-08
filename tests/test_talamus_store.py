@@ -46,22 +46,37 @@ class StoreTests(unittest.TestCase):
             self.assertTrue(paths.graph_file.is_file())
             self.assertTrue(paths.index_file.is_file())
 
-
     def test_write_note_json_merges_same_concept_across_sources(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
             n1 = CanonicalNote(
-                note_id="vector-store", title="Vector Store", aliases=["VS"], folder="",
-                tags=["infra"], summary="primo", retrieval_text="r1", body_sections={"d": "x"},
-                proposed_links=[], relations=[],
-                sources=[SourceRef("raw/a.md", "norm/a#1", "la", "sha256:a", ["c1"])], confidence=0.8,
+                note_id="vector-store",
+                title="Vector Store",
+                aliases=["VS"],
+                folder="",
+                tags=["infra"],
+                summary="primo",
+                retrieval_text="r1",
+                body_sections={"d": "x"},
+                proposed_links=[],
+                relations=[],
+                sources=[SourceRef("raw/a.md", "norm/a#1", "la", "sha256:a", ["c1"])],
+                confidence=0.8,
             )
             n2 = CanonicalNote(
-                note_id="vector-store", title="Vector Store", aliases=["vettori"], folder="",
-                tags=["ricerca"], summary="secondo", retrieval_text="r2", body_sections={"d": "y"},
-                proposed_links=[], relations=[],
-                sources=[SourceRef("raw/b.md", "norm/b#1", "lb", "sha256:b", ["c2"])], confidence=0.9,
+                note_id="vector-store",
+                title="Vector Store",
+                aliases=["vettori"],
+                folder="",
+                tags=["ricerca"],
+                summary="secondo",
+                retrieval_text="r2",
+                body_sections={"d": "y"},
+                proposed_links=[],
+                relations=[],
+                sources=[SourceRef("raw/b.md", "norm/b#1", "lb", "sha256:b", ["c2"])],
+                confidence=0.9,
             )
 
             write_note_json(paths, n1)

@@ -8,22 +8,26 @@ from tests.support import FakeLLMProvider
 
 class ExtractTests(unittest.TestCase):
     def _package(self):
-        return normalize_text("knowledge/raw/rag.md", "# RAG\nRAG collega il modello a fonti esterne.")
+        return normalize_text(
+            "knowledge/raw/rag.md", "# RAG\nRAG collega il modello a fonti esterne."
+        )
 
     def test_extracts_canonical_note_with_provenance(self) -> None:
-        llm_json = json.dumps([
-            {
-                "title": "Retrieval-Augmented Generation",
-                "aliases": ["RAG"],
-                "tags": ["retrieval"],
-                "summary": "RAG collega il modello a fonti esterne.",
-                "retrieval_text": "rag retrieval fonti esterne",
-                "body_sections": {"core_idea": "Recupera contesto prima di generare."},
-                "relations": [],
-                "supported_claims": ["RAG collega il modello a fonti esterne."],
-                "confidence": 0.9,
-            }
-        ])
+        llm_json = json.dumps(
+            [
+                {
+                    "title": "Retrieval-Augmented Generation",
+                    "aliases": ["RAG"],
+                    "tags": ["retrieval"],
+                    "summary": "RAG collega il modello a fonti esterne.",
+                    "retrieval_text": "rag retrieval fonti esterne",
+                    "body_sections": {"core_idea": "Recupera contesto prima di generare."},
+                    "relations": [],
+                    "supported_claims": ["RAG collega il modello a fonti esterne."],
+                    "confidence": 0.9,
+                }
+            ]
+        )
         llm = FakeLLMProvider([llm_json])
 
         notes = extract_notes(self._package(), llm)

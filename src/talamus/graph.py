@@ -45,7 +45,9 @@ def build_graph(notes: list[CanonicalNote]) -> dict:
             add_edge(note_id, tag_id, "tagged")
         for source in note.sources:
             source_id = _node_id("source", source.normalized_path)
-            add_node(source_id, kind="source", label=source.normalized_path, raw_path=source.raw_path)
+            add_node(
+                source_id, kind="source", label=source.normalized_path, raw_path=source.raw_path
+            )
             add_edge(source_id, note_id, "supports", locator=source.locator)
         for relation in note.relations:
             target_id = _node_id("concept", relation.target)

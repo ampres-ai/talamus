@@ -27,7 +27,9 @@ class ObsidianRendererTests(unittest.TestCase):
             summary="Agent memory stores useful context.",
             retrieval_text="agent memory rag retrieval",
             body_sections={"core_idea": "Agent memory can use RAG."},
-            proposed_links=[ProposedLink(anchor="RAG", target="RAG", reason="RAG is a memory pattern.")],
+            proposed_links=[
+                ProposedLink(anchor="RAG", target="RAG", reason="RAG is a memory pattern.")
+            ],
             relations=[],
             sources=[source_ref()],
             confidence=0.9,
@@ -48,12 +50,18 @@ class ObsidianRendererTests(unittest.TestCase):
             summary="Agent memory stores useful context.",
             retrieval_text="agent memory rag retrieval",
             body_sections={"core_idea": "Agent memory can use RAG."},
-            proposed_links=[ProposedLink(anchor="RAG", target="Retrieval-Augmented Generation", reason="RAG is relevant.")],
+            proposed_links=[
+                ProposedLink(
+                    anchor="RAG", target="Retrieval-Augmented Generation", reason="RAG is relevant."
+                )
+            ],
             relations=[],
             sources=[source_ref()],
             confidence=0.9,
         )
-        registry = NoteRegistry.from_notes([note, CanonicalNote.minimal("Retrieval-Augmented Generation", sources=[source_ref()])])
+        registry = NoteRegistry.from_notes(
+            [note, CanonicalNote.minimal("Retrieval-Augmented Generation", sources=[source_ref()])]
+        )
 
         markdown = render_obsidian_note(note, registry)
 
@@ -62,7 +70,6 @@ class ObsidianRendererTests(unittest.TestCase):
         self.assertIn("sources:", markdown)
         self.assertIn("## Core Idea", markdown)
         self.assertIn("[[Retrieval-Augmented Generation|RAG]]", markdown)
-
 
     def test_body_link_applied_once_across_sections(self) -> None:
         note = CanonicalNote(
@@ -77,7 +84,9 @@ class ObsidianRendererTests(unittest.TestCase):
                 "definizione": "Usa un Vector Store.",
                 "relazioni": "Si appoggia al Vector Store.",
             },
-            proposed_links=[ProposedLink(anchor="Vector Store", target="Vector Store", reason="infra")],
+            proposed_links=[
+                ProposedLink(anchor="Vector Store", target="Vector Store", reason="infra")
+            ],
             relations=[],
             sources=[source_ref()],
             confidence=0.9,

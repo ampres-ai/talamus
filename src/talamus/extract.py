@@ -55,7 +55,9 @@ def _extract_json_array(raw: str) -> list[dict]:
     return json.loads(raw[start : end + 1])
 
 
-def _section_source(section: NormalizedSection, package: NormalizedPackage, claims: list[str]) -> SourceRef:
+def _section_source(
+    section: NormalizedSection, package: NormalizedPackage, claims: list[str]
+) -> SourceRef:
     return SourceRef(
         raw_path=package.raw_path,
         normalized_path=f"{package.raw_path}#section-{section.section_id}",

@@ -45,13 +45,15 @@ def read_note(title: str) -> str:
 
 @server.tool()
 def recall(question: str) -> str:
-    """Recupera dal brain Talamus il contesto pertinente a una domanda (schede reali). Ragiona tu sul contesto per rispondere."""
+    """Recupera dal brain Talamus il contesto pertinente a una domanda (schede reali).
+    Ragiona tu sul contesto per rispondere."""
     return recall_context(_paths(), question)
 
 
 @server.tool()
 def neighbors(concept: str) -> str:
-    """Mostra i concetti collegati a un concetto nel brain (la mappa/ontologia), con il tipo di relazione."""
+    """Mostra i concetti collegati a un concetto nel brain (la mappa/ontologia),
+    con il tipo di relazione."""
     items = concept_neighbors(_paths(), concept)
     if not items:
         return "Nessun concetto collegato."
@@ -63,20 +65,25 @@ def neighbors(concept: str) -> str:
 
 @server.tool()
 def remember(text: str) -> str:
-    """Salva nel brain Talamus un'intuizione o decisione importante emersa nella sessione, trasformandola in una scheda."""
+    """Salva nel brain Talamus un'intuizione o decisione importante emersa nella
+    sessione, trasformandola in una scheda."""
     result = ingest_text(_paths(), text, _llm)
     return f"Ricordato: {result['notes_written']} schede salvate nel brain."
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="talamus-mcp", description="Server MCP di lettura per il brain Talamus.")
+    parser = argparse.ArgumentParser(
+        prog="talamus-mcp", description="Server MCP di lettura per il brain Talamus."
+    )
     parser.add_argument("--root", default=".", help="Cartella del brain Talamus.")
     parser.add_argument(
         "--http",
         action="store_true",
         help="Servi su HTTP locale invece di stdio (per client desktop che lo richiedono).",
     )
-    parser.add_argument("--host", default="127.0.0.1", help="Host per --http (predefinito: locale).")
+    parser.add_argument(
+        "--host", default="127.0.0.1", help="Host per --http (predefinito: locale)."
+    )
     parser.add_argument("--port", type=int, default=8000, help="Porta per --http.")
     return parser
 

@@ -16,7 +16,7 @@ class TalamusConfig:
     search_provider: str
 
     @classmethod
-    def default(cls) -> "TalamusConfig":
+    def default(cls) -> TalamusConfig:
         return cls(
             storage_provider="obsidian",
             pdf_converter="docling",

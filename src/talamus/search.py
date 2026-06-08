@@ -58,7 +58,7 @@ class BM25Index:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "BM25Index":
+    def from_dict(cls, data: dict) -> BM25Index:
         index = cls(k1=float(data["k1"]), b=float(data["b"]))
         index._docs = {doc_id: Counter(counts) for doc_id, counts in data["docs"].items()}
         index._lengths = {doc_id: int(length) for doc_id, length in data["lengths"].items()}
@@ -70,5 +70,5 @@ class BM25Index:
         path.write_text(json.dumps(self.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
 
     @classmethod
-    def load(cls, path: Path) -> "BM25Index":
+    def load(cls, path: Path) -> BM25Index:
         return cls.from_dict(json.loads(path.read_text(encoding="utf-8")))

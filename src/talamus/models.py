@@ -49,7 +49,7 @@ class CanonicalNote:
         *,
         confidence: float = 0.8,
         sources: list[SourceRef] | None = None,
-    ) -> "CanonicalNote":
+    ) -> CanonicalNote:
         note_id = title.lower().replace(" ", "-")
         return cls(
             note_id=note_id,

@@ -10,7 +10,9 @@ from talamus.store import load_notes
 
 
 def _load_graph_and_index(paths: TalamusPaths):
-    graph = load_graph(paths.graph_file) if paths.graph_file.is_file() else {"nodes": {}, "edges": []}
+    graph = (
+        load_graph(paths.graph_file) if paths.graph_file.is_file() else {"nodes": {}, "edges": []}
+    )
     index = BM25Index.load(paths.index_file) if paths.index_file.is_file() else BM25Index()
     return graph, index
 
@@ -56,7 +58,8 @@ def concept_neighbors(paths: TalamusPaths, concept: str) -> list[dict]:
 
 
 def recall_context(paths: TalamusPaths, question: str, limit: int = 5) -> str:
-    """Contesto pertinente (schede reali) per una domanda. L'agente è l'LLM: ritorna risorse, non risposte."""
+    """Contesto pertinente (schede reali) per una domanda.
+    L'agente è l'LLM: ritorna risorse, non risposte."""
     graph, index = _load_graph_and_index(paths)
     bundle = build_context_bundle(paths, graph, index, question, limit=limit)
     if not bundle.items:

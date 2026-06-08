@@ -24,13 +24,20 @@ def source_ref() -> SourceRef:
 
 
 def _extract_response() -> str:
-    return json.dumps([
-        {"title": "Retrieval-Augmented Generation", "aliases": ["RAG"],
-         "tags": ["retrieval"], "retrieval_text": "external documents retrieval augmented generation",
-         "summary": "RAG connette il modello a fonti esterne.",
-         "body_sections": {"core_idea": "RAG recupera contesto."},
-         "supported_claims": ["RAG recupera contesto."], "confidence": 0.9}
-    ])
+    return json.dumps(
+        [
+            {
+                "title": "Retrieval-Augmented Generation",
+                "aliases": ["RAG"],
+                "tags": ["retrieval"],
+                "retrieval_text": "external documents retrieval augmented generation",
+                "summary": "RAG connette il modello a fonti esterne.",
+                "body_sections": {"core_idea": "RAG recupera contesto."},
+                "supported_claims": ["RAG recupera contesto."],
+                "confidence": 0.9,
+            }
+        ]
+    )
 
 
 class TalamusAskTests(unittest.TestCase):
@@ -59,7 +66,9 @@ class TalamusAskTests(unittest.TestCase):
             search = BM25Index()
             search.add("wrong", "external documents")
 
-            bundle = build_context_bundle(paths, graph, search, "How do I use external documents?", limit=1)
+            bundle = build_context_bundle(
+                paths, graph, search, "How do I use external documents?", limit=1
+            )
 
             self.assertEqual("graph", bundle.items[0]["route"])
             self.assertIn("Retrieval-Augmented-Generation.md", bundle.items[0]["path"])
@@ -91,29 +100,48 @@ class TalamusAskTests(unittest.TestCase):
 
             self.assertIn("nessun contesto", answer.lower())
 
-
     def test_retrieval_expands_via_ontology(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
             alpha = CanonicalNote(
-                note_id="alpha", title="Alpha", aliases=[], folder="", tags=[],
-                summary="a", retrieval_text="zebraword unicorno",
-                body_sections={"d": "Alpha usa Beta."}, proposed_links=[],
-                relations=[Relation("Alpha", "usa", "Beta", 0.9)], sources=[source_ref()], confidence=0.9,
+                note_id="alpha",
+                title="Alpha",
+                aliases=[],
+                folder="",
+                tags=[],
+                summary="a",
+                retrieval_text="zebraword unicorno",
+                body_sections={"d": "Alpha usa Beta."},
+                proposed_links=[],
+                relations=[Relation("Alpha", "usa", "Beta", 0.9)],
+                sources=[source_ref()],
+                confidence=0.9,
             )
             beta = CanonicalNote(
-                note_id="beta", title="Beta", aliases=[], folder="", tags=[],
-                summary="b", retrieval_text="parole totalmente diverse",
-                body_sections={"d": "Beta."}, proposed_links=[], relations=[],
-                sources=[source_ref()], confidence=0.9,
+                note_id="beta",
+                title="Beta",
+                aliases=[],
+                folder="",
+                tags=[],
+                summary="b",
+                retrieval_text="parole totalmente diverse",
+                body_sections={"d": "Beta."},
+                proposed_links=[],
+                relations=[],
+                sources=[source_ref()],
+                confidence=0.9,
             )
             write_note(paths, alpha)
             write_note(paths, beta)
             rebuild_indexes(paths)
 
             bundle = build_context_bundle(
-                paths, load_graph(paths.graph_file), BM25Index.load(paths.index_file), "zebraword", limit=5
+                paths,
+                load_graph(paths.graph_file),
+                BM25Index.load(paths.index_file),
+                "zebraword",
+                limit=5,
             )
 
             paths_found = [item["path"] for item in bundle.items]

@@ -30,8 +30,20 @@ class RecallTests(unittest.TestCase):
     def _brain(self, tmp: str) -> TalamusPaths:
         paths = TalamusPaths(Path(tmp))
         paths.ensure_directories()
-        write_note(paths, _note("Retrieval-Augmented Generation", "Collega il modello a fonti esterne.", "rag fonti esterne documenti recupero"))
-        write_note(paths, _note("Vector Store", "Memorizza embeddings per la ricerca.", "vector store embeddings"))
+        write_note(
+            paths,
+            _note(
+                "Retrieval-Augmented Generation",
+                "Collega il modello a fonti esterne.",
+                "rag fonti esterne documenti recupero",
+            ),
+        )
+        write_note(
+            paths,
+            _note(
+                "Vector Store", "Memorizza embeddings per la ricerca.", "vector store embeddings"
+            ),
+        )
         rebuild_indexes(paths)
         return paths
 

@@ -110,7 +110,13 @@ def rebuild_indexes(paths: TalamusPaths) -> None:
     index = BM25Index()
     for note in notes:
         haystack = " ".join(
-            [note.title, " ".join(note.aliases), " ".join(note.tags), note.retrieval_text, note.summary]
+            [
+                note.title,
+                " ".join(note.aliases),
+                " ".join(note.tags),
+                note.retrieval_text,
+                note.summary,
+            ]
         )
         index.add(note_slug(note.title), haystack)
     index.save(paths.index_file)

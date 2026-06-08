@@ -27,7 +27,13 @@ class TalamusPathsConfigTests(unittest.TestCase):
             created = paths.ensure_directories()
 
             self.assertTrue(created)
-            for directory in (paths.notes, paths.raw, paths.normalized, paths.notes_cache, paths.logs):
+            for directory in (
+                paths.notes,
+                paths.raw,
+                paths.normalized,
+                paths.notes_cache,
+                paths.logs,
+            ):
                 self.assertTrue(directory.is_dir(), directory)
 
     def test_default_config_is_beginner_friendly(self) -> None:

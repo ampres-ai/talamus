@@ -21,7 +21,9 @@ def _content_to_text(content: object) -> str:
                     inp = block.get("input", {})
                     hint = ""
                     if isinstance(inp, dict):
-                        hint = str(inp.get("file_path") or inp.get("path") or inp.get("command") or "")[:60]
+                        hint = str(
+                            inp.get("file_path") or inp.get("path") or inp.get("command") or ""
+                        )[:60]
                     parts.append(f"[tool {name}: {hint}]".strip())
                 elif btype == "tool_result":
                     parts.append("[risultato tool]")
@@ -58,7 +60,8 @@ def _compress_jsonl(lines: list[str]) -> str | None:
 
 
 def compress_transcript(text: str) -> str:
-    """Comprime un transcript: se JSONL, estrae i turni e compatta i blocchi tool; altrimenti passthrough."""
+    """Comprime un transcript: se JSONL, estrae i turni e compatta i blocchi tool;
+    altrimenti passthrough."""
     compressed = _compress_jsonl(text.splitlines())
     if compressed is not None:
         return compressed

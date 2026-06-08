@@ -68,17 +68,29 @@ class TalamusCliTests(unittest.TestCase):
                 self.assertEqual(0, main(["init", "--root", tmp]))
             source = Path(tmp) / "rag.md"
             source.write_text("# RAG\nRAG collega il modello a fonti esterne.", encoding="utf-8")
-            extract_llm = FakeLLMProvider([json.dumps([
-                {"title": "Retrieval-Augmented Generation", "aliases": ["RAG"],
-                 "retrieval_text": "rag fonti esterne", "summary": "RAG collega a fonti.",
-                 "supported_claims": ["x"], "confidence": 0.9}
-            ])])
+            extract_llm = FakeLLMProvider(
+                [
+                    json.dumps(
+                        [
+                            {
+                                "title": "Retrieval-Augmented Generation",
+                                "aliases": ["RAG"],
+                                "retrieval_text": "rag fonti esterne",
+                                "summary": "RAG collega a fonti.",
+                                "supported_claims": ["x"],
+                                "confidence": 0.9,
+                            }
+                        ]
+                    )
+                ]
+            )
             answer_llm = FakeLLMProvider(["RAG [1]."])
 
             with redirect_stdout(io.StringIO()):
                 self.assertEqual(0, main(["ingest", str(source), "--root", tmp], llm=extract_llm))
-                self.assertEqual(0, main(["ask", "Come collego fonti esterne?", "--root", tmp], llm=answer_llm))
-
+                self.assertEqual(
+                    0, main(["ask", "Come collego fonti esterne?", "--root", tmp], llm=answer_llm)
+                )
 
     def test_search_read_recall_commands(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -86,11 +98,22 @@ class TalamusCliTests(unittest.TestCase):
                 self.assertEqual(0, main(["init", "--root", tmp]))
             source = Path(tmp) / "rag.md"
             source.write_text("# RAG\nRAG collega il modello a fonti esterne.", encoding="utf-8")
-            extract_llm = FakeLLMProvider([json.dumps([
-                {"title": "Retrieval-Augmented Generation", "aliases": ["RAG"],
-                 "retrieval_text": "rag fonti esterne", "summary": "RAG collega a fonti.",
-                 "supported_claims": ["x"], "confidence": 0.9}
-            ])])
+            extract_llm = FakeLLMProvider(
+                [
+                    json.dumps(
+                        [
+                            {
+                                "title": "Retrieval-Augmented Generation",
+                                "aliases": ["RAG"],
+                                "retrieval_text": "rag fonti esterne",
+                                "summary": "RAG collega a fonti.",
+                                "supported_claims": ["x"],
+                                "confidence": 0.9,
+                            }
+                        ]
+                    )
+                ]
+            )
             with redirect_stdout(io.StringIO()):
                 self.assertEqual(0, main(["ingest", str(source), "--root", tmp], llm=extract_llm))
 
@@ -107,13 +130,26 @@ class TalamusCliTests(unittest.TestCase):
                 self.assertEqual(0, main(["init", "--root", tmp]))
             transcript = Path(tmp) / "t.md"
             transcript.write_text("x" * 500, encoding="utf-8")
-            llm = FakeLLMProvider([json.dumps([
-                {"title": "Sessione", "retrieval_text": "x", "summary": "s",
-                 "supported_claims": ["x"], "confidence": 0.9}
-            ])])
+            llm = FakeLLMProvider(
+                [
+                    json.dumps(
+                        [
+                            {
+                                "title": "Sessione",
+                                "retrieval_text": "x",
+                                "summary": "s",
+                                "supported_claims": ["x"],
+                                "confidence": 0.9,
+                            }
+                        ]
+                    )
+                ]
+            )
             out = io.StringIO()
             with redirect_stdout(out):
-                self.assertEqual(0, main(["remember", "--transcript", str(transcript), "--root", tmp], llm=llm))
+                self.assertEqual(
+                    0, main(["remember", "--transcript", str(transcript), "--root", tmp], llm=llm)
+                )
             self.assertIn("ricordate", out.getvalue())
 
     def test_neighbors_command(self) -> None:
@@ -122,14 +158,32 @@ class TalamusCliTests(unittest.TestCase):
                 self.assertEqual(0, main(["init", "--root", tmp]))
             source = Path(tmp) / "d.md"
             source.write_text("# D\nAlpha e Beta.", encoding="utf-8")
-            llm = FakeLLMProvider([json.dumps([
-                {"title": "Alpha", "retrieval_text": "alpha", "summary": "a",
-                 "body_sections": {"definizione": "Alpha usa Beta."},
-                 "proposed_links": [{"anchor": "Beta", "target": "Beta", "reason": "x"}],
-                 "supported_claims": ["x"], "confidence": 0.9},
-                {"title": "Beta", "retrieval_text": "beta", "summary": "b",
-                 "supported_claims": ["y"], "confidence": 0.9},
-            ])])
+            llm = FakeLLMProvider(
+                [
+                    json.dumps(
+                        [
+                            {
+                                "title": "Alpha",
+                                "retrieval_text": "alpha",
+                                "summary": "a",
+                                "body_sections": {"definizione": "Alpha usa Beta."},
+                                "proposed_links": [
+                                    {"anchor": "Beta", "target": "Beta", "reason": "x"}
+                                ],
+                                "supported_claims": ["x"],
+                                "confidence": 0.9,
+                            },
+                            {
+                                "title": "Beta",
+                                "retrieval_text": "beta",
+                                "summary": "b",
+                                "supported_claims": ["y"],
+                                "confidence": 0.9,
+                            },
+                        ]
+                    )
+                ]
+            )
             with redirect_stdout(io.StringIO()):
                 self.assertEqual(0, main(["ingest", str(source), "--root", tmp], llm=llm))
             out = io.StringIO()

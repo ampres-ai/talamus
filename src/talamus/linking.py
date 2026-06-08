@@ -18,7 +18,7 @@ class NoteRegistry:
         cls,
         notes: list[CanonicalNote],
         extra_aliases: dict[str, str] | None = None,
-    ) -> "NoteRegistry":
+    ) -> NoteRegistry:
         title_by_key: dict[str, str] = {}
         for note in notes:
             title_by_key[cls._key(note.title)] = note.title

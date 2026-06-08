@@ -17,11 +17,22 @@ class IngestTests(unittest.TestCase):
             paths.ensure_directories()
             source = root / "rag.md"
             source.write_text("# RAG\nRAG collega il modello a fonti esterne.", encoding="utf-8")
-            llm = FakeLLMProvider([json.dumps([
-                {"title": "Retrieval-Augmented Generation", "aliases": ["RAG"],
-                 "retrieval_text": "rag fonti esterne", "summary": "RAG collega a fonti esterne.",
-                 "supported_claims": ["RAG collega a fonti esterne."], "confidence": 0.9}
-            ])])
+            llm = FakeLLMProvider(
+                [
+                    json.dumps(
+                        [
+                            {
+                                "title": "Retrieval-Augmented Generation",
+                                "aliases": ["RAG"],
+                                "retrieval_text": "rag fonti esterne",
+                                "summary": "RAG collega a fonti esterne.",
+                                "supported_claims": ["RAG collega a fonti esterne."],
+                                "confidence": 0.9,
+                            }
+                        ]
+                    )
+                ]
+            )
 
             result = ingest_file(paths, source, llm)
 
@@ -30,7 +41,6 @@ class IngestTests(unittest.TestCase):
             self.assertTrue(any(paths.raw.glob("*.md")))
             self.assertTrue(paths.graph_file.is_file())
 
-
     def test_ingest_resolves_same_batch_wikilinks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -38,21 +48,44 @@ class IngestTests(unittest.TestCase):
             paths.ensure_directories()
             source = root / "doc.md"
             source.write_text("# Doc\nRAG e Vector Store.", encoding="utf-8")
-            llm = FakeLLMProvider([json.dumps([
-                {"title": "RAG", "retrieval_text": "rag", "summary": "RAG.",
-                 "body_sections": {"definizione": "RAG usa un Vector Store per recuperare."},
-                 "proposed_links": [{"anchor": "Vector Store", "target": "Vector Store", "reason": "infra"}],
-                 "supported_claims": ["x"], "confidence": 0.9},
-                {"title": "Vector Store", "retrieval_text": "vector", "summary": "VS.",
-                 "body_sections": {"definizione": "Memorizza embeddings."},
-                 "supported_claims": ["y"], "confidence": 0.9},
-            ])])
+            llm = FakeLLMProvider(
+                [
+                    json.dumps(
+                        [
+                            {
+                                "title": "RAG",
+                                "retrieval_text": "rag",
+                                "summary": "RAG.",
+                                "body_sections": {
+                                    "definizione": "RAG usa un Vector Store per recuperare."
+                                },
+                                "proposed_links": [
+                                    {
+                                        "anchor": "Vector Store",
+                                        "target": "Vector Store",
+                                        "reason": "infra",
+                                    }
+                                ],
+                                "supported_claims": ["x"],
+                                "confidence": 0.9,
+                            },
+                            {
+                                "title": "Vector Store",
+                                "retrieval_text": "vector",
+                                "summary": "VS.",
+                                "body_sections": {"definizione": "Memorizza embeddings."},
+                                "supported_claims": ["y"],
+                                "confidence": 0.9,
+                            },
+                        ]
+                    )
+                ]
+            )
 
             ingest_file(paths, source, llm)
 
             rag_md = (paths.notes / "RAG.md").read_text(encoding="utf-8")
             self.assertIn("[[Vector Store", rag_md)
-
 
     def test_remember_session_compiles_when_worth(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -63,10 +96,21 @@ class IngestTests(unittest.TestCase):
                 '{"role":"assistant","content":"Si fa cosi perche serve Y"}'
             )
             diff = "diff --git a/x.py b/x.py\n+codice"
-            llm = FakeLLMProvider([json.dumps([
-                {"title": "Come fare X", "retrieval_text": "x", "summary": "Si fa cosi.",
-                 "supported_claims": ["x"], "confidence": 0.9}
-            ])])
+            llm = FakeLLMProvider(
+                [
+                    json.dumps(
+                        [
+                            {
+                                "title": "Come fare X",
+                                "retrieval_text": "x",
+                                "summary": "Si fa cosi.",
+                                "supported_claims": ["x"],
+                                "confidence": 0.9,
+                            }
+                        ]
+                    )
+                ]
+            )
 
             result = remember_session(paths, transcript, diff, llm)
 
@@ -79,10 +123,21 @@ class IngestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
-            llm = FakeLLMProvider([json.dumps([
-                {"title": "Insight", "retrieval_text": "x", "summary": "s",
-                 "supported_claims": ["x"], "confidence": 0.9}
-            ])])
+            llm = FakeLLMProvider(
+                [
+                    json.dumps(
+                        [
+                            {
+                                "title": "Insight",
+                                "retrieval_text": "x",
+                                "summary": "s",
+                                "supported_claims": ["x"],
+                                "confidence": 0.9,
+                            }
+                        ]
+                    )
+                ]
+            )
 
             result = ingest_text(paths, "Abbiamo deciso X perche Y.", llm)
 

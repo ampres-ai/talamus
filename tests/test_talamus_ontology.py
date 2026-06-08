@@ -43,7 +43,13 @@ class OntologyTests(unittest.TestCase):
 
         self.assertIn("Agent Memory", ontology["concepts"])
         self.assertEqual(
-            [{"source": "Agent Memory", "type": "uses", "target": "Retrieval-Augmented Generation"}],
+            [
+                {
+                    "source": "Agent Memory",
+                    "type": "uses",
+                    "target": "Retrieval-Augmented Generation",
+                }
+            ],
             ontology["edges"],
         )
 
@@ -53,7 +59,13 @@ class OntologyTests(unittest.TestCase):
         ontology = build_ontology([rag, memory])
 
         self.assertEqual(
-            [{"title": "Retrieval-Augmented Generation", "relation": "related", "direction": "out"}],
+            [
+                {
+                    "title": "Retrieval-Augmented Generation",
+                    "relation": "related",
+                    "direction": "out",
+                }
+            ],
             neighbors(ontology, "Agent Memory"),
         )
         self.assertEqual(
@@ -62,7 +74,9 @@ class OntologyTests(unittest.TestCase):
         )
 
     def test_unresolved_target_produces_no_edge(self) -> None:
-        memory = _note("Agent Memory", relations=[Relation("Agent Memory", "usa", "Concetto Inesistente", 0.9)])
+        memory = _note(
+            "Agent Memory", relations=[Relation("Agent Memory", "usa", "Concetto Inesistente", 0.9)]
+        )
         self.assertEqual([], build_ontology([memory])["edges"])
 
 

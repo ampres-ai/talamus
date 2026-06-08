@@ -6,17 +6,29 @@ from talamus.session import compress_transcript, normalize_session, session_wort
 
 class SessionTests(unittest.TestCase):
     def test_compress_jsonl_keeps_text_and_compacts_tools(self) -> None:
-        jsonl = "\n".join([
-            json.dumps({"role": "user", "content": "Correggi il bug in auth.py"}),
-            json.dumps({"role": "assistant", "content": [
-                {"type": "text", "text": "Guardo il file."},
-                {"type": "tool_use", "name": "Read", "input": {"file_path": "auth.py"}},
-            ]}),
-            json.dumps({"role": "assistant", "content": [
-                {"type": "tool_use", "name": "Edit", "input": {"file_path": "auth.py"}},
-                {"type": "text", "text": "Corretto."},
-            ]}),
-        ])
+        jsonl = "\n".join(
+            [
+                json.dumps({"role": "user", "content": "Correggi il bug in auth.py"}),
+                json.dumps(
+                    {
+                        "role": "assistant",
+                        "content": [
+                            {"type": "text", "text": "Guardo il file."},
+                            {"type": "tool_use", "name": "Read", "input": {"file_path": "auth.py"}},
+                        ],
+                    }
+                ),
+                json.dumps(
+                    {
+                        "role": "assistant",
+                        "content": [
+                            {"type": "tool_use", "name": "Edit", "input": {"file_path": "auth.py"}},
+                            {"type": "text", "text": "Corretto."},
+                        ],
+                    }
+                ),
+            ]
+        )
 
         out = compress_transcript(jsonl)
 
@@ -29,7 +41,9 @@ class SessionTests(unittest.TestCase):
         self.assertEqual("Solo testo.", compress_transcript("Solo testo."))
 
     def test_normalize_session_adds_changes_section_when_diff(self) -> None:
-        package = normalize_session("raw/s.jsonl", '{"role":"user","content":"ciao"}', "diff --git a/x b/x\n+riga")
+        package = normalize_session(
+            "raw/s.jsonl", '{"role":"user","content":"ciao"}', "diff --git a/x b/x\n+riga"
+        )
 
         titles = [section.title for section in package.sections]
         self.assertIn("Conversazione", titles)

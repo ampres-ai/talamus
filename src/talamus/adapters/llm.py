@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-from typing import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
 
 
 class LLMProvider(Protocol):
-    def complete(self, prompt: str) -> str:
-        ...
+    def complete(self, prompt: str) -> str: ...
 
 
 def _default_runner(args: list[str], prompt: str) -> str:

@@ -8,7 +8,7 @@ class NamingTests(unittest.TestCase):
         self.assertEqual("Vector-Store", note_slug("Vector Store"))
 
     def test_strips_characters_invalid_on_windows(self) -> None:
-        slug = note_slug('I/O: Notes? *Draft* <v2>')
+        slug = note_slug("I/O: Notes? *Draft* <v2>")
         for bad in '<>:"/\\|?*':
             self.assertNotIn(bad, slug)
 

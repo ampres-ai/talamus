@@ -1,6 +1,6 @@
 import unittest
 
-from talamus.models import CanonicalNote, ProposedLink, Relation, SourceRef
+from talamus.models import CanonicalNote, SourceRef
 
 
 class TalamusModelsTests(unittest.TestCase):
