@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from kortex.adapters.llm import LLMProvider
 from kortex.graph import load_graph, query_graph
 from kortex.naming import note_filename
+from kortex.ontology import load_ontology, neighbors
 from kortex.paths import KortexPaths
 from kortex.search import BM25Index
 
@@ -25,6 +26,16 @@ def _note_path(paths: KortexPaths, label: str):
     return paths.notes / note_filename(label)
 
 
+def _expand_with_ontology(seed_titles: list[str], ontology: dict, limit: int) -> list[str]:
+    """Riempie i candidati seguendo le relazioni dell'ontologia (1 salto), oltre alle parole."""
+    ranked = list(seed_titles)
+    for title in seed_titles:
+        for neighbor in neighbors(ontology, title):
+            if neighbor["title"] not in ranked:
+                ranked.append(neighbor["title"])
+    return ranked[:limit]
+
+
 def build_context_bundle(
     paths: KortexPaths,
     graph: dict,
@@ -32,9 +43,11 @@ def build_context_bundle(
     question: str,
     limit: int = 5,
 ) -> ContextBundle:
+    ontology = load_ontology(paths)
+    seed_titles = [str(node["label"]) for node in query_graph(graph, question, limit=limit)]
     items: list[dict] = []
-    for node in query_graph(graph, question, limit=limit):
-        path = _note_path(paths, str(node["label"]))
+    for title in _expand_with_ontology(seed_titles, ontology, limit):
+        path = _note_path(paths, title)
         if not path.is_file():
             continue
         items.append({"route": "graph", "path": path.as_posix(), "content": path.read_text(encoding="utf-8")})

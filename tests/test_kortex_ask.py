@@ -4,11 +4,12 @@ import unittest
 from pathlib import Path
 
 from kortex.ask import answer_question, build_context_bundle
-from kortex.graph import build_graph
+from kortex.graph import build_graph, load_graph
 from kortex.ingest import ingest_file
-from kortex.models import CanonicalNote, SourceRef
+from kortex.models import CanonicalNote, Relation, SourceRef
 from kortex.paths import KortexPaths
 from kortex.search import BM25Index
+from kortex.store import rebuild_indexes, write_note
 from tests.support import FakeLLMProvider
 
 
@@ -89,6 +90,36 @@ class KortexAskTests(unittest.TestCase):
             answer = answer_question(paths, "qualcosa", FakeLLMProvider(["non dovrebbe servire"]))
 
             self.assertIn("nessun contesto", answer.lower())
+
+
+    def test_retrieval_expands_via_ontology(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = KortexPaths(Path(tmp))
+            paths.ensure_directories()
+            alpha = CanonicalNote(
+                note_id="alpha", title="Alpha", aliases=[], folder="", tags=[],
+                summary="a", retrieval_text="zebraword unicorno",
+                body_sections={"d": "Alpha usa Beta."}, proposed_links=[],
+                relations=[Relation("Alpha", "usa", "Beta", 0.9)], sources=[source_ref()], confidence=0.9,
+            )
+            beta = CanonicalNote(
+                note_id="beta", title="Beta", aliases=[], folder="", tags=[],
+                summary="b", retrieval_text="parole totalmente diverse",
+                body_sections={"d": "Beta."}, proposed_links=[], relations=[],
+                sources=[source_ref()], confidence=0.9,
+            )
+            write_note(paths, alpha)
+            write_note(paths, beta)
+            rebuild_indexes(paths)
+
+            bundle = build_context_bundle(
+                paths, load_graph(paths.graph_file), BM25Index.load(paths.index_file), "zebraword", limit=5
+            )
+
+            paths_found = [item["path"] for item in bundle.items]
+            self.assertTrue(any("Alpha" in p for p in paths_found))
+            # Beta non combacia per parole, ma entra perche' collegato ad Alpha nell'ontologia
+            self.assertTrue(any("Beta" in p for p in paths_found))
 
 
 if __name__ == "__main__":
