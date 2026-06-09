@@ -147,4 +147,5 @@ def answer_question(paths: TalamusPaths, question: str, llm: LLMProvider) -> str
     context = "\n\n".join(
         f"[{idx}] {item['path']}\n{item['content']}" for idx, item in enumerate(items, start=1)
     )
-    return llm.complete(_ANSWER_PROMPT.format(question=question, context=context))
+    answer = llm.complete(_ANSWER_PROMPT.format(question=question, context=context)).strip()
+    return answer or "Il motore non ha prodotto una risposta. Riprova o controlla l'engine."

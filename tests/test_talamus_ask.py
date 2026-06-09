@@ -88,6 +88,21 @@ class TalamusAskTests(unittest.TestCase):
             self.assertIn("RAG", answer)
             self.assertIn("Retrieval-Augmented Generation", answering.prompts[0])
 
+    def test_answer_question_handles_empty_engine_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = TalamusPaths(root)
+            paths.ensure_directories()
+            source = root / "rag.md"
+            source.write_text("# RAG\nRAG collega il modello a fonti esterne.", encoding="utf-8")
+            ingest_file(paths, source, FakeLLMProvider([_extract_response()]))
+
+            answer = answer_question(
+                paths, "Come collego il modello a fonti esterne?", FakeLLMProvider([""])
+            )
+
+            self.assertIn("motore", answer.lower())
+
     def test_answer_question_without_context_is_explicit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
