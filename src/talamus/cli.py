@@ -9,9 +9,9 @@ import zipfile
 from dataclasses import replace
 from pathlib import Path
 
-from talamus.adapters.llm import ClaudeCliProvider, LLMProvider
+from talamus.adapters.llm import LLMProvider, build_provider
 from talamus.ask import answer_question
-from talamus.config import TalamusConfig, load_config, save_config
+from talamus.config import TalamusConfig, load_config, load_or_default, save_config
 from talamus.errors import TalamusError
 from talamus.ingest import ingest_file, remember_session
 from talamus.log import configure
@@ -34,7 +34,7 @@ def _engine_command(provider: str) -> str | None:
 
 def _detect_engine() -> str:
     """Pick an LLM engine that is actually installed; fall back to claude-cli."""
-    for provider in ("claude-cli", "ollama", "codex", "gemini"):
+    for provider in ("claude-cli", "ollama"):
         command = _ENGINE_COMMANDS[provider]
         if command and shutil.which(command):
             return provider
@@ -63,6 +63,11 @@ def _resolve_root(root: str | None, brain: str | None, use_global: bool) -> Path
         return (_global_home() / "default").resolve()
     project = _find_project_root(Path.cwd().resolve())
     return project if project is not None else (_global_home() / "default").resolve()
+
+
+def _provider_for(root: Path) -> LLMProvider:
+    config = load_or_default(TalamusPaths(root).config_path)
+    return build_provider(config.llm_provider, config.llm_model)
 
 
 def _ensure_utf8_output() -> None:
@@ -411,7 +416,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             return _cmd_recall(root, args.question, json_out)
         if command == "neighbors":
             return _cmd_neighbors(root, args.concept, json_out)
-        provider = llm if llm is not None else ClaudeCliProvider()
+        provider = llm if llm is not None else _provider_for(root)
         if command == "ingest":
             return _cmd_ingest(root, args.file, provider, json_out)
         if command == "ask":

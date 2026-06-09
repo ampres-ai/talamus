@@ -11,20 +11,24 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from talamus.adapters.llm import ClaudeCliProvider
+from talamus.adapters.llm import LLMProvider, build_provider
+from talamus.config import load_or_default
 from talamus.ingest import ingest_text
 from talamus.paths import TalamusPaths
 from talamus.recall import concept_neighbors, read_note_text, recall_context, search_notes
 
 server = FastMCP("talamus")
 
-_llm = ClaudeCliProvider()
-
 _root: Path = Path(".").resolve()
 
 
 def _paths() -> TalamusPaths:
     return TalamusPaths(_root)
+
+
+def _provider() -> LLMProvider:
+    config = load_or_default(_paths().config_path)
+    return build_provider(config.llm_provider, config.llm_model)
 
 
 @server.tool()
@@ -67,7 +71,7 @@ def neighbors(concept: str) -> str:
 def remember(text: str) -> str:
     """Salva nel brain Talamus un'intuizione o decisione importante emersa nella
     sessione, trasformandola in una scheda."""
-    result = ingest_text(_paths(), text, _llm)
+    result = ingest_text(_paths(), text, _provider())
     return f"Ricordato: {result['notes_written']} schede salvate nel brain."
 
 
