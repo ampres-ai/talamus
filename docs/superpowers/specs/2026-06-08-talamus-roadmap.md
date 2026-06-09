@@ -1,6 +1,6 @@
 # Talamus — Roadmap di Esecuzione (completa & vivente)
 
-**Data:** 2026-06-08 · **Stato:** documento **vivo**. · **Trunk:** `main`; **branch attivo:** `feat/a3-engines`. · **Avanzamento:** T1 ✅ · A0 rebrand ✅ · A1 codice ✅ · A2 CLI ✅ · **A3 motori LLM ✅ (core)** (**91 test verdi**) · prossimo: **A4** (onboarding/distribuzione).
+**Data:** 2026-06-08 · **Stato:** documento **vivo**. · **Trunk:** `main`; **branch attivo:** `feat/a4-onboarding`. · **Avanzamento:** T1 ✅ · A0 ✅ · A1 ✅ · A2 ✅ · A3 ✅ (core) · **A4 onboarding ✅ (core)** (**94 test verdi**) · prossimo: **A5** (README).
 
 Questo è l'**indice operativo esaustivo**: ogni implementazione futura, organizzata e in **ordine di esecuzione**. Non è il design delle singole feature — ogni traguardo da **Fase B** in poi avrà il suo **brainstorm → spec → piano → build → test** prima del codice. Le fasi sono la spina d'ordine primaria; in pratica si possono **interlacciare**. Visione di lungo periodo: `2026-05-29-talamus-product-vision.md`; idee fuori scope: `talamus-future-evolutions.md`.
 
@@ -77,7 +77,8 @@ Per orientarsi, ciò che **esiste già** e su cui costruiamo: ingest testo/Markd
 - **A3.8** Tracciamento **uso/costo** per motore.
 - **A3.9** Parametri modello (context window, temperatura) configurabili.
 
-## A4 — Onboarding 10 minuti & distribuzione (connesso a tutto, ogni piattaforma)
+## A4 — Onboarding 10 minuti & distribuzione ✅ (core)
+*Fatto (gate verde, 94 test): `talamus demo` (brain d'esempio offline), `talamus mcp install` (`.mcp.json` in un comando), `talamus hook`/`hook-run` (capture-hook robusto via console subcommand), `docs/quickstart.md` (percorso 10 min: install→demo→init→ingest→ask→MCP→Obsidian→scoping→export). Rinviati: **binari standalone** (PyInstaller per-OS in CI), GIF/asciinema, verifica cross-platform reale (coperta dalla CI).*
 - **A4.1** `pipx install talamus` documentato.
 - **A4.2** **Binari standalone** (PyInstaller) per chi non ha Python, Win/mac/Linux.
 - **A4.3** `talamus mcp install` — config in un comando per Claude Code/Cursor/Claude Desktop.
