@@ -14,7 +14,7 @@ from talamus.session import normalize_session, session_worth_remembering
 from talamus.sources import extract_text, is_url, read_url
 from talamus.store import load_notes, rebuild_indexes, render_note_markdown, write_note_json
 
-_SUPPORTED = {".md", ".markdown", ".txt", ".rst", ".pdf", ".html", ".htm"}
+_SUPPORTED = {".md", ".markdown", ".txt", ".rst", ".pdf", ".docx", ".html", ".htm"}
 
 
 def _content_hash(text: str) -> str:

@@ -1,16 +1,22 @@
 """Read source material of various kinds into plain text for the extractor.
 
-Plain text / Markdown and HTML are handled with the standard library. PDF needs the
-optional `pdf` extra (`pip install talamus[pdf]`). URLs are fetched and stripped to text.
+Plain text / Markdown, HTML and Word (.docx) are handled with the standard library.
+PDF needs the optional `pdf` extra (`pip install talamus[pdf]`). URLs are fetched and
+stripped to text.
 """
 
 from __future__ import annotations
 
 import urllib.request
+import zipfile
 from html.parser import HTMLParser
 from pathlib import Path
+from xml.etree import ElementTree
 
 from talamus.errors import SourceNotFound, TalamusError
+
+# WordprocessingML namespace for .docx paragraph/run/text elements.
+_W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
 class _HtmlToText(HTMLParser):
@@ -47,6 +53,22 @@ def _pdf_text(path: Path) -> str:
     return "\n\n".join((page.extract_text() or "") for page in reader.pages)
 
 
+def _docx_text(path: Path) -> str:
+    """Extract paragraph text from a .docx (a zip of XML) with the stdlib only."""
+    try:
+        with zipfile.ZipFile(path) as archive:
+            document = archive.read("word/document.xml")
+    except (zipfile.BadZipFile, KeyError) as exc:
+        raise TalamusError(f"Not a readable .docx file: {path.name}") from exc
+    root = ElementTree.fromstring(document)
+    paragraphs: list[str] = []
+    for para in root.iter(f"{_W}p"):
+        line = "".join(node.text or "" for node in para.iter(f"{_W}t")).strip()
+        if line:
+            paragraphs.append(line)
+    return "\n\n".join(paragraphs)
+
+
 def is_url(target: str) -> bool:
     return target.startswith(("http://", "https://"))
 
@@ -64,6 +86,8 @@ def extract_text(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix == ".pdf":
         return _pdf_text(path)
+    if suffix == ".docx":
+        return _docx_text(path)
     if suffix in (".html", ".htm"):
         return _strip_html(path.read_text(encoding="utf-8", errors="replace"))
     return path.read_text(encoding="utf-8", errors="replace")
