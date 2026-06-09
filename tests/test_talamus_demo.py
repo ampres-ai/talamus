@@ -4,6 +4,7 @@ from pathlib import Path
 
 from talamus.cli import main
 from talamus.demo import create_demo_brain
+from talamus.graph import load_graph
 from talamus.paths import TalamusPaths
 from talamus.recall import search_notes
 
@@ -22,10 +23,10 @@ class DemoBrainTests(unittest.TestCase):
             results = search_notes(paths, "reranking")
             self.assertTrue(any(r["title"] == "Reranking" for r in results))
 
-            crosslinked = any(
-                "[[" in p.read_text(encoding="utf-8") for p in paths.notes.glob("*.md")
-            )
-            self.assertTrue(crosslinked)
+            # demo notes are connected by typed relations in the graph index
+            graph = load_graph(paths.graph_file)
+            typed = [e for e in graph["edges"] if e.get("type") in ("uses", "part-of")]
+            self.assertTrue(typed)
 
     def test_demo_command_exits_zero(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
