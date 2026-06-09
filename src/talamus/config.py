@@ -17,6 +17,7 @@ class TalamusConfig:
     llm_provider: str
     graph_provider: str
     search_provider: str
+    llm_model: str = ""
 
     @classmethod
     def default(cls) -> TalamusConfig:
@@ -47,7 +48,11 @@ def load_config(path: Path) -> TalamusConfig:
         config = TalamusConfig(**data)
     except TypeError as exc:
         raise ConfigError(f"Invalid config fields in {path}: {exc}") from exc
-    empty = [name for name, value in asdict(config).items() if not str(value).strip()]
+    empty = [
+        name
+        for name, value in asdict(config).items()
+        if name != "llm_model" and not str(value).strip()
+    ]
     if empty:
         raise ConfigError(f"Empty config fields in {path}: {', '.join(empty)}")
     return config
