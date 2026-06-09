@@ -5,6 +5,8 @@ import subprocess
 from collections.abc import Callable
 from typing import Protocol
 
+from talamus.errors import EngineFailed, EngineNotFound
+
 
 class LLMProvider(Protocol):
     def complete(self, prompt: str) -> str: ...
@@ -13,7 +15,7 @@ class LLMProvider(Protocol):
 def _default_runner(args: list[str], prompt: str) -> str:
     executable = shutil.which(args[0])
     if executable is None:
-        raise RuntimeError(f"command not found: {args[0]}")
+        raise EngineNotFound(args[0])
     completed = subprocess.run(
         [executable, *args[1:]],
         input=prompt,
@@ -22,7 +24,7 @@ def _default_runner(args: list[str], prompt: str) -> str:
         encoding="utf-8",
     )
     if completed.returncode != 0:
-        raise RuntimeError(f"LLM command failed: {completed.stderr.strip()}")
+        raise EngineFailed(f"LLM command failed: {completed.stderr.strip()}")
     return completed.stdout.strip()
 
 

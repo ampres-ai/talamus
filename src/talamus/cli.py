@@ -4,10 +4,12 @@ import argparse
 import sys
 from pathlib import Path
 
-from talamus.adapters.llm import ClaudeCliProvider
+from talamus.adapters.llm import ClaudeCliProvider, LLMProvider
 from talamus.ask import answer_question
 from talamus.config import TalamusConfig, load_config, save_config
+from talamus.errors import TalamusError
 from talamus.ingest import ingest_file, remember_session
+from talamus.log import configure
 from talamus.paths import TalamusPaths
 from talamus.recall import concept_neighbors, read_note_text, recall_context, search_notes
 from talamus.store import reindex
@@ -69,18 +71,18 @@ def _cmd_doctor(root: Path) -> int:
     return 0
 
 
-def _cmd_ingest(root: Path, file: str, llm) -> int:
+def _cmd_ingest(root: Path, file: str, llm: LLMProvider) -> int:
     result = ingest_file(TalamusPaths(root), Path(file), llm)
     print(f"ingerite {result['notes_written']} schede da {result['source']}")
     return 0
 
 
-def _cmd_ask(root: Path, question: str, llm) -> int:
+def _cmd_ask(root: Path, question: str, llm: LLMProvider) -> int:
     print(answer_question(TalamusPaths(root), question, llm))
     return 0
 
 
-def _cmd_remember(root: Path, transcript_file: str, diff_file: str | None, llm) -> int:
+def _cmd_remember(root: Path, transcript_file: str, diff_file: str | None, llm: LLMProvider) -> int:
     transcript = Path(transcript_file).read_text(encoding="utf-8")
     diff = Path(diff_file).read_text(encoding="utf-8") if diff_file else ""
     result = remember_session(TalamusPaths(root), transcript, diff, llm)
@@ -134,6 +136,7 @@ def _cmd_neighbors(root: Path, concept: str) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="talamus", description="Local-first knowledge compiler.")
+    parser.add_argument("--verbose", action="store_true", help="Verbose diagnostics to stderr.")
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("init", "status", "doctor", "reindex"):
         cmd = sub.add_parser(name)
@@ -163,33 +166,38 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str] | None = None, llm=None) -> int:
+def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
     _ensure_utf8_output()
     args = build_parser().parse_args(argv)
+    configure(getattr(args, "verbose", False))
     root = Path(args.root).resolve()
-    if args.command == "init":
-        return _cmd_init(root)
-    if args.command == "status":
-        return _cmd_status(root)
-    if args.command == "doctor":
-        return _cmd_doctor(root)
-    if args.command == "reindex":
-        return _cmd_reindex(root)
-    if args.command == "search":
-        return _cmd_search(root, args.query)
-    if args.command == "read":
-        return _cmd_read(root, args.title)
-    if args.command == "recall":
-        return _cmd_recall(root, args.question)
-    if args.command == "neighbors":
-        return _cmd_neighbors(root, args.concept)
-    provider = llm if llm is not None else ClaudeCliProvider()
-    if args.command == "ingest":
-        return _cmd_ingest(root, args.file, provider)
-    if args.command == "ask":
-        return _cmd_ask(root, args.question, provider)
-    if args.command == "remember":
-        return _cmd_remember(root, args.transcript, args.diff, provider)
+    try:
+        if args.command == "init":
+            return _cmd_init(root)
+        if args.command == "status":
+            return _cmd_status(root)
+        if args.command == "doctor":
+            return _cmd_doctor(root)
+        if args.command == "reindex":
+            return _cmd_reindex(root)
+        if args.command == "search":
+            return _cmd_search(root, args.query)
+        if args.command == "read":
+            return _cmd_read(root, args.title)
+        if args.command == "recall":
+            return _cmd_recall(root, args.question)
+        if args.command == "neighbors":
+            return _cmd_neighbors(root, args.concept)
+        provider = llm if llm is not None else ClaudeCliProvider()
+        if args.command == "ingest":
+            return _cmd_ingest(root, args.file, provider)
+        if args.command == "ask":
+            return _cmd_ask(root, args.question, provider)
+        if args.command == "remember":
+            return _cmd_remember(root, args.transcript, args.diff, provider)
+    except TalamusError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     raise ValueError(f"unknown command {args.command}")
 
 

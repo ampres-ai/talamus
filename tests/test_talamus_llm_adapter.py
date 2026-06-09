@@ -1,11 +1,12 @@
 import unittest
 
 from talamus.adapters.llm import ClaudeCliProvider, _default_runner
+from talamus.errors import EngineNotFound
 
 
 class LLMAdapterTests(unittest.TestCase):
     def test_default_runner_errors_on_missing_command(self) -> None:
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(EngineNotFound):
             _default_runner(["definitely-not-a-real-command-xyz"], "prompt")
 
     def test_claude_cli_builds_print_mode_command(self) -> None:

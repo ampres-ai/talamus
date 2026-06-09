@@ -4,6 +4,8 @@ import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from talamus.errors import ConfigError
+
 
 @dataclass(frozen=True)
 class TalamusConfig:
@@ -34,5 +36,13 @@ def save_config(path: Path, config: TalamusConfig) -> None:
 
 
 def load_config(path: Path) -> TalamusConfig:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return TalamusConfig(**data)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ConfigError(f"Config not found: {path}. Run `talamus init`.") from exc
+    except json.JSONDecodeError as exc:
+        raise ConfigError(f"Invalid JSON in config {path}: {exc}") from exc
+    try:
+        return TalamusConfig(**data)
+    except TypeError as exc:
+        raise ConfigError(f"Invalid config fields in {path}: {exc}") from exc
