@@ -18,7 +18,7 @@ from talamus.correct import apply_correction, verify_note
 from talamus.demo import create_demo_brain
 from talamus.domains import build_overview, load_overview
 from talamus.errors import TalamusError
-from talamus.ingest import ingest_file, remember_session
+from talamus.ingest import ingest_path, remember_session
 from talamus.log import configure
 from talamus.paths import TalamusPaths
 from talamus.recall import concept_neighbors, read_note_text, recall_context, search_notes
@@ -319,10 +319,15 @@ def _cmd_reindex(root: Path, json_out: bool) -> int:
     return 0
 
 
-def _cmd_ingest(root: Path, file: str, llm: LLMProvider, json_out: bool) -> int:
-    result = ingest_file(TalamusPaths(root), Path(file), llm)
+def _cmd_ingest(root: Path, target: str, llm: LLMProvider, json_out: bool) -> int:
+    result = ingest_path(TalamusPaths(root), target, llm)
     if json_out:
         _print_json(result)
+    elif "files" in result:
+        print(
+            f"ingerite {result['notes_written']} schede da {result['files']} file "
+            f"({result['skipped']} invariati saltati)"
+        )
     else:
         print(f"ingerite {result['notes_written']} schede da {result['source']}")
     return 0
@@ -549,8 +554,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("hook", parents=[common], help="print the Claude Code capture-hook config")
     sub.add_parser("hook-run", parents=[common], help="run the capture hook (reads stdin)")
 
-    ingest = sub.add_parser("ingest", parents=[common], help="add a document to the brain")
-    ingest.add_argument("file")
+    ingest = sub.add_parser("ingest", parents=[common], help="add a file, folder, or URL")
+    ingest.add_argument("target", help="a file, a folder (recursive), or a URL")
     consolidate = sub.add_parser("consolidate", parents=[common], help="merge duplicate concepts")
     consolidate.add_argument("--apply", action="store_true", help="actually merge (default: list)")
     verify = sub.add_parser("verify", parents=[common], help="check a note against its source")
@@ -634,7 +639,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             return _cmd_relations(root, args.prune, json_out)
         provider = llm if llm is not None else _provider_for(root)
         if command == "ingest":
-            return _cmd_ingest(root, args.file, provider, json_out)
+            return _cmd_ingest(root, args.target, provider, json_out)
         if command == "consolidate":
             return _cmd_consolidate(root, args.apply, provider, json_out)
         if command == "verify":

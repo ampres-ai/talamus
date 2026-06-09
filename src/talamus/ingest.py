@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import shutil
 from pathlib import Path
 
@@ -10,7 +11,24 @@ from talamus.linking import NoteRegistry
 from talamus.normalize import NormalizedPackage, normalize_text
 from talamus.paths import TalamusPaths
 from talamus.session import normalize_session, session_worth_remembering
+from talamus.sources import extract_text, is_url, read_url
 from talamus.store import load_notes, rebuild_indexes, render_note_markdown, write_note_json
+
+_SUPPORTED = {".md", ".markdown", ".txt", ".rst", ".pdf", ".html", ".htm"}
+
+
+def _content_hash(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _load_hashes(paths: TalamusPaths) -> dict:
+    path = paths.cache / "ingested.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+def _save_hashes(paths: TalamusPaths, hashes: dict) -> None:
+    paths.cache.mkdir(parents=True, exist_ok=True)
+    (paths.cache / "ingested.json").write_text(json.dumps(hashes, indent=2), encoding="utf-8")
 
 
 def _compile_package(paths: TalamusPaths, package: NormalizedPackage, llm: LLMProvider) -> int:
@@ -35,12 +53,56 @@ def _compile_package(paths: TalamusPaths, package: NormalizedPackage, llm: LLMPr
 
 def ingest_file(paths: TalamusPaths, file_path: Path, llm: LLMProvider) -> dict:
     paths.ensure_directories()
-    text = file_path.read_text(encoding="utf-8")
+    text = extract_text(file_path)
     raw_copy = paths.raw / file_path.name
     shutil.copyfile(file_path, raw_copy)
     package = normalize_text(raw_copy.as_posix(), text)
     written = _compile_package(paths, package, llm)
+    hashes = _load_hashes(paths)
+    hashes[file_path.name] = _content_hash(text)
+    _save_hashes(paths, hashes)
     return {"notes_written": written, "source": file_path.name}
+
+
+def ingest_url(paths: TalamusPaths, url: str, llm: LLMProvider) -> dict:
+    paths.ensure_directories()
+    text = read_url(url)
+    raw_path = paths.raw / f"web-{_content_hash(text)[:8]}.md"
+    raw_path.write_text(text, encoding="utf-8")
+    package = normalize_text(raw_path.as_posix(), text)
+    written = _compile_package(paths, package, llm)
+    return {"notes_written": written, "source": url}
+
+
+def ingest_dir(paths: TalamusPaths, directory: Path, llm: LLMProvider) -> dict:
+    """Ingest every supported file in a folder (recursive); skip unchanged ones."""
+    paths.ensure_directories()
+    hashes = _load_hashes(paths)
+    result = {"files": 0, "skipped": 0, "notes_written": 0}
+    for path in sorted(directory.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in _SUPPORTED:
+            continue
+        try:
+            text = extract_text(path)
+        except Exception:
+            continue
+        if hashes.get(path.name) == _content_hash(text):
+            result["skipped"] += 1
+            continue
+        written = ingest_file(paths, path, llm)
+        result["files"] += 1
+        result["notes_written"] += written["notes_written"]
+    return result
+
+
+def ingest_path(paths: TalamusPaths, target: str, llm: LLMProvider) -> dict:
+    """Ingest a file, a folder (recursively), or a URL."""
+    if is_url(target):
+        return ingest_url(paths, target, llm)
+    path = Path(target)
+    if path.is_dir():
+        return ingest_dir(paths, path, llm)
+    return ingest_file(paths, path, llm)
 
 
 def remember_session(paths: TalamusPaths, transcript: str, diff: str, llm: LLMProvider) -> dict:

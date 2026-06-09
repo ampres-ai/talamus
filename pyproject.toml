@@ -20,6 +20,7 @@ mcp = ["mcp>=1.0"]
 dev = ["ruff>=0.6", "mypy>=1.11"]
 bench = ["tiktoken>=0.7"]
 docs = ["mkdocs-material>=9"]
+pdf = ["pypdf>=4"]
 
 [project.scripts]
 talamus = "talamus.cli:main"
