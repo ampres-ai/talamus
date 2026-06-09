@@ -1,6 +1,6 @@
 # Talamus — Roadmap di Esecuzione (completa & vivente)
 
-**Data:** 2026-06-08 · **Stato:** documento **vivo**. · **Trunk:** `main`; **branch attivo:** `feat/a5-readme`. · **Avanzamento:** T1 ✅ · A0 ✅ · A1 ✅ · A2 ✅ · A3 ✅ (core) · A4 ✅ (core) · **A5 README ✅** (manca solo la GIF) · prossimo: **A6** (docs/mkdocs).
+**Data:** 2026-06-08 · **Stato:** documento **vivo**. · **Trunk:** `main`; **branch attivo:** `feat/a6-docs`. · **Avanzamento:** **FASE A completata** — A0 ✅ · A1 ✅ · A2 ✅ · A3 ✅(core) · A4 ✅(core) · A5 ✅ · A6 ✅(core). · prossimo: **Fase B** → **F1 consolidamento concetti**.
 
 Questo è l'**indice operativo esaustivo**: ogni implementazione futura, organizzata e in **ordine di esecuzione**. Non è il design delle singole feature — ogni traguardo da **Fase B** in poi avrà il suo **brainstorm → spec → piano → build → test** prima del codice. Le fasi sono la spina d'ordine primaria; in pratica si possono **interlacciare**. Visione di lungo periodo: `2026-05-29-talamus-product-vision.md`; idee fuori scope: `talamus-future-evolutions.md`.
 
@@ -97,7 +97,8 @@ Per orientarsi, ciò che **esiste già** e su cui costruiamo: ingest testo/Markd
 - **A5.5** Casi d'uso: second brain **e** memoria agenti.
 - **A5.6** Sezioni standard + badge CI + link a questa roadmap. *Vende il core + la visione, senza fingere feature non ancora fatte.*
 
-## A6 — Documentazione & community
+## A6 — Documentazione & community ✅ (core)
+*Fatto: sito **mkdocs-material** (`mkdocs.yml` + extra `docs`) con `docs/index`, **comandi** (riferimento CLI completo), **configurazione** (`talamus.json`, env, scoping), più quickstart e architettura esistenti; **CHANGELOG.md** (keep-a-changelog) e **CONTRIBUTING.md** (gate `dev.py`, convenzioni, `mkdocs serve`). Rinviati: CODE_OF_CONDUCT, template issue/PR, ricette/esempi (quando il repo è pubblico). → **Fase A completata.***
 - **A6.1** Docs utente (concetti, comandi, config, motori, MCP, Obsidian).
 - **A6.2** Docs sviluppatore (architettura, modello dati, come aggiungere un adapter, contribuire/testare).
 - **A6.3** Sito docs (mkdocs-material) + comando per servirlo in locale.

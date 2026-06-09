@@ -1,0 +1,20 @@
+site_name: Talamus
+site_description: Local-first memory with time, meaning, and verifiability — for your second brain and your AI agents.
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Commands: commands.md
+  - Configuration: configuration.md
+  - Architecture: architecture.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.superfences
