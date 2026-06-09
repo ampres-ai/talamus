@@ -12,6 +12,7 @@ from pathlib import Path
 from talamus.adapters.llm import LLMProvider, build_provider
 from talamus.ask import answer_question
 from talamus.config import TalamusConfig, load_config, load_or_default, save_config
+from talamus.demo import create_demo_brain
 from talamus.errors import TalamusError
 from talamus.ingest import ingest_file, remember_session
 from talamus.log import configure
@@ -196,6 +197,19 @@ def _cmd_init(root: Path, engine: str | None = None) -> int:
     return 0
 
 
+def _cmd_demo(root: Path) -> int:
+    paths = TalamusPaths(root)
+    if not paths.config_path.exists():
+        save_config(
+            paths.config_path, replace(TalamusConfig.default(), llm_provider=_detect_engine())
+        )
+    count = create_demo_brain(paths)
+    print(f"demo brain ready at {root} ({count} notes)")
+    print('try:  talamus search "embedding"  ·  talamus read "Embedding"')
+    print('      talamus neighbors "Embedding"')
+    return 0
+
+
 def _cmd_status(root: Path) -> int:
     paths = TalamusPaths(root)
     missing = [p for p in paths.required_directories() if not p.exists()]
@@ -347,6 +361,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     init = sub.add_parser("init", parents=[common], help="initialize a brain here")
     init.add_argument("--engine", default=None, help="LLM engine (else auto-detected).")
+    sub.add_parser("demo", parents=[common], help="create a small example brain")
     for name in ("status", "doctor", "reindex"):
         sub.add_parser(name, parents=[common], help=f"{name} the brain")
     sub.add_parser("quickstart", help="print the essential commands")
@@ -402,6 +417,8 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             return _cmd_import(args.file, root)
         if command == "init":
             return _cmd_init(root, args.engine)
+        if command == "demo":
+            return _cmd_demo(root)
         if command == "status":
             return _cmd_status(root)
         if command == "doctor":

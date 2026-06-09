@@ -292,6 +292,15 @@ class TalamusCliTests(unittest.TestCase):
             self.assertEqual(0, main(["completion", "bash"]))
         self.assertIn("complete -F", out.getvalue())
 
+    def test_demo_creates_searchable_brain(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["demo", "--root", tmp]))
+            out = io.StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(0, main(["search", "embedding", "--root", tmp]))
+            self.assertIn("Embedding", out.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()
