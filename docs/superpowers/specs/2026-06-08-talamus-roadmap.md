@@ -1,6 +1,6 @@
 # Talamus — Roadmap di Esecuzione (completa & vivente)
 
-**Data:** 2026-06-08 · **Stato:** documento **vivo**. · **Trunk:** `main`; **branch attivo:** `feat/a4-onboarding`. · **Avanzamento:** T1 ✅ · A0 ✅ · A1 ✅ · A2 ✅ · A3 ✅ (core) · **A4 onboarding ✅ (core)** (**94 test verdi**) · prossimo: **A5** (README).
+**Data:** 2026-06-08 · **Stato:** documento **vivo**. · **Trunk:** `main`; **branch attivo:** `feat/a5-readme`. · **Avanzamento:** T1 ✅ · A0 ✅ · A1 ✅ · A2 ✅ · A3 ✅ (core) · A4 ✅ (core) · **A5 README ✅** (manca solo la GIF) · prossimo: **A6** (docs/mkdocs).
 
 Questo è l'**indice operativo esaustivo**: ogni implementazione futura, organizzata e in **ordine di esecuzione**. Non è il design delle singole feature — ogni traguardo da **Fase B** in poi avrà il suo **brainstorm → spec → piano → build → test** prima del codice. Le fasi sono la spina d'ordine primaria; in pratica si possono **interlacciare**. Visione di lungo periodo: `2026-05-29-talamus-product-vision.md`; idee fuori scope: `talamus-future-evolutions.md`.
 
@@ -88,7 +88,8 @@ Per orientarsi, ciò che **esiste già** e su cui costruiamo: ingest testo/Markd
 - **A4.7** Quickstart 10 minuti (doc + GIF/asciinema) dall'install alla prima risposta citata e al primo MCP. *Fatto quando: uno sconosciuto ci riesce in ≤10 min.*
 - **A4.8** Verifica cross-platform reale (Win/mac/Linux).
 
-## A5 — README da repository importante
+## A5 — README da repository importante ✅ (manca solo la GIF)
+*Fatto: `README.md` riscritto — hero + 3 differenziatori (con onesto "shipping/roadmap"), **tabella di posizionamento** (Talamus vs RAG vs llm_wiki vs Zep/mem0), quickstart accurato ai comandi reali, scelta motore, sezione agenti/MCP, Obsidian, "how it works" (storage ibrido, grafo-come-indice), casi d'uso, link a quickstart/architettura/roadmap, badge, dev. Rinviato: **GIF/asciinema** demo (placeholder nel README).*
 - **A5.1** Hero — valore in una riga + i 3 differenziatori + GIF.
 - **A5.2** **Tabella di posizionamento** onesta (Talamus vs RAG vs llm_wiki vs Zep/mem0).
 - **A5.3** Quickstart (install→init→ingest→ask) + MCP.
