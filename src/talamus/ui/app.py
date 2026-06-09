@@ -23,8 +23,12 @@ _MD = ft.MarkdownExtensionSet.GITHUB_WEB
 
 
 def _wikilinks_to_md(text: str) -> str:
-    """Turn Obsidian [[Target]] / [[Target|Label]] into clickable Markdown links."""
-    return _WIKILINK.sub(lambda m: f"[{m.group(2) or m.group(1)}]({m.group(1)})", text)
+    """Turn Obsidian [[Target]] / [[Target|Label]] into clickable Markdown links.
+
+    The target is wrapped in angle brackets so titles with spaces stay a single URL
+    (`[Label](<Vector Store>)`), which the tap handler then normalizes.
+    """
+    return _WIKILINK.sub(lambda m: f"[{m.group(2) or m.group(1)}](<{m.group(1).strip()}>)", text)
 
 
 def _provider(paths: TalamusPaths):
@@ -45,9 +49,10 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
         return ft.Text(text, size=24, weight=ft.FontWeight.BOLD)
 
     def open_note(title: str) -> None:
+        title = title.strip().strip("<>").strip()
         text = read_note_text(paths, title)
         if text is None:
-            show([heading(title), ft.Text("Scheda non trovata.")])
+            show([heading(title or "?"), ft.Text("Scheda non trovata.")])
             return
         body = ft.Markdown(
             _wikilinks_to_md(text),
@@ -62,6 +67,8 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
         query = ft.TextField(label="Cerca nel brain")
 
         def run_search() -> None:
+            if not (query.value or "").strip():
+                return
             results = search_notes(paths, query.value or "")
             results_box.controls = [
                 ft.ListTile(
@@ -81,12 +88,17 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
         box = ft.TextField(label="Chiedi alla tua memoria")
 
         def ask() -> None:
-            question = box.value or ""
+            question = (box.value or "").strip()
+            if not question:
+                return
             answer.value = "…"
             page.update()
 
             def work() -> None:
-                answer.value = answer_question(paths, question, _provider(paths))
+                try:
+                    answer.value = answer_question(paths, question, _provider(paths))
+                except Exception as exc:  # surface engine/config errors instead of hanging on "…"
+                    answer.value = f"**Errore dal motore:** {exc}"
                 page.update()
 
             threading.Thread(target=work, daemon=True).start()
