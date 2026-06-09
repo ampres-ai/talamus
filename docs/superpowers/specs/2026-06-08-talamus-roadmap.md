@@ -203,7 +203,8 @@ Per orientarsi, ciò che **esiste già** e su cui costruiamo: ingest testo/Markd
 
 # FASE D — Interfacce & ecosistema
 
-## D1 — UI Talamus
+## D1 — UI Talamus 🟡 (primo cut, Flet)
+*Deciso: **Flet** (Python → Flutter; desktop/web/mobile da un solo codice; chiama l'SDK **diretto**, nessuna API). Primo cut (gate verde, 108 test; **type-checked contro gli stub di Flet**): `talamus/ui/app.py` + comando **`talamus ui`** (extra `ui`) — NavigationRail Chat/Cerca/Domini; chat→`answer_question` (threaded), cerca→`search_notes`, vista nota con **wikilink cliccabili**, domini da `load_overview`. La GUI si verifica con `talamus ui` (non testabile headless). Design: `2026-06-08-talamus-ui-design.md`. **Prossimi (D1.x):** anteprima-hover dei wikilink (effetto-Wikipedia), viz del grafo, ingest da UI (file/cartelle/URL), code di revisione (consolidamento/correzione/ontologia), storia bitemporale + editing note, packaging `flet build` per ogni piattaforma.*
 - **D1.1** **Chat-sulla-memoria** sullo **stesso** motore `answer(...)`.
 - **D1.2** **Effetto-Wikipedia** — anteprima all'hover dei wikilink.
 - **D1.3** **Navigazione per domini** (overview di B3 sfogliabile).
