@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from talamus.ingest import ingest_file, ingest_text, remember_session
+from talamus.ingest import ingest_dir, ingest_file, ingest_text, remember_session
 from talamus.paths import TalamusPaths
 from talamus.store import load_notes
 from tests.support import FakeLLMProvider
@@ -146,6 +146,38 @@ class IngestTests(unittest.TestCase):
 
             self.assertEqual(1, result["notes_written"])
             self.assertEqual(1, len(load_notes(paths)))
+
+    def test_ingest_dir_records_failures_without_aborting(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = TalamusPaths(root)
+            paths.ensure_directories()
+            src = root / "src"
+            src.mkdir()
+            (src / "good.md").write_text("# Buono\nContenuto valido.", encoding="utf-8")
+            (src / "bad.docx").write_text("non e uno zip", encoding="utf-8")
+            llm = FakeLLMProvider(
+                [
+                    json.dumps(
+                        [
+                            {
+                                "title": "Buono",
+                                "retrieval_text": "x",
+                                "summary": "s",
+                                "supported_claims": ["x"],
+                                "confidence": 0.9,
+                            }
+                        ]
+                    )
+                ]
+            )
+
+            result = ingest_dir(paths, src, llm)
+
+            self.assertEqual(1, result["files"])
+            self.assertEqual(1, result["notes_written"])
+            self.assertEqual(1, len(result["failed"]))
+            self.assertEqual("bad.docx", result["failed"][0]["file"])
 
     def test_remember_session_skips_trivial(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

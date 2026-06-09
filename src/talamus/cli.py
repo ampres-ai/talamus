@@ -340,6 +340,8 @@ def _cmd_ingest(root: Path, target: str, llm: LLMProvider, json_out: bool) -> in
             f"ingerite {result['notes_written']} schede da {result['files']} file "
             f"({result['skipped']} invariati saltati)"
         )
+        for failure in result.get("failed", []):
+            print(f"  ! saltato {failure['file']}: {failure['error']}")
     else:
         print(f"ingerite {result['notes_written']} schede da {result['source']}")
     return 0

@@ -75,24 +75,34 @@ def ingest_url(paths: TalamusPaths, url: str, llm: LLMProvider) -> dict:
 
 
 def ingest_dir(paths: TalamusPaths, directory: Path, llm: LLMProvider) -> dict:
-    """Ingest every supported file in a folder (recursive); skip unchanged ones."""
+    """Ingest every supported file in a folder (recursive); skip unchanged ones.
+
+    Files that can't be read or compiled are collected in ``failed`` (name + reason)
+    instead of being silently dropped, so the user sees what didn't make it in.
+    """
     paths.ensure_directories()
     hashes = _load_hashes(paths)
-    result = {"files": 0, "skipped": 0, "notes_written": 0}
+    files = skipped = notes = 0
+    failed: list[dict] = []
     for path in sorted(directory.rglob("*")):
         if not path.is_file() or path.suffix.lower() not in _SUPPORTED:
             continue
         try:
             text = extract_text(path)
-        except Exception:
+        except Exception as exc:  # unreadable source — record, don't abort the batch
+            failed.append({"file": path.name, "error": str(exc)})
             continue
         if hashes.get(path.name) == _content_hash(text):
-            result["skipped"] += 1
+            skipped += 1
             continue
-        written = ingest_file(paths, path, llm)
-        result["files"] += 1
-        result["notes_written"] += written["notes_written"]
-    return result
+        try:
+            written = ingest_file(paths, path, llm)
+        except Exception as exc:  # extraction/compile failure — record and continue
+            failed.append({"file": path.name, "error": str(exc)})
+            continue
+        files += 1
+        notes += written["notes_written"]
+    return {"files": files, "skipped": skipped, "notes_written": notes, "failed": failed}
 
 
 def ingest_path(paths: TalamusPaths, target: str, llm: LLMProvider) -> dict:
