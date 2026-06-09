@@ -14,6 +14,7 @@ from talamus.adapters.llm import LLMProvider, build_provider
 from talamus.ask import answer_question
 from talamus.config import TalamusConfig, load_config, load_or_default, save_config
 from talamus.consolidate import apply_consolidation, find_duplicates
+from talamus.correct import apply_correction, verify_note
 from talamus.demo import create_demo_brain
 from talamus.domains import build_overview, load_overview
 from talamus.errors import TalamusError
@@ -123,8 +124,8 @@ def _cmd_quickstart() -> int:
 
 
 _ALL_COMMANDS = (
-    "init demo status doctor reindex ingest consolidate ask overview search read history recall "
-    "neighbors remember quickstart brains where export import completion mcp hook hook-run"
+    "init demo status doctor reindex ingest consolidate verify ask overview search read history "
+    "recall neighbors remember quickstart brains where export import completion mcp hook hook-run"
 )
 
 
@@ -348,6 +349,34 @@ def _cmd_consolidate(root: Path, do_apply: bool, llm: LLMProvider, json_out: boo
     return 0
 
 
+def _cmd_verify(root: Path, title: str, do_apply: bool, llm: LLMProvider, json_out: bool) -> int:
+    paths = TalamusPaths(root)
+    if do_apply:
+        corrected = apply_correction(paths, title, llm)
+        if json_out:
+            _print_json({"corrected": corrected})
+        else:
+            print(f"verify: {'corrected' if corrected else 'no correction needed for'} '{title}'")
+        return 0
+    result = verify_note(paths, title, llm)
+    if json_out:
+        _print_json(result)
+        return 0
+    if not result.get("found"):
+        print(f"scheda non trovata: {title}", file=sys.stderr)
+        return 1
+    if not result.get("checked"):
+        print(f"no source on disk to check for '{title}'")
+        return 0
+    if result.get("ok", True):
+        print(f"'{title}' looks faithful to its source")
+        return 0
+    print(f"'{title}' may need a correction:")
+    print(f"  summary -> {result.get('summary', '')}")
+    print("run `talamus verify <title> --apply` to apply it")
+    return 0
+
+
 def _cmd_overview(root: Path, llm: LLMProvider, json_out: bool, rebuild: bool) -> int:
     paths = TalamusPaths(root)
     if rebuild or not paths.overview_file.exists():
@@ -501,6 +530,9 @@ def build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("file")
     consolidate = sub.add_parser("consolidate", parents=[common], help="merge duplicate concepts")
     consolidate.add_argument("--apply", action="store_true", help="actually merge (default: list)")
+    verify = sub.add_parser("verify", parents=[common], help="check a note against its source")
+    verify.add_argument("title")
+    verify.add_argument("--apply", action="store_true", help="apply the correction")
     overview = sub.add_parser("overview", parents=[common], help="show the domain overview")
     overview.add_argument("--rebuild", action="store_true", help="re-induce the domains")
     ask = sub.add_parser("ask", parents=[common], help="ask the brain (cited answer)")
@@ -576,6 +608,8 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             return _cmd_ingest(root, args.file, provider, json_out)
         if command == "consolidate":
             return _cmd_consolidate(root, args.apply, provider, json_out)
+        if command == "verify":
+            return _cmd_verify(root, args.title, args.apply, provider, json_out)
         if command == "overview":
             return _cmd_overview(root, provider, json_out, args.rebuild)
         if command == "ask":

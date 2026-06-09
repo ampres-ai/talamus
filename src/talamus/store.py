@@ -135,6 +135,20 @@ def write_note_json(paths: TalamusPaths, note: CanonicalNote) -> None:
     path.write_text(json.dumps(note.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+def overwrite_note_json(paths: TalamusPaths, note: CanonicalNote) -> None:
+    """Replace a note (no merge); the prior version is preserved in history."""
+    paths.notes_cache.mkdir(parents=True, exist_ok=True)
+    path = paths.notes_cache / f"{note_slug(note.note_id)}.json"
+    now = _now()
+    created = note.created_at
+    if path.is_file():
+        existing = _note_from_dict(json.loads(path.read_text(encoding="utf-8")))
+        _append_history(paths, existing)
+        created = existing.created_at or now
+    note = dataclasses.replace(note, created_at=created or now, updated_at=now)
+    path.write_text(json.dumps(note.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
+
+
 def render_note_markdown(paths: TalamusPaths, note: CanonicalNote, registry: NoteRegistry) -> None:
     markdown = render_obsidian_note(note, registry)
     paths.notes.mkdir(parents=True, exist_ok=True)
