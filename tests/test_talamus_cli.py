@@ -198,6 +198,27 @@ class TalamusCliTests(unittest.TestCase):
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(1, main(["read", "Inesistente", "--root", tmp]))
 
+    def test_no_args_shows_panel(self) -> None:
+        out = io.StringIO()
+        with redirect_stdout(out):
+            self.assertEqual(0, main([]))
+        self.assertIn("Talamus", out.getvalue())
+
+    def test_quickstart_lists_commands(self) -> None:
+        out = io.StringIO()
+        with redirect_stdout(out):
+            self.assertEqual(0, main(["quickstart"]))
+        self.assertIn("talamus init", out.getvalue())
+
+    def test_search_json_output_is_valid_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(0, main(["init", "--root", tmp]))
+            out = io.StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(0, main(["search", "x", "--root", tmp, "--json"]))
+            self.assertIsInstance(json.loads(out.getvalue()), list)
+
 
 if __name__ == "__main__":
     unittest.main()
