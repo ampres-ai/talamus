@@ -162,14 +162,14 @@ Per orientarsi, ciò che **esiste già** e su cui costruiamo: ingest testo/Markd
 ---
 
 # FASE C — Sorgenti (ingestion di ogni formato) 🟡 (MVP fatto)
-*MVP fatto (gate verde, 111 test): `talamus/sources.py` (`extract_text`: **PDF** via extra `pdf`/pypdf, **HTML** ripulito stdlib, testo/Markdown) + `read_url`; `talamus ingest <file|cartella|URL>` con import ricorsivo di cartelle e cache incrementale per hash (salta i file invariati). Rinviati: OCR, DOCX/PPTX/XLSX/EPUB, estensione browser, RSS/auto-watch, chat/email, media (vision/audio/video), repo di codice, coda resiliente, locator pagina/sezione.*
+*MVP fatto: `talamus/sources.py` (`extract_text`: **PDF** via extra `pdf`/pypdf, **HTML** ripulito stdlib, testo/Markdown) + `read_url`; `talamus ingest <file|cartella|URL>` con import ricorsivo di cartelle e cache incrementale per hash (salta i file invariati). **Aggiornamenti 2026-06-09:** **DOCX** (C1.3) fatto stdlib (zip+XML, nessuna dipendenza); l'ingest di cartelle **riporta i file falliti** invece di scartarli in silenzio; `read_url` manda **User-Agent** e dà errore chiaro sui fetch falliti. Rinviati: OCR, PPTX/XLSX/EPUB, estensione browser, RSS/auto-watch, chat/email, media (vision/audio/video), repo di codice, coda resiliente, locator pagina/sezione.*
 *Recuperare ampiezza d'input. Ordine per valore/diffusione. Ogni formato: estrazione + provenienza con locator (pagina/sezione/timestamp).*
 > Nota d'ordine: **C1.1 (PDF testo)** è table-stakes; valutare se anticiparlo in Fase A per l'adozione. Il resto segue i differenziatori.
 
 ## C1 — Documenti
 - **C1.1** **PDF** (testo nativo).
 - **C1.2** **OCR** per PDF scansionati / immagini con testo.
-- **C1.3** **DOCX**.
+- **C1.3** **DOCX**. ✅ (stdlib zip+XML, nessuna dipendenza)
 - **C1.4** **PPTX**.
 - **C1.5** **XLSX / CSV** (tabellari).
 - **C1.6** **EPUB** / ebook.
@@ -206,7 +206,7 @@ Per orientarsi, ciò che **esiste già** e su cui costruiamo: ingest testo/Markd
 # FASE D — Interfacce & ecosistema
 
 ## D1 — UI Talamus 🟡 (primo cut, Flet)
-*Deciso: **Flet** (Python → Flutter; desktop/web/mobile da un solo codice; chiama l'SDK **diretto**, nessuna API). Primo cut (gate verde, 108 test; **type-checked contro gli stub di Flet**): `talamus/ui/app.py` + comando **`talamus ui`** (extra `ui`) — NavigationRail Chat/Cerca/Domini; chat→`answer_question` (threaded), cerca→`search_notes`, vista nota con **wikilink cliccabili**, domini da `load_overview`. La GUI si verifica con `talamus ui` (non testabile headless). Design: `2026-06-08-talamus-ui-design.md`. **Prossimi (D1.x):** anteprima-hover dei wikilink (effetto-Wikipedia), viz del grafo, ingest da UI (file/cartelle/URL), code di revisione (consolidamento/correzione/ontologia), storia bitemporale + editing note, packaging `flet build` per ogni piattaforma.*
+*Deciso: **Flet** (Python → Flutter; desktop/web/mobile da un solo codice; chiama l'SDK **diretto**, nessuna API). Primo cut (gate verde, 108 test; **type-checked contro gli stub di Flet**): `talamus/ui/app.py` + comando **`talamus ui`** (extra `ui`) — NavigationRail Chat/Cerca/Domini; chat→`answer_question` (threaded), cerca→`search_notes`, vista nota con **wikilink cliccabili**, domini da `load_overview`. La GUI si verifica con `talamus ui` (non testabile headless — **test runtime in sospeso, atteso da Giovanni**). **Pass di robustezza 2026-06-09:** la chat mostra gli errori del motore invece di restare su "…", i wikilink con spazi navigano, guardie sugli input vuoti; aggiunto un job CI `extras` che type-checka la UI contro Flet. Design: `2026-06-08-talamus-ui-design.md`. **Prossimi (D1.x):** anteprima-hover dei wikilink (effetto-Wikipedia), viz del grafo, ingest da UI (file/cartelle/URL), code di revisione (consolidamento/correzione/ontologia), storia bitemporale + editing note, packaging `flet build` per ogni piattaforma.*
 - **D1.1** **Chat-sulla-memoria** sullo **stesso** motore `answer(...)`.
 - **D1.2** **Effetto-Wikipedia** — anteprima all'hover dei wikilink.
 - **D1.3** **Navigazione per domini** (overview di B3 sfogliabile).
