@@ -20,9 +20,9 @@ options. Most commands accept the [global flags](#global-flags) below.
 | `talamus ingest <file\|dir\|url>` | Turn a document, folder, or URL into source-grounded concept notes (PDF/DOCX/HTML/Markdown/text). |
 | `talamus ask "<question>"` | Cited answer composed from your brain. |
 | `talamus overview [--rebuild]` | Show the hierarchical domain map induced from the graph. |
-| `talamus search "<query>"` | List relevant notes (token-cheap). |
+| `talamus search "<query>" [--limit N]` | List relevant notes (token-cheap). |
 | `talamus read "<title>"` | Print one note. |
-| `talamus recall "<question>"` | Retrieve the relevant context (for agents to reason over). |
+| `talamus recall "<question>" [--limit N]` | Retrieve the relevant context (for agents to reason over). |
 | `talamus neighbors "<concept>"` | Show a concept's typed connections. |
 | `talamus history "<title>" [--as-of T]` | Show a note's past versions (or the one current at time T). |
 | `talamus reindex` | Fold hand-edits to the Markdown notes back into the indexes. |

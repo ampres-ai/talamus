@@ -8,8 +8,28 @@ from pathlib import Path
 
 from talamus.cli import main
 from talamus.config import load_config
+from talamus.models import CanonicalNote, SourceRef
 from talamus.paths import TalamusPaths
+from talamus.store import rebuild_indexes, write_note
 from tests.support import FakeLLMProvider
+
+
+def _mininote(title: str, retrieval: str) -> CanonicalNote:
+    src = SourceRef("raw/a.md", "norm/a#1", "s", "sha256:x", ["c"])
+    return CanonicalNote(
+        note_id=title.lower().replace(" ", "-"),
+        title=title,
+        aliases=[],
+        folder="",
+        tags=[],
+        summary=f"{title}.",
+        retrieval_text=retrieval,
+        body_sections={"d": retrieval},
+        proposed_links=[],
+        relations=[],
+        sources=[src],
+        confidence=0.9,
+    )
 
 
 class TalamusCliTests(unittest.TestCase):
@@ -314,6 +334,21 @@ class TalamusCliTests(unittest.TestCase):
             with redirect_stdout(out):
                 self.assertEqual(0, main(["hook", "--root", tmp]))
             self.assertIn("SessionEnd", out.getvalue())
+
+
+class CliSearchLimitTests(unittest.TestCase):
+    def test_search_limit_caps_results(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            paths.ensure_directories()
+            for i in range(3):
+                write_note(paths, _mininote(f"Nota {i}", "argomento comune ricorrente"))
+            rebuild_indexes(paths)
+            out = io.StringIO()
+            with redirect_stdout(out):
+                code = main(["search", "argomento comune", "--root", tmp, "--limit", "1", "--json"])
+            self.assertEqual(0, code)
+            self.assertEqual(1, len(json.loads(out.getvalue())))
 
 
 class CliVersionTests(unittest.TestCase):

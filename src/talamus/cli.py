@@ -459,8 +459,8 @@ def _cmd_remember(
     return 0
 
 
-def _cmd_search(root: Path, query: str, json_out: bool) -> int:
-    results = search_notes(TalamusPaths(root), query)
+def _cmd_search(root: Path, query: str, json_out: bool, limit: int = 5) -> int:
+    results = search_notes(TalamusPaths(root), query, limit=limit)
     if json_out:
         _print_json(results)
         return 0
@@ -507,8 +507,8 @@ def _cmd_history(root: Path, title: str, as_of: str | None, json_out: bool) -> i
     return 0
 
 
-def _cmd_recall(root: Path, question: str, json_out: bool) -> int:
-    context = recall_context(TalamusPaths(root), question)
+def _cmd_recall(root: Path, question: str, json_out: bool, limit: int = 5) -> int:
+    context = recall_context(TalamusPaths(root), question, limit=limit)
     if json_out:
         _print_json({"context": context})
     else:
@@ -600,6 +600,7 @@ def build_parser() -> argparse.ArgumentParser:
     ask.add_argument("question")
     search = sub.add_parser("search", parents=[common], help="find relevant notes")
     search.add_argument("query")
+    search.add_argument("--limit", type=int, default=5, help="max results (default 5)")
     read = sub.add_parser("read", parents=[common], help="print a note by title")
     read.add_argument("title")
     history = sub.add_parser("history", parents=[common], help="show a note's past versions")
@@ -607,6 +608,7 @@ def build_parser() -> argparse.ArgumentParser:
     history.add_argument("--as-of", default=None, help="version current at this ISO time")
     recall = sub.add_parser("recall", parents=[common], help="retrieve context for a question")
     recall.add_argument("question")
+    recall.add_argument("--limit", type=int, default=5, help="max notes of context (default 5)")
     ev = sub.add_parser("eval", parents=[common], help="measure retrieval quality on a cases file")
     ev.add_argument("--cases", required=True, help='JSON: [{"question","relevant":[titles]}]')
     ev.add_argument("-k", type=int, default=5, help="cutoff for recall@k (default 5)")
@@ -664,13 +666,13 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "reindex":
             return _cmd_reindex(root, json_out)
         if command == "search":
-            return _cmd_search(root, args.query, json_out)
+            return _cmd_search(root, args.query, json_out, args.limit)
         if command == "read":
             return _cmd_read(root, args.title, json_out)
         if command == "history":
             return _cmd_history(root, args.title, args.as_of, json_out)
         if command == "recall":
-            return _cmd_recall(root, args.question, json_out)
+            return _cmd_recall(root, args.question, json_out, args.limit)
         if command == "eval":
             return _cmd_eval(root, args.cases, args.k, json_out)
         if command == "neighbors":
