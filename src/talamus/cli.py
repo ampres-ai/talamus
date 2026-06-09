@@ -22,6 +22,7 @@ from talamus.ingest import ingest_file, remember_session
 from talamus.log import configure
 from talamus.paths import TalamusPaths
 from talamus.recall import concept_neighbors, read_note_text, recall_context, search_notes
+from talamus.relations import list_relations, prune_relations
 from talamus.store import cache_is_current, reindex
 from talamus.timeline import note_as_of, note_history
 
@@ -125,7 +126,8 @@ def _cmd_quickstart() -> int:
 
 _ALL_COMMANDS = (
     "init demo status doctor reindex ingest consolidate verify ask overview search read history "
-    "recall neighbors remember quickstart brains where export import completion mcp hook hook-run"
+    "recall neighbors relations remember quickstart brains where export import completion mcp hook "
+    "hook-run"
 )
 
 
@@ -492,6 +494,27 @@ def _cmd_neighbors(root: Path, concept: str, json_out: bool) -> int:
     return 0
 
 
+def _cmd_relations(root: Path, prune: float | None, json_out: bool) -> int:
+    paths = TalamusPaths(root)
+    if prune is not None:
+        removed = prune_relations(paths, prune)
+        if json_out:
+            _print_json({"pruned": removed})
+        else:
+            print(f"pruned {removed} relation(s) below confidence {prune}")
+        return 0
+    rels = list_relations(paths)
+    if json_out:
+        _print_json(rels)
+        return 0
+    if not rels:
+        print("no relations")
+        return 0
+    for rel in rels:
+        print(f"{rel['source']} --[{rel['relation']} {rel['confidence']:.2f}]--> {rel['target']}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument(
@@ -548,6 +571,10 @@ def build_parser() -> argparse.ArgumentParser:
     recall.add_argument("question")
     neighbors = sub.add_parser("neighbors", parents=[common], help="show a concept's connections")
     neighbors.add_argument("concept")
+    relations = sub.add_parser("relations", parents=[common], help="list/prune typed relations")
+    relations.add_argument(
+        "--prune", type=float, default=None, metavar="MIN", help="drop below MIN"
+    )
     remember = sub.add_parser("remember", parents=[common], help="capture an agent session")
     remember.add_argument("--transcript", required=True)
     remember.add_argument("--diff", default=None)
@@ -603,6 +630,8 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             return _cmd_recall(root, args.question, json_out)
         if command == "neighbors":
             return _cmd_neighbors(root, args.concept, json_out)
+        if command == "relations":
+            return _cmd_relations(root, args.prune, json_out)
         provider = llm if llm is not None else _provider_for(root)
         if command == "ingest":
             return _cmd_ingest(root, args.file, provider, json_out)
