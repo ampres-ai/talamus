@@ -1,10 +1,12 @@
 import tempfile
 import unittest
+import urllib.error
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 from talamus.errors import TalamusError
-from talamus.sources import extract_text, is_url
+from talamus.sources import extract_text, is_url, read_url
 
 _W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
@@ -53,6 +55,26 @@ class SourcesTests(unittest.TestCase):
     def test_is_url(self) -> None:
         self.assertTrue(is_url("https://example.com"))
         self.assertFalse(is_url("notes.md"))
+
+
+class ReadUrlTests(unittest.TestCase):
+    def test_read_url_strips_html(self) -> None:
+        response = mock.MagicMock()
+        response.read.return_value = b"<html><body><p>Ciao</p><script>junk</script></body></html>"
+        ctx = mock.MagicMock()
+        ctx.__enter__.return_value = response
+        with mock.patch("talamus.sources.urllib.request.urlopen", return_value=ctx):
+            text = read_url("https://example.com")
+        self.assertIn("Ciao", text)
+        self.assertNotIn("junk", text)
+
+    def test_read_url_wraps_network_error(self) -> None:
+        with mock.patch(
+            "talamus.sources.urllib.request.urlopen",
+            side_effect=urllib.error.URLError("boom"),
+        ):
+            with self.assertRaises(TalamusError):
+                read_url("https://does-not-exist.invalid")
 
 
 if __name__ == "__main__":

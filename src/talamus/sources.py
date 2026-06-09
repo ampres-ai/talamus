@@ -7,6 +7,7 @@ stripped to text.
 
 from __future__ import annotations
 
+import urllib.error
 import urllib.request
 import zipfile
 from html.parser import HTMLParser
@@ -14,6 +15,8 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 from talamus.errors import SourceNotFound, TalamusError
+
+_USER_AGENT = "Talamus/1.0 (+https://github.com/GCrapuzzi/Talamus-Wiki)"
 
 # WordprocessingML namespace for .docx paragraph/run/text elements.
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -74,8 +77,12 @@ def is_url(target: str) -> bool:
 
 
 def read_url(url: str) -> str:
-    with urllib.request.urlopen(url, timeout=30) as response:  # noqa: S310 (user-provided URL)
-        body = response.read().decode("utf-8", errors="replace")
+    request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310 (user URL)
+            body = response.read().decode("utf-8", errors="replace")
+    except urllib.error.URLError as exc:
+        raise TalamusError(f"Could not fetch {url}: {exc.reason}") from exc
     return _strip_html(body)
 
 
