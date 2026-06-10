@@ -59,6 +59,15 @@ default is `project+central`; from the central brain it is `all` (sensitive brai
 Cross-brain results carry markers (`[central]`, `[project:name]`) and always read the real
 notes from the owning brain — the federated index is a pointer index, never source truth.
 
+## Jobs & review
+
+| Command | What it does |
+| --- | --- |
+| `talamus jobs [list]` | List long-running jobs (scan/ingest/verify/...). |
+| `talamus jobs status\|logs\|cancel\|resume <id>` | Inspect, cancel (cooperative, never corrupts notes) or resume a job. |
+| `talamus review [list] [--all]` | Pending decisions (corrections, duplicates, ontology candidates, ...). |
+| `talamus review show\|apply\|reject <id> [--reason R]` | Decide an item; rejections stay logged, never deleted. |
+
 ## Integrations
 
 | Command | What it does |

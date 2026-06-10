@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from talamus.errors import TalamusError
 from talamus.eval import evaluate, load_cases, search_retriever
 from talamus.federation import build_federated_index, federation_status
 from talamus.ingest import ingest_path, remember_session
+from talamus.jobs import JobRecord, JobStore
 from talamus.log import configure
 from talamus.paths import TalamusPaths
 from talamus.recall import concept_neighbors, read_note_text, recall_context
@@ -35,6 +37,7 @@ from talamus.registry import (
     unregister_brain,
 )
 from talamus.relations import list_relations, prune_relations
+from talamus.review import ReviewQueue
 from talamus.scope import (
     SCOPE_POLICIES,
     ResolvedBrain,
@@ -144,9 +147,111 @@ def _cmd_ui(root: Path) -> int:
 
 _ALL_COMMANDS = (
     "init demo ui status doctor reindex ingest consolidate verify ask overview search read history "
-    "recall neighbors relations remember eval quickstart brains where export import completion mcp "
-    "hook hook-run"
+    "recall neighbors relations remember eval jobs review quickstart brains where export import "
+    "completion mcp hook hook-run"
 )
+
+# Runners that can resume a persisted job, keyed by kind (M3+ registers scan etc.).
+JOB_RUNNERS: dict[str, Callable[[Path, JobRecord], int]] = {}
+
+
+def _cmd_jobs_group(args: argparse.Namespace, root: Path) -> int:
+    store = JobStore(TalamusPaths(root))
+    cmd = getattr(args, "jobs_cmd", None) or "list"
+    json_out = bool(getattr(args, "json", False))
+    if cmd == "list":
+        records = store.list()
+        if json_out:
+            _print_json([r.to_dict() for r in records])
+            return 0
+        if not records:
+            print("no jobs")
+        for record in records:
+            progress = record.progress or {}
+            done = progress.get("done", "-")
+            total = progress.get("total", "-")
+            print(f"- {record.job_id}  {record.state}  {done}/{total}")
+        return 0
+    job = store.load(args.job_id)
+    if job is None:
+        print(f"no job '{args.job_id}'", file=sys.stderr)
+        return 1
+    if cmd == "status":
+        if json_out:
+            _print_json(job.to_dict())
+            return 0
+        print(f"job: {job.job_id}\nstate: {job.state}")
+        for key, value in (job.progress or {}).items():
+            if key != "done_items":
+                print(f"{key}: {value}")
+        if job.error:
+            print(f"error: {job.error}")
+        return 0
+    if cmd == "logs":
+        log = store.read_log(args.job_id)
+        print(log if log else "no log")
+        return 0
+    if cmd == "cancel":
+        if store.cancel(args.job_id):
+            print(f"cancelled {args.job_id}")
+            return 0
+        print(f"cannot cancel '{args.job_id}' (missing or already terminal)", file=sys.stderr)
+        return 1
+    if cmd == "resume":
+        runner = JOB_RUNNERS.get(job.kind)
+        if runner is None:
+            print(
+                f"error: no runner available for job kind '{job.kind}'\n"
+                f"cause: this kind is resumed by the feature that created it\n"
+                f"fix: re-run the original command",
+                file=sys.stderr,
+            )
+            return 1
+        return runner(root, job)
+    raise ValueError(f"unknown jobs command {cmd}")
+
+
+def _cmd_review_group(args: argparse.Namespace, root: Path) -> int:
+    queue = ReviewQueue(TalamusPaths(root))
+    cmd = getattr(args, "review_cmd", None) or "list"
+    json_out = bool(getattr(args, "json", False))
+    if cmd == "list":
+        status = None if getattr(args, "all", False) else "pending"
+        items = queue.list(status=status)
+        if json_out:
+            _print_json([i.to_dict() for i in items])
+            return 0
+        if not items:
+            print("review queue empty")
+        for item in items:
+            print(f"- {item.item_id}  [{item.kind}]  {item.status}  {item.title}")
+        return 0
+    entry = queue.get(args.item_id)
+    if entry is None:
+        print(f"no review item '{args.item_id}'", file=sys.stderr)
+        return 1
+    if cmd == "show":
+        if json_out:
+            _print_json(entry.to_dict())
+            return 0
+        for key, value in entry.to_dict().items():
+            print(f"{key}: {value}")
+        return 0
+    if cmd == "apply":
+        applied = queue.apply(args.item_id)
+        if applied is None:
+            print(f"'{args.item_id}' is not pending", file=sys.stderr)
+            return 1
+        print(f"applied {applied.item_id} ({applied.kind})")
+        return 0
+    if cmd == "reject":
+        rejected = queue.reject(args.item_id, getattr(args, "reason", "") or "")
+        if rejected is None:
+            print(f"'{args.item_id}' is not pending", file=sys.stderr)
+            return 1
+        print(f"rejected {rejected.item_id} (kept in the log)")
+        return 0
+    raise ValueError(f"unknown review command {cmd}")
 
 
 def _cmd_completion(shell: str) -> int:
@@ -816,6 +921,24 @@ def build_parser() -> argparse.ArgumentParser:
     b_promote.add_argument("--from", dest="from_brain", required=True)
     b_promote.add_argument("--to", dest="to_brain", default="default")
     sub.add_parser("where", parents=[common], help="print the resolved brain path")
+    jobs = sub.add_parser("jobs", help="inspect and control long-running jobs")
+    jobs_sub = jobs.add_subparsers(dest="jobs_cmd")
+    jobs_sub.add_parser("list", parents=[common], help="list jobs")
+    for jobs_action in ("status", "resume", "cancel", "logs"):
+        j_parser = jobs_sub.add_parser(jobs_action, parents=[common], help=f"{jobs_action} a job")
+        j_parser.add_argument("job_id")
+    review = sub.add_parser("review", help="review queue: pending decisions")
+    review_sub = review.add_subparsers(dest="review_cmd")
+    r_list = review_sub.add_parser("list", parents=[common], help="list pending review items")
+    r_list.add_argument("--all", action="store_true", help="include applied/rejected items")
+    for review_action in ("show", "apply"):
+        r_parser = review_sub.add_parser(
+            review_action, parents=[common], help=f"{review_action} a review item"
+        )
+        r_parser.add_argument("item_id")
+    r_reject = review_sub.add_parser("reject", parents=[common], help="reject a review item")
+    r_reject.add_argument("item_id")
+    r_reject.add_argument("--reason", default="", help="why it was rejected (kept in the log)")
     export = sub.add_parser("export", parents=[common], help="export the brain to a zip")
     export.add_argument("file")
     importer = sub.add_parser("import", parents=[common], help="import a brain from a zip")
@@ -899,7 +1022,11 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         resolved = resolve_init_root(args.root, args.brain, args.use_global)
         return _cmd_init(resolved.root, args.engine, resolved.scope)
 
-    root = _resolve_root(args.root, args.brain, args.use_global)
+    root = _resolve_root(
+        getattr(args, "root", None),
+        getattr(args, "brain", None),
+        getattr(args, "use_global", False),
+    )
     json_out = bool(getattr(args, "json", False))
     policy = "all" if getattr(args, "all_brains", False) else getattr(args, "scope", None)
     try:
@@ -909,6 +1036,10 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             return _cmd_export(root, args.file)
         if command == "import":
             return _cmd_import(args.file, root)
+        if command == "jobs":
+            return _cmd_jobs_group(args, root)
+        if command == "review":
+            return _cmd_review_group(args, root)
         if command == "demo":
             return _cmd_demo(root)
         if command == "ui":
