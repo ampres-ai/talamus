@@ -60,22 +60,37 @@ def _synthetic_queries(n: int, how_many: int = 5) -> list[str]:
 
 
 def measure_latency(paths: TalamusPaths, n: int) -> dict:
-    """Cold (full search_notes incl. loads) vs warm (in-memory BM25+graph) latency."""
+    """Production search (persistent index, M4) vs the legacy in-memory full scan."""
     queries = _synthetic_queries(n)
-    cold: list[float] = []
+    search: list[float] = []
     for query in queries:
         start = time.perf_counter()
         search_notes(paths, query)
-        cold.append((time.perf_counter() - start) * 1000)
+        search.append((time.perf_counter() - start) * 1000)
     graph = load_graph(paths.graph_file)
     index = BM25Index.load(paths.index_file)
-    warm: list[float] = []
+    legacy: list[float] = []
     for query in queries * 3:
         start = time.perf_counter()
         index.search(query, limit=10)
         query_graph_scored(graph, query, limit=10)
-        warm.append((time.perf_counter() - start) * 1000)
-    return {"n_notes": n, "cold": percentiles(cold), "warm": percentiles(warm)}
+        legacy.append((time.perf_counter() - start) * 1000)
+    return {"n_notes": n, "search": percentiles(search), "legacy_scan": percentiles(legacy)}
+
+
+def run_scale(sizes: list[int] | None = None) -> list[dict]:
+    """Scale benchmark (F3.4): latency + index size at growing synthetic corpora."""
+    from talamus.indexes import backend_info
+
+    rows: list[dict] = []
+    for n in sizes or [100, 1000, 10000]:
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            build_synthetic_corpus(paths, n, render=False)
+            row = measure_latency(paths, n)
+            row["index"] = backend_info(paths)
+            rows.append(row)
+    return rows
 
 
 def routing_prompt_tokens(n_notes: int, notes_per_domain: int = 10) -> dict:
@@ -120,13 +135,7 @@ def run_baseline(
         result["docs_corpus_notes"] = len(titles)
         result["eval"] = report.to_dict()
 
-    latency: list[dict] = []
-    for n in sizes:
-        with tempfile.TemporaryDirectory() as tmp:
-            paths = TalamusPaths(Path(tmp))
-            build_synthetic_corpus(paths, n, render=False)
-            latency.append(measure_latency(paths, n))
-    result["latency"] = latency
+    result["latency"] = run_scale(sizes)
     result["routing_tokens"] = [routing_prompt_tokens(n) for n in [100, 1000, 10000, 100000]]
     result["llm_call_ledger"] = LLM_CALL_LEDGER
     return result
@@ -163,18 +172,18 @@ def format_report(result: dict) -> str:
         "",
         *_eval_section(result["eval"]),
         "",
-        "## Latenza del recupero (sintetico, attuale architettura O(N))",
+        "## Latenza del recupero (sintetico)",
         "",
-        "cold = `search_notes` completa (incl. caricamento note+indici da disco, il costo vero",
-        "di oggi) · warm = solo BM25+grafo in memoria (costo algoritmico).",
+        "search = `search_notes` di produzione (indice persistito, M4) · legacy = la",
+        "vecchia scansione completa in memoria (BM25+grafo), tenuta come confronto.",
         "",
-        "| note | cold p50 (ms) | cold p95 (ms) | warm p50 (ms) | warm p95 (ms) |",
+        "| note | search p50 (ms) | search p95 (ms) | legacy p50 (ms) | legacy p95 (ms) |",
         "| --- | --- | --- | --- | --- |",
     ]
     for row in result["latency"]:
         lines.append(
-            f"| {row['n_notes']} | {row['cold']['p50_ms']} | {row['cold']['p95_ms']}"
-            f" | {row['warm']['p50_ms']} | {row['warm']['p95_ms']} |"
+            f"| {row['n_notes']} | {row['search']['p50_ms']} | {row['search']['p95_ms']}"
+            f" | {row['legacy_scan']['p50_ms']} | {row['legacy_scan']['p95_ms']} |"
         )
     lines += [
         "",
@@ -224,5 +233,5 @@ def main(out_dir: str = "docs/benchmarks", sizes: list[int] | None = None) -> di
     print(f"baseline scritta in {out}/{stamp}-m0-baseline.md")
     print(f"  eval: recall@5={result['eval']['recall_at_k']} mrr={result['eval']['mrr']}")
     for row in result["latency"]:
-        print(f"  latenza {row['n_notes']} note: cold p95 {row['cold']['p95_ms']}ms")
+        print(f"  latenza {row['n_notes']} note: search p95 {row['search']['p95_ms']}ms")
     return result

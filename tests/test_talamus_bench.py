@@ -33,14 +33,14 @@ class RoutingTokensTests(unittest.TestCase):
 
 
 class MeasureLatencyTests(unittest.TestCase):
-    def test_returns_cold_and_warm_stats(self) -> None:
+    def test_returns_search_and_legacy_stats(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
             build_synthetic_corpus(paths, 20, render=False)
             stats = measure_latency(paths, 20)
             self.assertEqual(stats["n_notes"], 20)
-            self.assertGreater(stats["cold"]["n_samples"], 0)
-            self.assertGreater(stats["warm"]["n_samples"], 0)
+            self.assertGreater(stats["search"]["n_samples"], 0)
+            self.assertGreater(stats["legacy_scan"]["n_samples"], 0)
 
 
 class ReportTests(unittest.TestCase):
@@ -63,8 +63,8 @@ class ReportTests(unittest.TestCase):
             "latency": [
                 {
                     "n_notes": 100,
-                    "cold": {"p50_ms": 1.0, "p95_ms": 2.0, "n_samples": 6},
-                    "warm": {"p50_ms": 0.1, "p95_ms": 0.2, "n_samples": 18},
+                    "search": {"p50_ms": 1.0, "p95_ms": 2.0, "n_samples": 6},
+                    "legacy_scan": {"p50_ms": 0.1, "p95_ms": 0.2, "n_samples": 18},
                 }
             ],
             "routing_tokens": [{"n_notes": 100, "n_domains": 10, "prompt_tokens": 200}],

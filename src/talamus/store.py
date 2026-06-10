@@ -162,6 +162,8 @@ def write_note(paths: TalamusPaths, note: CanonicalNote) -> None:
 
 
 def rebuild_indexes(paths: TalamusPaths) -> None:
+    from talamus.indexes import build_search_index
+
     notes = load_notes(paths)
     paths.cache.mkdir(parents=True, exist_ok=True)
     save_graph(paths.graph_file, build_graph(notes))
@@ -179,6 +181,7 @@ def rebuild_indexes(paths: TalamusPaths) -> None:
         )
         index.add(note_slug(note.title), haystack)
     index.save(paths.index_file)
+    build_search_index(paths, notes)  # persistent index (sqlite/FTS5 or postings)
     _write_cache_manifest(paths)
 
 

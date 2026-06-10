@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from talamus.adapters.llm import LLMProvider
-from talamus.budget import context_budget, fit_to_budget
+from talamus.budget import context_budget, estimate_tokens, fit_to_budget
 from talamus.domains import load_overview
 from talamus.graph import load_graph, query_graph
 from talamus.naming import note_filename
@@ -47,10 +48,27 @@ def build_context_bundle(
     limit: int = 5,
     budget_tokens: int | None = None,
 ) -> ContextBundle:
+    from talamus.indexes import postings_path, sqlite_path
+    from talamus.indexes import search_index as query_persistent_index
+
     budget = context_budget(budget_tokens)
     ontology = load_ontology(paths)
-    seed_titles = [str(node["label"]) for node in query_graph(graph, question, limit=limit)]
     items: list[dict] = []
+    if sqlite_path(paths).is_file() or postings_path(paths).is_file():
+        # M4 path: seeds from the persistent index, then 1-hop ontology expansion
+        seed_titles = [h["title"] for h in query_persistent_index(paths, question, limit=limit)]
+        for title in _expand_with_ontology(seed_titles, ontology, limit):
+            path = _note_path(paths, title)
+            if not path.is_file():
+                continue
+            route = "index" if title in seed_titles else "graph"
+            items.append(
+                {"route": route, "path": path.as_posix(), "content": path.read_text("utf-8")}
+            )
+        return ContextBundle(question=question, items=fit_to_budget(items, budget))
+
+    # legacy path for brains indexed before M4: caller-provided graph + BM25
+    seed_titles = [str(node["label"]) for node in query_graph(graph, question, limit=limit)]
     for title in _expand_with_ontology(seed_titles, ontology, limit):
         path = _note_path(paths, title)
         if not path.is_file():
@@ -71,8 +89,9 @@ def build_context_bundle(
     return ContextBundle(question=question, items=fit_to_budget(items, budget))
 
 
-_ROUTE_PROMPT = """Data la MAPPA dei domini (nome: descrizione) e una DOMANDA, restituisci
-SOLO i nomi dei domini pertinenti, separati da virgola. Nessun'altra parola.
+_ROUTE_PROMPT = """Data la MAPPA dei domini (id | nome: descrizione) e una DOMANDA, restituisci
+SOLO gli id dei domini pertinenti, separati da virgola (es. dom-retrieval, dom-tempo).
+Nessun'altra parola.
 
 MAPPA:
 {map}
@@ -82,18 +101,41 @@ DOMANDA: {question}
 
 
 def _overview_bundle(
-    paths: TalamusPaths, question: str, llm: LLMProvider, limit: int = 8
+    paths: TalamusPaths,
+    question: str,
+    llm: LLMProvider,
+    limit: int = 8,
+    trace: dict | None = None,
 ) -> ContextBundle:
-    """Route via the domain overview: pick the relevant domain(s), read their notes."""
+    """Route via the domain overview. Domains are picked by **stable id** (F3.7/F3.8):
+    the LLM answers with ids, parsed and validated against the map — substring
+    matching on names survives only as a fallback for pre-id overviews."""
     overview = load_overview(paths)
     if not overview:
         return ContextBundle(question=question, items=[])
-    domain_map = "\n".join(f"- {d['name']}: {d.get('description', '')}" for d in overview)
-    chosen = llm.complete(_ROUTE_PROMPT.format(map=domain_map, question=question)).lower()
+    domain_map = "\n".join(
+        f"- {d.get('id', '?')} | {d.get('name', '')}: {d.get('description', '')}" for d in overview
+    )
+    raw = llm.complete(_ROUTE_PROMPT.format(map=domain_map, question=question))
+    valid_ids = {str(d["id"]) for d in overview if d.get("id")}
+    chosen_ids = [token for token in re.findall(r"[a-z0-9-]+", raw.lower()) if token in valid_ids]
     titles: list[str] = []
-    for domain in overview:
-        if str(domain.get("name", "")).lower() in chosen:
-            titles.extend(domain.get("members", []))
+    fallback = False
+    if chosen_ids:
+        for domain in overview:
+            if str(domain.get("id", "")) in chosen_ids:
+                titles.extend(domain.get("members", []))
+    else:  # pre-id overviews or unparseable response: legacy name matching
+        fallback = True
+        lower = raw.lower()
+        for domain in overview:
+            name = str(domain.get("name", "")).lower()
+            if name and name in lower:
+                titles.extend(domain.get("members", []))
+    if trace is not None:
+        trace["domains_available"] = [str(d.get("id") or d.get("name", "?")) for d in overview]
+        trace["domains_chosen"] = chosen_ids
+        trace["routing_fallback"] = fallback
     items: list[dict] = []
     for title in titles[:limit]:
         path = _note_path(paths, title)
@@ -135,10 +177,14 @@ def answer_question(
     question: str,
     llm: LLMProvider,
     extra_items: list[dict] | None = None,
+    trace: dict | None = None,
 ) -> str:
     """Answer from the brain. ``extra_items`` lets callers append cross-brain
-    context (real note contents with scope markers) before the budget cut."""
-    bundle = _overview_bundle(paths, question, llm)
+    context (real note contents with scope markers) before the budget cut.
+    Pass a dict as ``trace`` to get the route explained (F3.10): domains, route,
+    notes read, context tokens, whether fallbacks fired."""
+    bundle = _overview_bundle(paths, question, llm, trace=trace)
+    route = "overview" if bundle.items else "none"
     if not bundle.items:
         graph = (
             load_graph(paths.graph_file)
@@ -147,12 +193,22 @@ def answer_question(
         )
         search = BM25Index.load(paths.index_file) if paths.index_file.is_file() else BM25Index()
         bundle = build_context_bundle(paths, graph, search, question)
-        if not bundle.items and not extra_items:
+        if bundle.items:
+            route = "index"
+        elif not extra_items:
             bundle = build_context_bundle(paths, graph, search, _expand_query(question, llm))
+            if bundle.items:
+                route = "expansion"
     all_items = [*bundle.items, *(extra_items or [])]
+    if trace is not None:
+        trace["route"] = route
+        trace["extra_items"] = len(extra_items or [])
     if not all_items:
         return "Nessun contesto trovato nel brain per questa domanda."
     items = fit_to_budget(all_items, context_budget())
+    if trace is not None:
+        trace["items_read"] = [item["path"] for item in items]
+        trace["context_tokens"] = sum(estimate_tokens(item["content"]) for item in items)
     context = "\n\n".join(
         f"[{idx}] {item['path']}\n{item['content']}" for idx, item in enumerate(items, start=1)
     )

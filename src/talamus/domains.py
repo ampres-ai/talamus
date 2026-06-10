@@ -9,6 +9,7 @@ those clusters into named domains and assigns the strays. The result is the
 from __future__ import annotations
 
 import json
+import re
 
 from talamus.adapters.llm import LLMProvider
 from talamus.models import CanonicalNote
@@ -115,7 +116,24 @@ def build_overview(paths: TalamusPaths, llm: LLMProvider) -> list[dict]:
     return domains
 
 
+def _domain_id(name: str, taken: set[str]) -> str:
+    base = "dom-" + (re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "x")
+    candidate = base
+    suffix = 2
+    while candidate in taken:
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+    return candidate
+
+
 def save_overview(paths: TalamusPaths, domains: list[dict]) -> None:
+    """Persist the overview, ensuring every domain carries a stable ``id`` (F3.8)
+    separate from its human name — routing talks ids, never substring-matched names."""
+    taken: set[str] = {str(d["id"]) for d in domains if d.get("id")}
+    for domain in domains:
+        if not domain.get("id"):
+            domain["id"] = _domain_id(str(domain.get("name", "")), taken)
+            taken.add(domain["id"])
     paths.cache.mkdir(parents=True, exist_ok=True)
     paths.overview_file.write_text(
         json.dumps(domains, indent=2, ensure_ascii=False), encoding="utf-8"

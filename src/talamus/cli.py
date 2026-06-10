@@ -635,8 +635,12 @@ def _cmd_doctor(root: Path) -> int:
     print(f"llm: {config.llm_provider} [{engine_status}]")
     print(f"graph: {config.graph_provider}")
     print(f"search: {config.search_provider}")
+    from talamus.indexes import backend_info
+
     n_notes = len(list(paths.notes.glob("*.md"))) if paths.notes.exists() else 0
     print(f"notes: {n_notes}")
+    info = backend_info(paths)
+    print(f"index backend: {info['backend']} ({info['bytes']:,} bytes)")
     overview = load_overview(paths)
     if overview:
         print(f"overview: built ({len(overview)} domini)")
@@ -759,15 +763,21 @@ def _cmd_overview(
 
 
 def _cmd_ask(
-    root: Path, question: str, llm: LLMProvider, json_out: bool, policy: str | None = None
+    root: Path,
+    question: str,
+    llm: LLMProvider,
+    json_out: bool,
+    policy: str | None = None,
+    with_trace: bool = False,
 ) -> int:
     policy = policy or default_scope(root)
+    trace: dict | None = {"scope": policy} if with_trace else None
     if policy == "central-only":
         central = central_brain()
         if central is None:
             print("no central brain registered (run `talamus init --global`)", file=sys.stderr)
             return 1
-        answer = answer_question(TalamusPaths(central.root()), question, llm)
+        answer = answer_question(TalamusPaths(central.root()), question, llm, trace=trace)
     else:
         extra: list[dict] = []
         if policy == "project+central":
@@ -776,11 +786,34 @@ def _cmd_ask(
             )
         elif policy == "all":
             extra, _ = scoped_context_items(root, question, "all", limit=5, exclude_roots=[root])
-        answer = answer_question(TalamusPaths(root), question, llm, extra_items=extra)
+        answer = answer_question(TalamusPaths(root), question, llm, extra_items=extra, trace=trace)
     if json_out:
-        _print_json({"answer": answer, "scope": policy})
-    else:
-        print(answer)
+        payload: dict = {"answer": answer, "scope": policy}
+        if trace is not None:
+            payload["trace"] = trace
+        _print_json(payload)
+        return 0
+    print(answer)
+    if trace is not None:
+        print("--- trace ---", file=sys.stderr)
+        print(json.dumps(trace, ensure_ascii=False, indent=2), file=sys.stderr)
+    return 0
+
+
+def _cmd_eval_scale(sizes_arg: str | None, json_out: bool) -> int:
+    from talamus.bench import run_scale
+
+    sizes = [int(s) for s in (sizes_arg or "100,1000,10000").split(",") if s.strip()]
+    rows = run_scale(sizes)
+    if json_out:
+        _print_json(rows)
+        return 0
+    print("| note | search p50 (ms) | search p95 (ms) | backend | bytes |")
+    for row in rows:
+        print(
+            f"| {row['n_notes']} | {row['search']['p50_ms']} | {row['search']['p95_ms']}"
+            f" | {row['index']['backend']} | {row['index']['bytes']:,} |"
+        )
     return 0
 
 
@@ -1058,6 +1091,9 @@ def build_parser() -> argparse.ArgumentParser:
     overview.add_argument("--rebuild", action="store_true", help="re-induce the domains")
     ask = sub.add_parser("ask", parents=[common], help="ask the brain (cited answer)")
     ask.add_argument("question")
+    ask.add_argument(
+        "--trace", action="store_true", help="explain the route: domains, candidates, tokens"
+    )
     search = sub.add_parser("search", parents=[common], help="find relevant notes")
     search.add_argument("query")
     search.add_argument("--limit", type=int, default=5, help="max results (default 5)")
@@ -1086,9 +1122,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--all-brains", dest="all_brains", action="store_true", help="alias for --scope all"
     )
     ev = sub.add_parser("eval", parents=[common], help="measure retrieval quality on a cases file")
-    ev.add_argument("--cases", required=True, help='JSON: [{"question","relevant":[titles]}]')
+    ev.add_argument("--cases", default=None, help='JSON: [{"question","relevant":[titles]}]')
     ev.add_argument("-k", type=int, default=5, help="cutoff for recall@k (default 5)")
     ev.add_argument("--category", default=None, help="run only cases of this category")
+    ev.add_argument("--scale", action="store_true", help="latency benchmark at growing sizes")
+    ev.add_argument("--sizes", default=None, help="comma-separated note counts for --scale")
     neighbors = sub.add_parser("neighbors", parents=[common], help="show a concept's connections")
     neighbors.add_argument("concept")
     relations = sub.add_parser("relations", parents=[common], help="list/prune typed relations")
@@ -1168,6 +1206,11 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "recall":
             return _cmd_recall(root, args.question, json_out, args.limit, policy)
         if command == "eval":
+            if args.scale:
+                return _cmd_eval_scale(args.sizes, json_out)
+            if not args.cases:
+                print("error: pass --cases FILE or --scale", file=sys.stderr)
+                return 1
             return _cmd_eval(root, args.cases, args.k, json_out, args.category)
         if command == "neighbors":
             return _cmd_neighbors(root, args.concept, json_out)
@@ -1190,7 +1233,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "overview":
             return _cmd_overview(root, provider, json_out, args.rebuild, policy)
         if command == "ask":
-            return _cmd_ask(root, args.question, provider, json_out, policy)
+            return _cmd_ask(root, args.question, provider, json_out, policy, args.trace)
         if command == "remember":
             return _cmd_remember(root, args.transcript, args.diff, provider, json_out)
     except TalamusError as exc:

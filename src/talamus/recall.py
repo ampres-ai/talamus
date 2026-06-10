@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from talamus.ask import build_context_bundle
-from talamus.graph import load_graph, query_graph_scored
-from talamus.naming import note_filename, note_slug
+from talamus.graph import load_graph
+from talamus.naming import note_filename
 from talamus.ontology import load_ontology, neighbors
 from talamus.paths import TalamusPaths
 from talamus.rank import rerank_candidates
@@ -19,29 +19,22 @@ def _load_graph_and_index(paths: TalamusPaths):
 
 
 def search_notes(paths: TalamusPaths, query: str, limit: int = 5) -> list[dict]:
-    """Candidati pertinenti: unione grafo + BM25, riordinata (rerank). {title, summary}."""
-    notes_by_title = {note.title: note for note in load_notes(paths)}
-    graph, index = _load_graph_and_index(paths)
+    """Candidati pertinenti dall'indice persistito, riordinati (rerank). {title, summary}.
+
+    Da M4 la ricerca interroga l'indice persistito (sqlite/FTS5 o posting list) e i
+    metadati che porta con sé — niente più caricamento di tutte le note a ogni query.
+    """
+    from talamus.indexes import search_index
+
     pool = max(limit * 2, limit)
-    graph_hits = [
-        (str(node.get("label", "")), float(score))
-        for node, score in query_graph_scored(graph, query, limit=pool)
-        if str(node.get("label", "")) in notes_by_title
-    ]
-    slug_to_title = {note_slug(title): title for title in notes_by_title}
-    bm25_hits = [
-        (slug_to_title[hit["id"]], float(hit["score"]))
-        for hit in index.search(query, limit=pool)
-        if hit["id"] in slug_to_title
-    ]
-    aliases_by_title = {title: note.aliases for title, note in notes_by_title.items()}
-    ranked = rerank_candidates(query, graph_hits, bm25_hits, aliases_by_title, limit=limit)
-    results: list[dict] = []
-    for title, _score in ranked:
-        note = notes_by_title.get(title)
-        if note is not None:
-            results.append({"title": title, "summary": note.summary})
-    return results
+    hits = search_index(paths, query, limit=pool)
+    if not hits:
+        return []
+    aliases_by_title = {h["title"]: list(h.get("aliases", [])) for h in hits}
+    bm25_hits = [(str(h["title"]), float(h["score"])) for h in hits]
+    ranked = rerank_candidates(query, [], bm25_hits, aliases_by_title, limit=limit)
+    summary_by_title = {h["title"]: h["summary"] for h in hits}
+    return [{"title": title, "summary": summary_by_title.get(title, "")} for title, _ in ranked]
 
 
 def read_note_text(paths: TalamusPaths, title: str) -> str | None:
