@@ -129,6 +129,57 @@ class LoadCasesTests(unittest.TestCase):
             self.assertEqual(cases[0].question, "good")
 
 
+class NegativeAndCategoryTests(unittest.TestCase):
+    def test_negative_case_passes_when_nothing_retrieved(self) -> None:
+        cases = [EvalCase("argomento assente", [], category="negative")]
+        report = evaluate(cases, lambda q, k: [], k=5)
+        self.assertEqual(report.n_negative, 1)
+        self.assertEqual(report.negative_rejection, 1.0)
+
+    def test_negative_case_fails_when_something_retrieved(self) -> None:
+        cases = [EvalCase("argomento assente", [], category="negative")]
+        report = evaluate(cases, lambda q, k: ["Rumore"], k=5)
+        self.assertEqual(report.negative_rejection, 0.0)
+
+    def test_negatives_do_not_drag_answerable_metrics(self) -> None:
+        cases = [
+            EvalCase("q1", ["A"], category="direct"),
+            EvalCase("assente", [], category="negative"),
+        ]
+        report = evaluate(cases, lambda q, k: ["A"] if q == "q1" else [], k=5)
+        self.assertEqual(report.hit_rate, 1.0)  # 1/1 answerable, not 1/2
+        self.assertEqual(report.recall_at_k, 1.0)
+
+    def test_per_category_breakdown(self) -> None:
+        cases = [
+            EvalCase("q1", ["A"], category="direct"),
+            EvalCase("q2", ["B"], category="vague"),
+        ]
+        report = evaluate(cases, lambda q, k: ["A"], k=5)
+        self.assertEqual(report.categories["direct"]["hit_rate"], 1.0)
+        self.assertEqual(report.categories["vague"]["hit_rate"], 0.0)
+
+    def test_load_cases_keeps_negative_and_filters_by_category(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cases.json"
+            path.write_text(
+                json.dumps(
+                    [
+                        {"id": "d1", "question": "q1", "relevant": ["A"], "category": "direct"},
+                        {"id": "n1", "question": "assente", "relevant": [], "category": "negative"},
+                        {"question": "malformato senza relevant", "relevant": []},
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            all_cases = load_cases(path)
+            self.assertEqual(len(all_cases), 2)  # malformed non-negative skipped
+            self.assertTrue(all_cases[1].negative)
+            only_direct = load_cases(path, category="direct")
+            self.assertEqual(len(only_direct), 1)
+            self.assertEqual(only_direct[0].case_id, "d1")
+
+
 class CliEvalTests(unittest.TestCase):
     def _brain(self, tmp: str) -> TalamusPaths:
         paths = TalamusPaths(Path(tmp))

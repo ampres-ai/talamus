@@ -432,12 +432,14 @@ def _cmd_ask(root: Path, question: str, llm: LLMProvider, json_out: bool) -> int
     return 0
 
 
-def _cmd_eval(root: Path, cases_file: str, k: int, json_out: bool) -> int:
+def _cmd_eval(
+    root: Path, cases_file: str, k: int, json_out: bool, category: str | None = None
+) -> int:
     path = Path(cases_file)
     if not path.is_file():
         print(f"cases file not found: {cases_file}", file=sys.stderr)
         return 1
-    cases = load_cases(path)
+    cases = load_cases(path, category=category)
     if not cases:
         print("no valid cases (need entries with question + relevant[])", file=sys.stderr)
         return 1
@@ -618,6 +620,7 @@ def build_parser() -> argparse.ArgumentParser:
     ev = sub.add_parser("eval", parents=[common], help="measure retrieval quality on a cases file")
     ev.add_argument("--cases", required=True, help='JSON: [{"question","relevant":[titles]}]')
     ev.add_argument("-k", type=int, default=5, help="cutoff for recall@k (default 5)")
+    ev.add_argument("--category", default=None, help="run only cases of this category")
     neighbors = sub.add_parser("neighbors", parents=[common], help="show a concept's connections")
     neighbors.add_argument("concept")
     relations = sub.add_parser("relations", parents=[common], help="list/prune typed relations")
@@ -680,7 +683,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "recall":
             return _cmd_recall(root, args.question, json_out, args.limit)
         if command == "eval":
-            return _cmd_eval(root, args.cases, args.k, json_out)
+            return _cmd_eval(root, args.cases, args.k, json_out, args.category)
         if command == "neighbors":
             return _cmd_neighbors(root, args.concept, json_out)
         if command == "relations":
