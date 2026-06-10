@@ -1,10 +1,12 @@
 import io
 import json
+import os
 import shutil
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 from talamus.cli import main
 from talamus.config import load_config
@@ -362,6 +364,98 @@ class CliDoctorTests(unittest.TestCase):
             self.assertEqual(0, code)
             self.assertIn("brain:", text)
             self.assertIn("overview:", text)
+
+
+class CliMultiBrainTests(unittest.TestCase):
+    def test_init_defaults_to_current_directory_not_global(self) -> None:
+        """Regression: bare `talamus init` used to fall through to the global brain."""
+        with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as cwd:
+            with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                previous = os.getcwd()
+                os.chdir(cwd)
+                try:
+                    out = io.StringIO()
+                    with redirect_stdout(out):
+                        code = main(["init"])
+                finally:
+                    os.chdir(previous)
+                self.assertEqual(0, code)
+                self.assertTrue((Path(cwd) / "talamus.json").exists())
+                self.assertFalse((Path(home) / "default" / "talamus.json").exists())
+
+    def test_init_registers_the_brain(self) -> None:
+        with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as root:
+            with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                main(["init", "--root", root])
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    code = main(["brains", "list", "--json"])
+                self.assertEqual(0, code)
+                registry = json.loads(out.getvalue())
+                self.assertEqual(len(registry["brains"]), 1)
+                self.assertEqual(registry["brains"][0]["type"], "project")
+
+    def test_init_global_registers_central(self) -> None:
+        with tempfile.TemporaryDirectory() as home:
+            with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                main(["init", "--global"])
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    main(["brains", "list", "--json"])
+                registry = json.loads(out.getvalue())
+                self.assertEqual(registry["brains"][0]["type"], "central")
+
+    def test_brains_use_rename_delete_flow(self) -> None:
+        with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as root:
+            with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                main(["init", "--root", root])
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    main(["brains", "list", "--json"])
+                name = json.loads(out.getvalue())["brains"][0]["name"]
+                self.assertEqual(0, main(["brains", "use", name]))
+                self.assertEqual(0, main(["brains", "rename", name, "rinominato"]))
+                self.assertEqual(0, main(["brains", "info", "rinominato"]))
+                self.assertEqual(0, main(["brains", "delete", "rinominato"]))
+                self.assertTrue(Path(root).exists())  # files preserved
+
+    def test_search_all_brains_returns_brain_pointers(self) -> None:
+        from talamus.demo import create_demo_brain
+        from talamus.paths import TalamusPaths
+
+        with (
+            tempfile.TemporaryDirectory() as home,
+            tempfile.TemporaryDirectory() as a,
+            tempfile.TemporaryDirectory() as b,
+        ):
+            with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                create_demo_brain(TalamusPaths(Path(a)))
+                create_demo_brain(TalamusPaths(Path(b)))
+                (Path(a) / "talamus.json").write_text("{}", encoding="utf-8")
+                (Path(b) / "talamus.json").write_text("{}", encoding="utf-8")
+                main(["brains", "register", a, "--name", "alpha"])
+                main(["brains", "register", b, "--name", "beta"])
+                self.assertEqual(0, main(["brains", "index"]))
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    code = main(["search", "reranking", "--root", a, "--all-brains", "--json"])
+                self.assertEqual(0, code)
+                results = json.loads(out.getvalue())
+                self.assertTrue(results)
+                self.assertTrue(all("brain_id" in r for r in results))
+                # pointers verified against the owning brain's real note files
+                self.assertTrue(all(Path(r["path"]).is_file() for r in results))
+
+    def test_read_commands_never_write_global_default(self) -> None:
+        with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as root:
+            with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                main(["init", "--root", root])
+                out = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(io.StringIO()):
+                    main(["search", "qualcosa", "--root", root])
+                    main(["where", "--root", root])
+                    main(["status", "--root", root])
+                self.assertFalse((Path(home) / "default").exists())
 
 
 class CliVersionTests(unittest.TestCase):

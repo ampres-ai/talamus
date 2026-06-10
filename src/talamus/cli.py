@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -20,11 +19,32 @@ from talamus.demo import create_demo_brain
 from talamus.domains import build_overview, load_overview
 from talamus.errors import TalamusError
 from talamus.eval import evaluate, load_cases, search_retriever
+from talamus.federation import build_federated_index, federation_status
 from talamus.ingest import ingest_path, remember_session
 from talamus.log import configure
 from talamus.paths import TalamusPaths
-from talamus.recall import concept_neighbors, read_note_text, recall_context, search_notes
+from talamus.recall import concept_neighbors, read_note_text, recall_context
+from talamus.registry import (
+    central_brain,
+    load_registry,
+    register_brain,
+    rename_brain,
+    select_brain,
+    set_brain_flag,
+    talamus_home,
+    unregister_brain,
+)
 from talamus.relations import list_relations, prune_relations
+from talamus.scope import (
+    SCOPE_POLICIES,
+    ResolvedBrain,
+    default_scope,
+    promote_note,
+    resolve_brain,
+    resolve_init_root,
+    scoped_context_items,
+    scoped_search,
+)
 from talamus.store import cache_is_current, reindex
 from talamus.timeline import note_as_of, note_history
 
@@ -52,26 +72,12 @@ def _detect_engine() -> str:
 
 def _global_home() -> Path:
     """Container for global (named) brains; override with TALAMUS_HOME."""
-    return Path(os.environ.get("TALAMUS_HOME") or Path.home() / "talamus")
-
-
-def _find_project_root(start: Path) -> Path | None:
-    for directory in [start, *start.parents]:
-        if (directory / "talamus.json").exists():
-            return directory
-    return None
+    return talamus_home()
 
 
 def _resolve_root(root: str | None, brain: str | None, use_global: bool) -> Path:
-    """Which brain to use: --root > --brain > --global > project (upward) > global default."""
-    if root is not None:
-        return Path(root).resolve()
-    if brain is not None:
-        return (_global_home() / brain).resolve()
-    if use_global:
-        return (_global_home() / "default").resolve()
-    project = _find_project_root(Path.cwd().resolve())
-    return project if project is not None else (_global_home() / "default").resolve()
+    """Which brain to use (see talamus.scope.resolve_brain for the full order)."""
+    return resolve_brain(root, brain, use_global).root
 
 
 def _provider_for(root: Path) -> LLMProvider:
@@ -156,24 +162,151 @@ def _cmd_completion(shell: str) -> int:
     return 0
 
 
-def _cmd_brains() -> int:
-    home = _global_home()
-    brains = (
-        [d.name for d in sorted(home.iterdir()) if (d / "talamus.json").exists()]
-        if home.exists()
-        else []
-    )
-    if not brains:
-        print(f"no global brains yet (they will live under {home})")
+def _cmd_brains_list(json_out: bool) -> int:
+    registry = load_registry()
+    if json_out:
+        _print_json(registry.to_dict())
         return 0
-    for name in brains:
-        print(f"- {name}")
+    if not registry.brains:
+        print(f"no brains registered yet (registry: {talamus_home() / 'registry.json'})")
+        print("  `talamus init` registers automatically;")
+        print("  `talamus brains register PATH` for existing brains")
+    for brain in registry.brains:
+        selected = " *" if registry.selected == brain.name else ""
+        flags = []
+        if not brain.federated:
+            flags.append("no-fed")
+        if brain.sensitive:
+            flags.append("sensitive")
+        extra = f" [{', '.join(flags)}]" if flags else ""
+        print(f"- {brain.name}{selected}  ({brain.type}){extra}  {brain.path}")
+    home = talamus_home()
+    if home.exists():
+        unregistered = [
+            d.name
+            for d in sorted(home.iterdir())
+            if d.is_dir() and (d / "talamus.json").exists() and load_registry().by_path(d) is None
+        ]
+        for name in unregistered:
+            print(f"- {name}  (non registrato — `talamus brains register {home / name}`)")
     return 0
 
 
-def _cmd_where(root: Path) -> int:
-    has_brain = (root / "talamus.json").exists()
-    print(f"{root}  ({'brain' if has_brain else 'no brain here'})")
+def _cmd_brains_info(name: str, json_out: bool) -> int:
+    registry = load_registry()
+    brain = registry.by_name(name)
+    if brain is None:
+        print(f"no brain named '{name}' in the registry", file=sys.stderr)
+        return 1
+    root = brain.root()
+    notes = len(list((root / "notes").glob("*.md"))) if (root / "notes").exists() else 0
+    info = {**brain.to_dict(), "notes": notes, "exists": (root / "talamus.json").exists()}
+    if json_out:
+        _print_json(info)
+        return 0
+    for key, value in info.items():
+        print(f"{key}: {value}")
+    return 0
+
+
+def _cmd_brains_index(rebuild: bool, status_only: bool, json_out: bool) -> int:
+    if status_only:
+        status = federation_status()
+        if json_out:
+            _print_json(status)
+        else:
+            built = f"built {status.get('built_at')}" if status["built"] else "not built"
+            print(f"federated index: {built} · rows: {status['rows']}")
+        return 0
+    report = build_federated_index()
+    if json_out:
+        _print_json(report)
+        return 0
+    print(f"federated index built: {report['rows']} note da {len(report['brains'])} brain")
+    for entry in report["brains"]:
+        skipped = f" ({entry['skipped']})" if "skipped" in entry else ""
+        print(f"  - {entry['brain']}: {entry['notes']} note{skipped}")
+    for warning in report["warnings"]:
+        print(f"  ! {warning}")
+    return 0
+
+
+def _cmd_brains_group(args: argparse.Namespace) -> int:
+    cmd = getattr(args, "brains_cmd", None) or "list"
+    json_out = bool(getattr(args, "json", False))
+    if cmd == "list":
+        return _cmd_brains_list(json_out)
+    if cmd == "use":
+        if select_brain(args.name):
+            print(f"selected brain: {args.name}")
+            return 0
+        print(f"no brain named '{args.name}' (see `talamus brains list`)", file=sys.stderr)
+        return 1
+    if cmd == "info":
+        return _cmd_brains_info(args.name, json_out)
+    if cmd == "rename":
+        try:
+            ok = rename_brain(args.old, args.new)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"renamed: {args.old} -> {args.new}" if ok else f"no brain named '{args.old}'")
+        return 0 if ok else 1
+    if cmd == "delete":
+        if unregister_brain(args.name):
+            print(f"unregistered '{args.name}' (files on disk are preserved)")
+            return 0
+        print(f"no brain named '{args.name}'", file=sys.stderr)
+        return 1
+    if cmd == "register":
+        info = register_brain(Path(args.path).resolve(), args.name, args.type)
+        print(f"registered '{info.name}' ({info.type}) at {info.path}")
+        return 0
+    if cmd == "set":
+        changed = False
+        for flag in ("federated", "sensitive"):
+            value = getattr(args, flag, None)
+            if value is not None:
+                if not set_brain_flag(args.name, flag, value == "true"):
+                    print(f"no brain named '{args.name}'", file=sys.stderr)
+                    return 1
+                changed = True
+        if not changed:
+            print("nothing to set (pass --federated and/or --sensitive)", file=sys.stderr)
+            return 1
+        print(f"updated '{args.name}'")
+        return 0
+    if cmd == "index":
+        return _cmd_brains_index(args.rebuild, args.action == "status", json_out)
+    if cmd == "promote":
+        registry = load_registry()
+        source = registry.by_name(args.from_brain)
+        target = registry.by_name(args.to_brain)
+        if source is None or target is None:
+            missing = args.from_brain if source is None else args.to_brain
+            print(f"no brain named '{missing}' in the registry", file=sys.stderr)
+            return 1
+        if promote_note(source.root(), target.root(), args.note, source.name):
+            print(f"promoted '{args.note}': {source.name} -> {target.name}")
+            return 0
+        print(f"note '{args.note}' not found in '{source.name}'", file=sys.stderr)
+        return 1
+    raise ValueError(f"unknown brains command {cmd}")
+
+
+def _cmd_where(resolved: ResolvedBrain, json_out: bool) -> int:
+    config_exists = (resolved.root / "talamus.json").exists()
+    if json_out:
+        _print_json(
+            {
+                "resolved_root": str(resolved.root),
+                "scope": resolved.scope,
+                "source": resolved.source,
+                "config_exists": config_exists,
+            }
+        )
+        return 0
+    print(f"{resolved.root}  ({'brain' if config_exists else 'no brain here'})")
     return 0
 
 
@@ -199,7 +332,7 @@ def _cmd_import(out_file: str, root: Path) -> int:
     return 0
 
 
-def _cmd_init(root: Path, engine: str | None = None) -> int:
+def _cmd_init(root: Path, engine: str | None = None, scope_kind: str = "project") -> int:
     paths = TalamusPaths(root)
     paths.ensure_directories()
     created = not paths.config_path.exists()
@@ -212,6 +345,9 @@ def _cmd_init(root: Path, engine: str | None = None) -> int:
         command = _engine_command(config.llm_provider)
         found = command is None or shutil.which(command) is not None
         print(f"engine: {config.llm_provider} ({'found' if found else 'not on PATH'})")
+    brain_type = "central" if scope_kind == "global" else "project"
+    info = register_brain(root, brain_type=brain_type)
+    print(f"registered as '{info.name}' ({info.type})")
     print("next: talamus ingest <file>")
     return 0
 
@@ -404,7 +540,24 @@ def _cmd_verify(root: Path, title: str, do_apply: bool, llm: LLMProvider, json_o
     return 0
 
 
-def _cmd_overview(root: Path, llm: LLMProvider, json_out: bool, rebuild: bool) -> int:
+def _cmd_overview(
+    root: Path, llm: LLMProvider, json_out: bool, rebuild: bool, policy: str | None = None
+) -> int:
+    if policy == "all":
+        registry = load_registry()
+        collected: list[tuple[str, list[dict]]] = []
+        for brain in registry.brains:
+            if not brain.federated or not (brain.root() / "talamus.json").exists():
+                continue
+            collected.append((brain.name, load_overview(TalamusPaths(brain.root()))))
+        if json_out:
+            _print_json([{"brain": name, "domains": domains} for name, domains in collected])
+            return 0
+        for name, brain_domains in collected:
+            print(f"=== {name} ===")
+            for domain in brain_domains:
+                print(f"## {domain['name']}  ({len(domain.get('members', []))} note)")
+        return 0
     paths = TalamusPaths(root)
     if rebuild or not paths.overview_file.exists():
         domains = build_overview(paths, llm)
@@ -423,10 +576,27 @@ def _cmd_overview(root: Path, llm: LLMProvider, json_out: bool, rebuild: bool) -
     return 0
 
 
-def _cmd_ask(root: Path, question: str, llm: LLMProvider, json_out: bool) -> int:
-    answer = answer_question(TalamusPaths(root), question, llm)
+def _cmd_ask(
+    root: Path, question: str, llm: LLMProvider, json_out: bool, policy: str | None = None
+) -> int:
+    policy = policy or default_scope(root)
+    if policy == "central-only":
+        central = central_brain()
+        if central is None:
+            print("no central brain registered (run `talamus init --global`)", file=sys.stderr)
+            return 1
+        answer = answer_question(TalamusPaths(central.root()), question, llm)
+    else:
+        extra: list[dict] = []
+        if policy == "project+central":
+            extra, _ = scoped_context_items(
+                root, question, "central-only", limit=5, exclude_roots=[root]
+            )
+        elif policy == "all":
+            extra, _ = scoped_context_items(root, question, "all", limit=5, exclude_roots=[root])
+        answer = answer_question(TalamusPaths(root), question, llm, extra_items=extra)
     if json_out:
-        _print_json({"answer": answer})
+        _print_json({"answer": answer, "scope": policy})
     else:
         print(answer)
     return 0
@@ -467,16 +637,21 @@ def _cmd_remember(
     return 0
 
 
-def _cmd_search(root: Path, query: str, json_out: bool, limit: int = 5) -> int:
-    results = search_notes(TalamusPaths(root), query, limit=limit)
+def _cmd_search(
+    root: Path, query: str, json_out: bool, limit: int = 5, policy: str | None = None
+) -> int:
+    policy = policy or default_scope(root)
+    results, warnings = scoped_search(root, query, policy, limit=limit)
     if json_out:
         _print_json(results)
         return 0
     if not results:
         print("nessuna scheda pertinente")
-        return 0
     for item in results:
-        print(f"- {item['title']}: {item['summary']}")
+        marker = "" if item.get("scope") == "[project]" else f"{item.get('scope', '')} "
+        print(f"- {marker}{item['title']}: {item['summary']}")
+    for warning in warnings:
+        print(f"  ! {warning}", file=sys.stderr)
     return 0
 
 
@@ -515,12 +690,35 @@ def _cmd_history(root: Path, title: str, as_of: str | None, json_out: bool) -> i
     return 0
 
 
-def _cmd_recall(root: Path, question: str, json_out: bool, limit: int = 5) -> int:
-    context = recall_context(TalamusPaths(root), question, limit=limit)
+def _render_scoped_items(items: list[dict]) -> str:
+    return "\n".join(
+        f"[{idx}] {item['path']}\n{item['content']}" for idx, item in enumerate(items, start=1)
+    )
+
+
+def _cmd_recall(
+    root: Path, question: str, json_out: bool, limit: int = 5, policy: str | None = None
+) -> int:
+    policy = policy or default_scope(root)
+    warnings: list[str] = []
+    if policy == "central-only":
+        items, warnings = scoped_context_items(root, question, "central-only", limit=limit)
+        context = _render_scoped_items(items) or "Nessun contesto pertinente trovato nel brain."
+    else:
+        context = recall_context(TalamusPaths(root), question, limit=limit)
+        if policy in ("project+central", "all"):
+            sub_policy = "central-only" if policy == "project+central" else "all"
+            extra, warnings = scoped_context_items(
+                root, question, sub_policy, limit=limit, exclude_roots=[root]
+            )
+            if extra:
+                context += "\n\n" + _render_scoped_items(extra)
     if json_out:
-        _print_json({"context": context})
+        _print_json({"context": context, "scope": policy, "warnings": warnings})
     else:
         print(context)
+        for warning in warnings:
+            print(f"  ! {warning}", file=sys.stderr)
     return 0
 
 
@@ -582,7 +780,41 @@ def build_parser() -> argparse.ArgumentParser:
     for name in ("status", "doctor", "reindex"):
         sub.add_parser(name, parents=[common], help=f"{name} the brain")
     sub.add_parser("quickstart", help="print the essential commands")
-    sub.add_parser("brains", help="list global brains")
+    brains = sub.add_parser("brains", help="manage the brain registry")
+    brains_sub = brains.add_subparsers(dest="brains_cmd")
+    brains_sub.add_parser("list", parents=[common], help="list registered brains")
+    b_use = brains_sub.add_parser("use", parents=[common], help="select the default global brain")
+    b_use.add_argument("name")
+    b_info = brains_sub.add_parser("info", parents=[common], help="show one brain's record")
+    b_info.add_argument("name")
+    b_rename = brains_sub.add_parser("rename", parents=[common], help="rename a registered brain")
+    b_rename.add_argument("old")
+    b_rename.add_argument("new")
+    b_delete = brains_sub.add_parser(
+        "delete", parents=[common], help="unregister a brain (files are preserved)"
+    )
+    b_delete.add_argument("name")
+    b_register = brains_sub.add_parser(
+        "register", parents=[common], help="register an existing brain"
+    )
+    b_register.add_argument("path")
+    b_register.add_argument("--name", default=None)
+    b_register.add_argument("--type", default="project", choices=["project", "central", "archive"])
+    b_set = brains_sub.add_parser("set", parents=[common], help="set federation/privacy flags")
+    b_set.add_argument("name")
+    b_set.add_argument("--federated", choices=["true", "false"], default=None)
+    b_set.add_argument("--sensitive", choices=["true", "false"], default=None)
+    b_index = brains_sub.add_parser(
+        "index", parents=[common], help="build or inspect the federated index"
+    )
+    b_index.add_argument("action", nargs="?", default="build", choices=["build", "status"])
+    b_index.add_argument("--rebuild", action="store_true", help="force a full rebuild")
+    b_promote = brains_sub.add_parser(
+        "promote", parents=[common], help="promote a note between brains"
+    )
+    b_promote.add_argument("note")
+    b_promote.add_argument("--from", dest="from_brain", required=True)
+    b_promote.add_argument("--to", dest="to_brain", default="default")
     sub.add_parser("where", parents=[common], help="print the resolved brain path")
     export = sub.add_parser("export", parents=[common], help="export the brain to a zip")
     export.add_argument("file")
@@ -609,6 +841,16 @@ def build_parser() -> argparse.ArgumentParser:
     search = sub.add_parser("search", parents=[common], help="find relevant notes")
     search.add_argument("query")
     search.add_argument("--limit", type=int, default=5, help="max results (default 5)")
+    for scoped in (overview, ask, search):
+        scoped.add_argument(
+            "--scope", choices=list(SCOPE_POLICIES), default=None, help="brain scope policy"
+        )
+        scoped.add_argument(
+            "--all-brains",
+            dest="all_brains",
+            action="store_true",
+            help="alias for --scope all (search every registered brain)",
+        )
     read = sub.add_parser("read", parents=[common], help="print a note by title")
     read.add_argument("title")
     history = sub.add_parser("history", parents=[common], help="show a note's past versions")
@@ -617,6 +859,12 @@ def build_parser() -> argparse.ArgumentParser:
     recall = sub.add_parser("recall", parents=[common], help="retrieve context for a question")
     recall.add_argument("question")
     recall.add_argument("--limit", type=int, default=5, help="max notes of context (default 5)")
+    recall.add_argument(
+        "--scope", choices=list(SCOPE_POLICIES), default=None, help="brain scope policy"
+    )
+    recall.add_argument(
+        "--all-brains", dest="all_brains", action="store_true", help="alias for --scope all"
+    )
     ev = sub.add_parser("eval", parents=[common], help="measure retrieval quality on a cases file")
     ev.add_argument("--cases", required=True, help='JSON: [{"question","relevant":[titles]}]')
     ev.add_argument("-k", type=int, default=5, help="cutoff for recall@k (default 5)")
@@ -643,21 +891,24 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
     if command == "quickstart":
         return _cmd_quickstart()
     if command == "brains":
-        return _cmd_brains()
+        return _cmd_brains_group(args)
     if command == "completion":
         return _cmd_completion(args.shell)
 
+    if command == "init":
+        resolved = resolve_init_root(args.root, args.brain, args.use_global)
+        return _cmd_init(resolved.root, args.engine, resolved.scope)
+
     root = _resolve_root(args.root, args.brain, args.use_global)
     json_out = bool(getattr(args, "json", False))
+    policy = "all" if getattr(args, "all_brains", False) else getattr(args, "scope", None)
     try:
         if command == "where":
-            return _cmd_where(root)
+            return _cmd_where(resolve_brain(args.root, args.brain, args.use_global), json_out)
         if command == "export":
             return _cmd_export(root, args.file)
         if command == "import":
             return _cmd_import(args.file, root)
-        if command == "init":
-            return _cmd_init(root, args.engine)
         if command == "demo":
             return _cmd_demo(root)
         if command == "ui":
@@ -675,13 +926,13 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "reindex":
             return _cmd_reindex(root, json_out)
         if command == "search":
-            return _cmd_search(root, args.query, json_out, args.limit)
+            return _cmd_search(root, args.query, json_out, args.limit, policy)
         if command == "read":
             return _cmd_read(root, args.title, json_out)
         if command == "history":
             return _cmd_history(root, args.title, args.as_of, json_out)
         if command == "recall":
-            return _cmd_recall(root, args.question, json_out, args.limit)
+            return _cmd_recall(root, args.question, json_out, args.limit, policy)
         if command == "eval":
             return _cmd_eval(root, args.cases, args.k, json_out, args.category)
         if command == "neighbors":
@@ -696,9 +947,9 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "verify":
             return _cmd_verify(root, args.title, args.apply, provider, json_out)
         if command == "overview":
-            return _cmd_overview(root, provider, json_out, args.rebuild)
+            return _cmd_overview(root, provider, json_out, args.rebuild, policy)
         if command == "ask":
-            return _cmd_ask(root, args.question, provider, json_out)
+            return _cmd_ask(root, args.question, provider, json_out, policy)
         if command == "remember":
             return _cmd_remember(root, args.transcript, args.diff, provider, json_out)
     except TalamusError as exc:

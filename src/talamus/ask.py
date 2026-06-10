@@ -130,7 +130,14 @@ CONTESTO:
 """
 
 
-def answer_question(paths: TalamusPaths, question: str, llm: LLMProvider) -> str:
+def answer_question(
+    paths: TalamusPaths,
+    question: str,
+    llm: LLMProvider,
+    extra_items: list[dict] | None = None,
+) -> str:
+    """Answer from the brain. ``extra_items`` lets callers append cross-brain
+    context (real note contents with scope markers) before the budget cut."""
     bundle = _overview_bundle(paths, question, llm)
     if not bundle.items:
         graph = (
@@ -140,11 +147,12 @@ def answer_question(paths: TalamusPaths, question: str, llm: LLMProvider) -> str
         )
         search = BM25Index.load(paths.index_file) if paths.index_file.is_file() else BM25Index()
         bundle = build_context_bundle(paths, graph, search, question)
-        if not bundle.items:
+        if not bundle.items and not extra_items:
             bundle = build_context_bundle(paths, graph, search, _expand_query(question, llm))
-    if not bundle.items:
+    all_items = [*bundle.items, *(extra_items or [])]
+    if not all_items:
         return "Nessun contesto trovato nel brain per questa domanda."
-    items = fit_to_budget(bundle.items, context_budget())
+    items = fit_to_budget(all_items, context_budget())
     context = "\n\n".join(
         f"[{idx}] {item['path']}\n{item['content']}" for idx, item in enumerate(items, start=1)
     )
