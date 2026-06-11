@@ -61,26 +61,41 @@ class CodexCliProvider:
     """OpenAI Codex CLI subscription via `codex exec` (prompt on stdin via `-`,
     dodging the Windows argv length limit). `codex exec` is an AGENT that can run
     shell commands, so we pin it down: read-only sandbox, no git-repo check —
-    it must behave as a pure completion engine."""
+    it must behave as a pure completion engine. Optional model via `-m`
+    (config `llm_model`, e.g. a mini model for fast bulk ingest)."""
 
-    def __init__(self, runner: Callable[[list[str], str], str] = _default_runner) -> None:
+    def __init__(
+        self, model: str = "", runner: Callable[[list[str], str], str] = _default_runner
+    ) -> None:
+        self._model = model
         self._runner = runner
 
     def complete(self, prompt: str) -> str:
-        return self._runner(
-            ["codex", "exec", "--skip-git-repo-check", "-s", "read-only", "-"], prompt
-        )
+        args = ["codex", "exec", "--skip-git-repo-check", "-s", "read-only"]
+        if self._model:
+            args += ["-m", self._model]
+        return self._runner([*args, "-"], prompt)
 
 
 class GeminiCliProvider:
     """Google Gemini CLI subscription: `-p ""` triggers headless mode and the
-    real prompt travels on stdin (the CLI appends -p to stdin input)."""
+    real prompt travels on stdin (the CLI appends -p to stdin input).
+    Gemini CLI is an AGENT too, so it gets the same treatment as codex:
+    `--approval-mode plan` = read-only (no tool execution), `--skip-trust`
+    because headless refuses to run in untrusted directories (rc=55).
+    Optional model via `-m` (config `llm_model`, e.g. a flash model)."""
 
-    def __init__(self, runner: Callable[[list[str], str], str] = _default_runner) -> None:
+    def __init__(
+        self, model: str = "", runner: Callable[[list[str], str], str] = _default_runner
+    ) -> None:
+        self._model = model
         self._runner = runner
 
     def complete(self, prompt: str) -> str:
-        return self._runner(["gemini", "-p", ""], prompt)
+        args = ["gemini", "--skip-trust", "--approval-mode", "plan"]
+        if self._model:
+            args += ["-m", self._model]
+        return self._runner([*args, "-p", ""], prompt)
 
 
 class OllamaProvider:
@@ -183,9 +198,9 @@ def build_provider(provider: str, model: str = "") -> LLMProvider:
     if provider == "claude-cli":
         return ClaudeCliProvider()
     if provider in ("codex-cli", "codex"):
-        return CodexCliProvider()
+        return CodexCliProvider(model)
     if provider in ("gemini-cli", "gemini"):
-        return GeminiCliProvider()
+        return GeminiCliProvider(model)
     if provider == "ollama":
         return OllamaProvider(model or "llama3")
     if provider in ("anthropic-api", "api"):

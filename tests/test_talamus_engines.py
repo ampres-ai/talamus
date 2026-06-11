@@ -37,8 +37,25 @@ class CliAdapterTests(unittest.TestCase):
 
         GeminiCliProvider(runner=runner).complete("ciao")
         args, prompt = calls[0]
-        self.assertEqual(args, ["gemini", "-p", ""])
+        self.assertEqual(args, ["gemini", "--skip-trust", "--approval-mode", "plan", "-p", ""])
         self.assertEqual(prompt, "ciao")
+
+    def test_model_passthrough_for_bulk_ingest(self) -> None:
+        """config llm_model reaches the CLI via -m (fast models for big books)."""
+        calls: list[list[str]] = []
+
+        def runner(args: list[str], prompt: str) -> str:
+            calls.append(args)
+            return "ok"
+
+        CodexCliProvider(model="gpt-5.4-mini", runner=runner).complete("x")
+        GeminiCliProvider(model="gemini-2.5-flash", runner=runner).complete("x")
+        self.assertIn("-m", calls[0])
+        self.assertEqual(calls[0][calls[0].index("-m") + 1], "gpt-5.4-mini")
+        self.assertEqual(calls[0][-1], "-")  # stdin marker stays last
+        self.assertIn("-m", calls[1])
+        self.assertEqual(calls[1][calls[1].index("-m") + 1], "gemini-2.5-flash")
+        self.assertEqual(calls[1][-2:], ["-p", ""])  # headless mode stays intact
 
     def test_build_provider_knows_the_new_engines(self) -> None:
         self.assertIsInstance(build_provider("codex-cli"), CodexCliProvider)

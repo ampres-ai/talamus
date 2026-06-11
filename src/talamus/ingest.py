@@ -33,7 +33,11 @@ def _save_hashes(paths: TalamusPaths, hashes: dict) -> None:
 
 
 def _compile_package(
-    paths: TalamusPaths, package: NormalizedPackage, llm: LLMProvider, preamble: str = ""
+    paths: TalamusPaths,
+    package: NormalizedPackage,
+    llm: LLMProvider,
+    preamble: str = "",
+    reindex: bool = True,
 ) -> int:
     """Estrae le note dal pacchetto, le scrive e risolve i wikilink a lotto,
     ricostruisce gli indici."""
@@ -55,7 +59,8 @@ def _compile_package(
     registry = NoteRegistry.from_notes(load_notes(paths))
     for note in notes:
         render_note_markdown(paths, note, registry)
-    rebuild_indexes(paths)
+    if reindex:
+        rebuild_indexes(paths)
     return len(notes)
 
 
@@ -142,7 +147,9 @@ def ingest_large(paths: TalamusPaths, file_path: Path, llm: LLMProvider, job_rec
         chunk_raw.write_text(chunks[index], encoding="utf-8")
         try:
             package = normalize_text(chunk_raw.as_posix(), chunks[index])
-            notes_total += _compile_package(paths, package, llm)
+            # niente reindex per chunk: un libro farebbe N rebuild su un brain
+            # che cresce — si ricostruisce UNA volta a fine job (anche su crash)
+            notes_total += _compile_package(paths, package, llm, reindex=False)
         except (EngineFailed, EngineNotFound):
             raise  # motore giù: il job si ferma resumabile, non si bruciano i chunk
         except Exception as exc:  # errore di contenuto del singolo chunk: non abortire il libro
@@ -150,7 +157,10 @@ def ingest_large(paths: TalamusPaths, file_path: Path, llm: LLMProvider, job_rec
             store.log(record.job_id, f"chunk {index}: FAILED {exc}")
 
     items = [f"chunk-{i:03d}" for i in range(len(chunks))]
-    final = run_items(store, record, items, handle, stage="ingest")
+    try:
+        final = run_items(store, record, items, handle, stage="ingest")
+    finally:
+        rebuild_indexes(paths)  # le note già scritte restano cercabili anche dopo un crash
     hashes = _load_hashes(paths)
     hashes[file_path.name] = _content_hash(text)
     _save_hashes(paths, hashes)
