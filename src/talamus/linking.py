@@ -36,7 +36,7 @@ def resolve_links(note: CanonicalNote, registry: NoteRegistry) -> dict[str, str]
     resolved: dict[str, str] = {}
     for proposed in note.proposed_links:
         title = registry.resolve(proposed.target)
-        if title is None:
-            continue
+        if title is None or title == note.title:
+            continue  # irrisolvibile, o auto-link: una nota non si linka mai da sola
         resolved[proposed.anchor] = f"[[{title}|{proposed.anchor}]]"
     return resolved

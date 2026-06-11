@@ -71,6 +71,37 @@ class ObsidianRendererTests(unittest.TestCase):
         self.assertIn("## Core Idea", markdown)
         self.assertIn("[[Retrieval-Augmented Generation|RAG]]", markdown)
 
+    def test_self_links_are_dropped(self) -> None:
+        """Real-world flaw from the book pilot: the model proposes links whose
+        target is the note itself (directly or via alias) — never render them."""
+        note = CanonicalNote(
+            note_id="perplessità",
+            title="Perplessità",
+            aliases=["Perplexity"],
+            folder="",
+            tags=[],
+            summary="Esponenziale della cross entropy.",
+            retrieval_text="perplessità perplexity",
+            body_sections={"definizione": "Metrica che quantifica l'incertezza."},
+            proposed_links=[
+                ProposedLink(anchor="quantifica l'incertezza", target="Perplessità", reason="self"),
+                ProposedLink(anchor="PPL", target="Perplexity", reason="self via alias"),
+                ProposedLink(anchor="Cross Entropy", target="Cross Entropy", reason="real"),
+            ],
+            relations=[],
+            sources=[source_ref()],
+            confidence=0.9,
+        )
+        registry = NoteRegistry.from_notes(
+            [note, CanonicalNote.minimal("Cross Entropy", sources=[source_ref()])]
+        )
+
+        resolved = resolve_links(note, registry)
+
+        self.assertEqual(["Cross Entropy"], list(resolved))
+        markdown = render_obsidian_note(note, registry)
+        self.assertNotIn("[[Perplessità", markdown)
+
     def test_body_link_applied_once_across_sections(self) -> None:
         note = CanonicalNote(
             note_id="rag",
