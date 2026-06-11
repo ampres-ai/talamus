@@ -212,6 +212,13 @@ def answer_question(
         trace["extra_items"] = len(extra_items or [])
     if not all_items:
         return "Nessun contesto trovato nel brain per questa domanda."
+    return answer_from_items(question, all_items, llm, trace=trace)
+
+
+def answer_from_items(
+    question: str, all_items: list[dict], llm: LLMProvider, trace: dict | None = None
+) -> str:
+    """Budget the items, answer with citations, append the Fonti legend."""
     items = fit_to_budget(all_items, context_budget())
     if trace is not None:
         trace["items_read"] = [item["path"] for item in items]

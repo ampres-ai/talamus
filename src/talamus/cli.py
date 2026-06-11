@@ -12,7 +12,7 @@ from pathlib import Path
 
 from talamus import __version__
 from talamus.adapters.llm import LLMProvider, build_provider
-from talamus.ask import answer_question
+from talamus.ask import answer_from_items, answer_question
 from talamus.config import TalamusConfig, load_config, load_or_default, save_config
 from talamus.consolidate import apply_consolidation, find_duplicates
 from talamus.correct import apply_correction, verify_note
@@ -36,7 +36,7 @@ from talamus.ontology_lab import (
     stability,
 )
 from talamus.paths import TalamusPaths
-from talamus.recall import concept_neighbors, read_note_text, recall_context
+from talamus.recall import concept_neighbors, read_note_text, recall_context, search_notes
 from talamus.registry import (
     central_brain,
     load_registry,
@@ -67,6 +67,7 @@ from talamus.scope import (
     scoped_search,
 )
 from talamus.store import cache_is_current, reindex
+from talamus.temporal import note_timeline, parse_when
 from talamus.timeline import note_as_of, note_history
 
 _ENGINE_COMMANDS: dict[str, str | None] = {
@@ -165,8 +166,8 @@ def _cmd_ui(root: Path) -> int:
 
 _ALL_COMMANDS = (
     "init demo ui status doctor reindex ingest scan consolidate verify ask overview search read "
-    "history recall neighbors relations remember eval ontology jobs review quickstart brains "
-    "where export import completion mcp hook hook-run"
+    "history timeline recall neighbors relations remember eval ontology jobs review quickstart "
+    "brains where export import completion mcp hook hook-run"
 )
 
 # Runners that can resume a persisted job, keyed by kind (scan registers below).
@@ -879,9 +880,45 @@ def _cmd_ask(
     json_out: bool,
     policy: str | None = None,
     with_trace: bool = False,
+    as_of: str | None = None,
 ) -> int:
     policy = policy or default_scope(root)
     trace: dict | None = {"scope": policy} if with_trace else None
+    if as_of:
+        when = parse_when(as_of)
+        if trace is not None and when.warning:
+            trace["as_of_warning"] = when.warning
+        paths = TalamusPaths(root)
+        items: list[dict] = []
+        for hit in search_notes(paths, question, limit=5):
+            version = note_as_of(paths, hit["title"], as_of)
+            if version is None:
+                continue  # the note did not exist yet at that time
+            joiner = chr(10)
+            body = joiner.join(str(v) for v in version.get("body_sections", {}).values())
+            items.append(
+                {
+                    "route": "as-of",
+                    "path": f"[as-of {as_of}] {hit['title']}",
+                    "content": f"{version.get('summary', '')}{joiner}{body}",
+                }
+            )
+        if not items:
+            print(f"nessuna conoscenza nel brain alla data {as_of}")
+            return 0
+        answer = answer_from_items(question, items, llm, trace=trace)
+        if json_out:
+            temporal_payload: dict = {
+                "answer": answer,
+                "scope": policy,
+                "as_of": when.instant_utc,
+            }
+            if trace is not None:
+                temporal_payload["trace"] = trace
+            _print_json(temporal_payload)
+            return 0
+        print(answer)
+        return 0
     if policy == "central-only":
         central = central_brain()
         if central is None:
@@ -980,8 +1017,26 @@ def _cmd_search(
     return 0
 
 
-def _cmd_read(root: Path, title: str, json_out: bool) -> int:
-    text = read_note_text(TalamusPaths(root), title)
+def _cmd_read(root: Path, title: str, json_out: bool, as_of: str | None = None) -> int:
+    paths = TalamusPaths(root)
+    if as_of:
+        version = note_as_of(paths, title, as_of)
+        if version is None:
+            print(f"nessuna versione di '{title}' a {as_of}", file=sys.stderr)
+            return 1
+        if json_out:
+            _print_json(version)
+            return 0
+        print(f"# {version.get('title', title)}  [as-of {as_of}]")
+        print()
+        print(version.get("summary", ""))
+        print()
+        for section, body in version.get("body_sections", {}).items():
+            print(f"## {section.capitalize()}")
+            print(body)
+            print()
+        return 0
+    text = read_note_text(paths, title)
     if json_out:
         _print_json({"title": title, "found": text is not None, "markdown": text})
         return 0 if text is not None else 1
@@ -989,6 +1044,27 @@ def _cmd_read(root: Path, title: str, json_out: bool) -> int:
         print(f"scheda non trovata: {title}", file=sys.stderr)
         return 1
     print(text)
+    return 0
+
+
+def _cmd_timeline(root: Path, title: str, json_out: bool) -> int:
+    data = note_timeline(TalamusPaths(root), title)
+    if json_out:
+        _print_json(data)
+        return 0
+    print(f"Timeline di '{title}'")
+    print("- storia delle transazioni (quando Talamus ha cambiato il record):")
+    if not data["transaction"]:
+        print("  (nessuna versione)")
+    for event in data["transaction"]:
+        print(f"  [{event['at']}] {event['summary']}")
+    print("- validita' dei fatti (quando erano veri nel mondo rappresentato):")
+    if not data["valid"]:
+        print("  (nessun claim registrato)")
+    for claim in data["valid"]:
+        closed = f" -> {claim['to']}" if claim["to"] else ""
+        marker = f"  (invalidato da: {claim['invalidated_by']})" if claim["invalidated_by"] else ""
+        print(f"  [{claim['from']}{closed}] {claim['text']}{marker}")
     return 0
 
 
@@ -1230,6 +1306,9 @@ def build_parser() -> argparse.ArgumentParser:
     ask.add_argument(
         "--trace", action="store_true", help="explain the route: domains, candidates, tokens"
     )
+    ask.add_argument(
+        "--as-of", dest="as_of", default=None, help="answer from the brain as it was at this time"
+    )
     search = sub.add_parser("search", parents=[common], help="find relevant notes")
     search.add_argument("query")
     search.add_argument("--limit", type=int, default=5, help="max results (default 5)")
@@ -1245,6 +1324,9 @@ def build_parser() -> argparse.ArgumentParser:
         )
     read = sub.add_parser("read", parents=[common], help="print a note by title")
     read.add_argument("title")
+    read.add_argument("--as-of", dest="as_of", default=None, help="version current at this time")
+    tl = sub.add_parser("timeline", parents=[common], help="both timelines of a note")
+    tl.add_argument("title")
     history = sub.add_parser("history", parents=[common], help="show a note's past versions")
     history.add_argument("title")
     history.add_argument("--as-of", default=None, help="version current at this ISO time")
@@ -1340,7 +1422,9 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "search":
             return _cmd_search(root, args.query, json_out, args.limit, policy)
         if command == "read":
-            return _cmd_read(root, args.title, json_out)
+            return _cmd_read(root, args.title, json_out, args.as_of)
+        if command == "timeline":
+            return _cmd_timeline(root, args.title, json_out)
         if command == "history":
             return _cmd_history(root, args.title, args.as_of, json_out)
         if command == "recall":
@@ -1373,7 +1457,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "overview":
             return _cmd_overview(root, provider, json_out, args.rebuild, policy)
         if command == "ask":
-            return _cmd_ask(root, args.question, provider, json_out, policy, args.trace)
+            return _cmd_ask(root, args.question, provider, json_out, policy, args.trace, args.as_of)
         if command == "remember":
             return _cmd_remember(root, args.transcript, args.diff, provider, json_out)
     except TalamusError as exc:

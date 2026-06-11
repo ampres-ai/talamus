@@ -91,4 +91,37 @@ def apply_correction(paths: TalamusPaths, title: str, llm: LLMProvider) -> bool:
     overwrite_note_json(paths, corrected)
     render_note_markdown(paths, corrected, NoteRegistry.from_notes(load_notes(paths)))
     rebuild_indexes(paths)
+    _record_correction_claims(paths, note, corrected)
     return True
+
+
+def _record_correction_claims(paths: TalamusPaths, old: CanonicalNote, new: CanonicalNote) -> None:
+    """Valid-time overlay (M6): a correction CLOSES the old claim and OPENS the new
+    one — the contradicted fact stays queryable as-of its validity window, but is
+    excluded from the current view (F6.6)."""
+    from talamus.temporal import current_claims, invalidate_claim, record_claim
+
+    evidence = old.sources[0].normalized_path if old.sources else ""
+    existing = current_claims(paths, note_id=old.note_id)
+    if not existing:
+        # first correction for this note: record the old fact retroactively
+        # (valid since the note was created), so its window is honest
+        existing = [
+            record_claim(
+                paths,
+                note_id=old.note_id,
+                text=old.summary,
+                evidence=evidence,
+                valid_from=old.created_at or "",
+                confidence=old.confidence,
+            )
+        ]
+    for claim in existing:
+        invalidate_claim(paths, claim.claim_id, invalidated_by="correction")
+    record_claim(
+        paths,
+        note_id=new.note_id,
+        text=new.summary,
+        evidence=evidence,
+        confidence=new.confidence,
+    )

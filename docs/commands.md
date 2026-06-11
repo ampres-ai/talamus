@@ -27,6 +27,8 @@ options. Most commands accept the [global flags](#global-flags) below.
 | `talamus recall "<question>" [--limit N]` | Retrieve the relevant context (for agents to reason over). |
 | `talamus neighbors "<concept>"` | Show a concept's typed connections. |
 | `talamus history "<title>" [--as-of T]` | Show a note's past versions (or the one current at time T). |
+| `talamus timeline "<title>"` | Both timelines: transaction history (when Talamus changed the record) and valid-time claims (when facts were true). |
+| `talamus read "<title>" --as-of T` / `talamus ask "<q>" --as-of T` | The note / the answer as the brain was at time T (accepts `2026`, `2026-01`, `2026-01-15`, full ISO; partial dates = end of period). |
 | `talamus reindex` | Fold hand-edits to the Markdown notes back into the indexes. |
 | `talamus remember --transcript <f> [--diff <f>]` | Capture an agent session into notes. |
 

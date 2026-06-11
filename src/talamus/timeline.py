@@ -39,6 +39,12 @@ def note_history(paths: TalamusPaths, title: str) -> list[dict]:
 
 
 def note_as_of(paths: TalamusPaths, title: str, timestamp: str) -> dict | None:
-    """The note version current at the given ISO timestamp, or None."""
-    matching = [v for v in note_history(paths, title) if str(v.get("updated_at", "")) <= timestamp]
+    """The note version current at the given time, or None.
+
+    Accepts year / year-month / date / full datetime (robust parsing via
+    ``temporal.parse_when``); raw ISO strings keep working as before."""
+    from talamus.temporal import parse_when
+
+    instant = parse_when(timestamp).instant_utc
+    matching = [v for v in note_history(paths, title) if str(v.get("updated_at", "")) <= instant]
     return matching[-1] if matching else None
