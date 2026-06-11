@@ -303,32 +303,163 @@ def build_ontology_lab(paths: TalamusPaths, refresh: Callable[[], None]) -> ft.C
 # ------------------------------------------------------------------- settings
 
 
-def build_settings(paths: TalamusPaths) -> ft.Control:
-    from talamus.config import load_or_default
+def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = None) -> ft.Control:
+    """Everything configurable in-app (Fase R3): engine, model, API key, MCP,
+    brain registry flags. Saves go to talamus.json / TALAMUS_HOME — the same
+    files the CLI uses (no duplicated logic, just thin wiring)."""
+    import dataclasses
+    import os
+
+    from talamus.adapters.llm import detect_engines, save_credential
+    from talamus.config import load_or_default, save_config
     from talamus.indexes import backend_info
-    from talamus.registry import load_registry
+    from talamus.registry import load_registry, set_brain_flag
+    from talamus.ui import theme
+
+    def _notify(message: str) -> None:
+        if notify is not None:
+            notify(message)
 
     config = load_or_default(paths.config_path)
     info = backend_info(paths)
+
+    engines = detect_engines()
+    if config.llm_provider not in engines:
+        engines.insert(0, config.llm_provider)
+    engine_dd = ft.Dropdown(
+        label="Motore LLM",
+        value=config.llm_provider,
+        options=[ft.DropdownOption(key=name, text=name) for name in engines],
+        width=320,
+    )
+    model_tf = ft.TextField(
+        label="Modello (opzionale, es. llama3)",
+        value=config.llm_model,
+        width=320,
+    )
+
+    def save_engine(_e: object) -> None:
+        current = load_or_default(paths.config_path)
+        updated = dataclasses.replace(
+            current,
+            llm_provider=engine_dd.value or current.llm_provider,
+            llm_model=model_tf.value or "",
+        )
+        save_config(paths.config_path, updated)
+        _notify(f"Motore salvato: {updated.llm_provider}")
+
+    key_set = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    key_tf = ft.TextField(
+        label="Chiave API Anthropic (motore anthropic-api)",
+        password=True,
+        can_reveal_password=True,
+        width=320,
+        hint_text="già impostata via env" if key_set else "vuota",
+    )
+
+    def save_key(_e: object) -> None:
+        if key_tf.value:
+            save_credential("anthropic_api_key", key_tf.value)
+            key_tf.value = ""
+            _notify("Chiave salvata in TALAMUS_HOME/credentials.json (la env var vince sempre)")
+
+    def install_mcp(_e: object) -> None:
+        import json as _json
+
+        config_file = paths.project_root / ".mcp.json"
+        data: dict = {}
+        if config_file.exists():
+            try:
+                data = _json.loads(config_file.read_text(encoding="utf-8"))
+            except _json.JSONDecodeError:
+                data = {}
+        data.setdefault("mcpServers", {})["talamus"] = {
+            "command": "talamus-mcp",
+            "args": ["--root", str(paths.project_root)],
+        }
+        config_file.write_text(_json.dumps(data, indent=2), encoding="utf-8")
+        _notify(f"MCP configurato: {config_file} (riavvia il tuo agent)")
+
     registry = load_registry()
-    rows: list[ft.Control] = [
-        heading("Impostazioni"),
-        ft.Text(
-            f"Engine: {config.llm_provider}"
-            + (f" ({config.llm_model})" if config.llm_model else "")
-        ),
-        ft.Text(f"Indice: {info['backend']} ({info['bytes']:,} byte)"),
-        subtle("Engine e budget si cambiano in talamus.json o via TALAMUS_* env."),
-        ft.Text("Brain registrati", size=16, weight=ft.FontWeight.BOLD),
-    ]
-    if not registry.brains:
-        rows.append(subtle("nessun brain nel registry"))
+    brain_rows: list[ft.Control] = []
     for brain in registry.brains:
-        flags = []
-        if not brain.federated:
-            flags.append("no-fed")
-        if brain.sensitive:
-            flags.append("sensitive")
-        extra = f"  [{', '.join(flags)}]" if flags else ""
-        rows.append(subtle(f"{brain.name} ({brain.type}){extra} — {brain.path}"))
-    return ft.Column(rows, spacing=6)
+
+        def _toggle(name: str, flag: str) -> Callable[[ft.Event[ft.Switch]], None]:
+            def handler(e: ft.Event[ft.Switch]) -> None:
+                set_brain_flag(name, flag, bool(e.control.value))
+                _notify(f"{name}: {flag} = {e.control.value}")
+
+            return handler
+
+        brain_rows.append(
+            theme.card(
+                ft.Column(
+                    [
+                        ft.Text(f"{brain.name}  ({brain.type})", weight=ft.FontWeight.BOLD),
+                        theme.muted(brain.path),
+                        ft.Row(
+                            [
+                                ft.Switch(
+                                    label="federato",
+                                    value=brain.federated,
+                                    on_change=_toggle(brain.name, "federated"),
+                                ),
+                                ft.Switch(
+                                    label="sensibile",
+                                    value=brain.sensitive,
+                                    on_change=_toggle(brain.name, "sensitive"),
+                                ),
+                            ]
+                        ),
+                    ],
+                    spacing=4,
+                ),
+                padding=12,
+            )
+        )
+    if not brain_rows:
+        brain_rows.append(theme.muted("nessun brain nel registry (`talamus init` registra)"))
+
+    budget = os.environ.get("TALAMUS_CONTEXT_BUDGET", "6000 (default)")
+    return ft.Column(
+        [
+            heading("Impostazioni"),
+            theme.section("Motore"),
+            theme.card(
+                ft.Column(
+                    [engine_dd, model_tf, ft.FilledButton("Salva motore", on_click=save_engine)],
+                    spacing=10,
+                )
+            ),
+            theme.section("Chiave API"),
+            theme.card(
+                ft.Column([key_tf, ft.FilledButton("Salva chiave", on_click=save_key)], spacing=10)
+            ),
+            theme.section("Integrazioni agent"),
+            theme.card(
+                ft.Column(
+                    [
+                        ft.FilledButton("Installa MCP in questo progetto", on_click=install_mcp),
+                        theme.muted(
+                            "Hook di cattura: `talamus hook` stampa lo snippet per "
+                            ".claude/settings.json"
+                        ),
+                    ],
+                    spacing=10,
+                )
+            ),
+            theme.section("Brain registrati"),
+            *brain_rows,
+            theme.section("Sistema"),
+            theme.card(
+                ft.Column(
+                    [
+                        theme.muted(f"Indice: {info['backend']} ({info['bytes']:,} byte)"),
+                        theme.muted(f"Budget contesto: {budget} token (TALAMUS_CONTEXT_BUDGET)"),
+                    ],
+                    spacing=4,
+                )
+            ),
+        ],
+        spacing=10,
+    )
