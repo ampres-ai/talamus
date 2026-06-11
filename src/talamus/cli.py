@@ -230,13 +230,45 @@ def _cmd_ui(root: Path, web: bool = False, port: int = 8550) -> int:
 
 
 _ALL_COMMANDS = (
-    "init demo ui status doctor reindex ingest scan consolidate verify ask overview search read "
+    "setup init demo ui status doctor reindex ingest scan consolidate verify ask overview search "
+    "read "
     "history timeline recall neighbors relations remember eval ontology jobs review quickstart "
     "brains where export import completion mcp hook hook-run"
 )
 
 # Runners that can resume a persisted job, keyed by kind (scan registers below).
 JOB_RUNNERS: dict[str, Callable[[Path, JobRecord], int]] = {}
+
+
+def _cmd_setup(root: Path, engine: str | None) -> int:
+    """One-command onboarding (Fase R4): the coding-agent subscription you
+    already pay for becomes a personal + agentic memory, in minutes."""
+    from talamus.adapters.llm import detect_engines
+
+    print("Talamus setup\n")
+    engines = detect_engines()
+    chosen = engine or next((e for e in engines if e != "anthropic-api"), "claude-cli")
+    print(f"1/4  Motori rilevati: {', '.join(engines)}")
+    print(f"     Uso: {chosen} (cambialo con --engine o dalle Impostazioni)\n")
+    code = _cmd_init(root, chosen, "project")
+    if code != 0:
+        return code
+    print()
+    print("2/4  Collego il tuo agent (MCP)...")
+    _cmd_mcp_install(root)
+    print()
+    print("3/4  Hook di cattura sessione (per ricordare il lavoro dell'agent):")
+    _cmd_hook(root)
+    print()
+    print("4/4  Cosa c'è da imparare in questa cartella (piano, costo zero):")
+    plan = build_plan(root, profile="all")
+    print(format_plan(plan))
+    print()
+    print("Fatto. La tua memoria è viva:")
+    print('  talamus ask "..."        domanda con risposta citata')
+    print("  talamus scan . --yes     compila la repo nel brain (dopo il piano qui sopra)")
+    print("  talamus ui               il workbench grafico")
+    return 0
 
 
 def _cmd_scan(
@@ -1298,6 +1330,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"talamus {__version__}")
     sub = parser.add_subparsers(dest="command", metavar="<command>")
 
+    setup = sub.add_parser(
+        "setup", parents=[common], help="one-command onboarding: brain + engine + MCP + hook"
+    )
+    setup.add_argument("--engine", default=None, help="LLM engine (else best detected)")
     init = sub.add_parser("init", parents=[common], help="initialize a brain here")
     init.add_argument("--engine", default=None, help="LLM engine (else auto-detected).")
     init.add_argument(
@@ -1501,6 +1537,10 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         return _cmd_brains_group(args)
     if command == "completion":
         return _cmd_completion(args.shell)
+
+    if command == "setup":
+        resolved = resolve_init_root(args.root, args.brain, args.use_global)
+        return _cmd_setup(resolved.root, args.engine)
 
     if command == "init":
         resolved = resolve_init_root(args.root, args.brain, args.use_global)

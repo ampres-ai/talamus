@@ -458,6 +458,27 @@ class CliMultiBrainTests(unittest.TestCase):
                 self.assertFalse((Path(home) / "default").exists())
 
 
+class CliSetupTests(unittest.TestCase):
+    def test_setup_creates_brain_mcp_and_plan_in_one_command(self) -> None:
+        with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as root:
+            with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    code = main(["setup", "--root", root])
+                self.assertEqual(0, code)
+                self.assertTrue((Path(root) / "talamus.json").exists())
+                self.assertTrue((Path(root) / ".mcp.json").exists())
+                text = out.getvalue()
+                self.assertIn("Motori rilevati", text)
+                self.assertIn("Scan plan", text)
+                self.assertIn("memoria è viva", text)
+                # registered in the registry too
+                out2 = io.StringIO()
+                with redirect_stdout(out2):
+                    main(["brains", "list", "--json"])
+                self.assertEqual(1, len(json.loads(out2.getvalue())["brains"]))
+
+
 class CliVersionTests(unittest.TestCase):
     def test_version_flag_prints_and_exits_zero(self) -> None:
         out = io.StringIO()
