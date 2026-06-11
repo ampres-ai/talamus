@@ -14,7 +14,7 @@ from mcp.server.fastmcp import FastMCP
 from talamus.adapters.llm import LLMProvider, build_provider
 from talamus.config import load_or_default
 from talamus.domains import load_overview
-from talamus.ingest import ingest_text
+from talamus.ingest import ingest_text as sdk_ingest_text
 from talamus.paths import TalamusPaths
 from talamus.recall import concept_neighbors, read_note_text, recall_context, search_notes
 
@@ -25,6 +25,18 @@ _root: Path = Path(".").resolve()
 
 def _paths() -> TalamusPaths:
     return TalamusPaths(_root)
+
+
+def _paths_for(scope: str) -> TalamusPaths:
+    """Resolve the brain for an explicit scope (F10.1): 'project' (default) or
+    'central' (the personal hub). Writes default to the project brain (F10.4)."""
+    if scope == "central":
+        from talamus.registry import central_brain
+
+        central = central_brain()
+        if central is not None:
+            return TalamusPaths(central.root())
+    return _paths()
 
 
 def _provider() -> LLMProvider:
@@ -85,11 +97,112 @@ def neighbors(concept: str) -> str:
 
 
 @server.tool()
-def remember(text: str) -> str:
+def history(title: str) -> str:
+    """Le versioni passate di una scheda del brain (transaction time), dalla più
+    vecchia: quando Talamus ha cambiato quel record e come."""
+    from talamus.timeline import note_history
+
+    versions = note_history(_paths(), title)
+    if not versions:
+        return f"Nessuna versione per: {title}"
+    return "\n".join(f"[{v.get('updated_at', '?')}] {v.get('summary', '')}" for v in versions)
+
+
+@server.tool()
+def sources(title: str) -> str:
+    """Le fonti (provenienza) di una scheda: da dove viene ogni affermazione."""
+    from talamus.store import load_notes
+
+    for note in load_notes(_paths()):
+        if note.title.lower() == title.strip().lower():
+            if not note.sources:
+                return "La scheda non ha fonti registrate."
+            return "\n".join(f"- {s.normalized_path} ({s.locator})" for s in note.sources)
+    return f"Scheda non trovata: {title}"
+
+
+@server.tool()
+def ontology_status() -> str:
+    """Lo stato del sistema di tipi emergente: versione dello schema, tipi
+    attivi/candidati e copertura degli archi tipizzati."""
+    from talamus.ontology_lab import schema_status
+
+    status = schema_status(_paths())
+    cov = status["coverage"]
+    lines = [f"schema {status['schema_id']} (v{status['version']})"]
+    for state, count in sorted(status["types"].items()):
+        lines.append(f"{state}: {count}")
+    if cov["edges"]:
+        lines.append(f"coverage: {cov['non_related']}/{cov['edges']} archi tipizzati")
+    return "\n".join(lines)
+
+
+@server.tool()
+def remember(text: str, scope: str = "project") -> str:
     """Salva nel brain Talamus un'intuizione o decisione importante emersa nella
-    sessione, trasformandola in una scheda."""
-    result = ingest_text(_paths(), text, _provider())
-    return f"Ricordato: {result['notes_written']} schede salvate nel brain."
+    sessione, trasformandola in una scheda. scope: 'project' (default) o 'central'
+    per il brain personale — la scrittura globale deve essere esplicita."""
+    result = sdk_ingest_text(_paths_for(scope), text, _provider())
+    return f"Ricordato in [{scope}]: {result['notes_written']} schede salvate."
+
+
+@server.tool()
+def ingest_text(text: str, name: str = "insight", scope: str = "project") -> str:
+    """Compila un testo in schede del brain (senza il gate 'vale la pena ricordare':
+    usalo per contenuto già selezionato). scope: 'project' (default) o 'central'."""
+    result = sdk_ingest_text(_paths_for(scope), text, _provider(), name=name)
+    return f"Ingerito in [{scope}]: {result['notes_written']} schede."
+
+
+@server.tool()
+def propose_note(text: str, reason: str = "") -> str:
+    """Proponi una conoscenza INCERTA: finisce nella coda di review del brain,
+    non direttamente nelle schede (F10.4). Un umano la applicherà o rifiuterà."""
+    from talamus.review import ReviewQueue
+
+    item = ReviewQueue(_paths()).add(
+        "low_confidence_note",
+        text[:80] + ("…" if len(text) > 80 else ""),
+        {"text": text, "reason": reason or "proposta da agente"},
+    )
+    return f"In review: {item.item_id} (decidi con `talamus review`)."
+
+
+@server.tool()
+def review_list() -> str:
+    """Le decisioni in attesa nella coda di review del brain."""
+    from talamus.review import ReviewQueue
+
+    pending = ReviewQueue(_paths()).list(status="pending")
+    if not pending:
+        return "Coda di review vuota."
+    return "\n".join(f"- {i.item_id} [{i.kind}] {i.title}" for i in pending)
+
+
+@server.tool()
+def review_apply(item_id: str) -> str:
+    """Applica un elemento della coda di review (le correzioni vengono scritte
+    nel brain preservando la storia)."""
+    from talamus.correct import apply_proposed_correction
+    from talamus.review import ReviewQueue
+
+    queue = ReviewQueue(_paths())
+    entry = queue.get(item_id)
+    if entry is None:
+        return f"Nessun elemento: {item_id}"
+    if entry.kind == "correction" and not apply_proposed_correction(_paths(), entry.detail):
+        return f"Impossibile applicare: nota '{entry.detail.get('title')}' non trovata."
+    applied = queue.apply(item_id)
+    return f"Applicato: {item_id}" if applied else f"'{item_id}' non è in attesa."
+
+
+@server.tool()
+def review_reject(item_id: str, reason: str = "") -> str:
+    """Rifiuta un elemento della coda di review (la decisione resta registrata)."""
+    from talamus.review import ReviewQueue
+
+    rejected = ReviewQueue(_paths()).reject(item_id, reason)
+    return f"Rifiutato: {item_id}" if rejected else f"'{item_id}' non è in attesa."
 
 
 def _build_parser() -> argparse.ArgumentParser:

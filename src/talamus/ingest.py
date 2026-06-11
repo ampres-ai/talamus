@@ -117,11 +117,27 @@ def ingest_path(paths: TalamusPaths, target: str, llm: LLMProvider) -> dict:
     return ingest_file(paths, path, llm)
 
 
+def _log_capture(paths: TalamusPaths, decision: str, detail: str) -> None:
+    """Append the capture decision to .talamus/logs/capture.log (F10.5):
+    every remember/skip is auditable, with its reason."""
+    import time
+
+    paths.logs.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+    with (paths.logs / "capture.log").open("a", encoding="utf-8") as handle:
+        handle.write(f"{stamp} {decision} {detail}\n")
+
+
 def remember_session(paths: TalamusPaths, transcript: str, diff: str, llm: LLMProvider) -> dict:
     """Una sessione-agente (transcript + diff) diventa note, se supera il gate."""
     paths.ensure_directories()
     if not session_worth_remembering(transcript, diff):
-        return {"skipped": True, "notes_written": 0}
+        _log_capture(
+            paths,
+            "skip",
+            f"sotto la soglia del gate (transcript {len(transcript)} char, diff {len(diff)} char)",
+        )
+        return {"skipped": True, "notes_written": 0, "reason": "below worth-remembering gate"}
     digest = hashlib.sha256((transcript + "\n" + diff).encode("utf-8")).hexdigest()[:8]
     raw_path = paths.raw / f"session-{digest}.md"
     raw_path.write_text(
@@ -129,6 +145,7 @@ def remember_session(paths: TalamusPaths, transcript: str, diff: str, llm: LLMPr
     )
     package = normalize_session(raw_path.as_posix(), transcript, diff)
     written = _compile_package(paths, package, llm)
+    _log_capture(paths, "capture", f"session-{digest}: {written} schede")
     return {"skipped": False, "notes_written": written}
 
 
