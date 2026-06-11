@@ -25,7 +25,7 @@ class CliAdapterTests(unittest.TestCase):
         provider = CodexCliProvider(runner=runner)
         self.assertEqual(provider.complete("domanda lunga" * 100), "risposta")
         args, prompt = calls[0]
-        self.assertEqual(args, ["codex", "exec", "-"])
+        self.assertEqual(args, ["codex", "exec", "--skip-git-repo-check", "-s", "read-only", "-"])
         self.assertIn("domanda lunga", prompt)  # prompt on stdin, not argv
 
     def test_gemini_headless_with_stdin_prompt(self) -> None:

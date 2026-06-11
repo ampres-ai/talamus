@@ -58,14 +58,18 @@ class ClaudeCliProvider:
 
 
 class CodexCliProvider:
-    """OpenAI Codex CLI subscription via `codex exec -` (prompt on stdin —
-    avoids the Windows command-line length limit on long extraction prompts)."""
+    """OpenAI Codex CLI subscription via `codex exec` (prompt on stdin via `-`,
+    dodging the Windows argv length limit). `codex exec` is an AGENT that can run
+    shell commands, so we pin it down: read-only sandbox, no git-repo check —
+    it must behave as a pure completion engine."""
 
     def __init__(self, runner: Callable[[list[str], str], str] = _default_runner) -> None:
         self._runner = runner
 
     def complete(self, prompt: str) -> str:
-        return self._runner(["codex", "exec", "-"], prompt)
+        return self._runner(
+            ["codex", "exec", "--skip-git-repo-check", "-s", "read-only", "-"], prompt
+        )
 
 
 class GeminiCliProvider:

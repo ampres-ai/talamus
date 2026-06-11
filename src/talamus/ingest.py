@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 
 from talamus.adapters.llm import LLMProvider
+from talamus.errors import EngineFailed, EngineNotFound
 from talamus.extract import extract_notes
 from talamus.linking import NoteRegistry
 from talamus.normalize import NormalizedPackage, normalize_text
@@ -58,17 +59,111 @@ def _compile_package(
     return len(notes)
 
 
+CHUNK_CHARS = 20_000  # ~5k token per chiamata di estrazione: documenti più grandi vanno a chunk
+
+
+def split_chunks(text: str, limit: int = CHUNK_CHARS) -> list[str]:
+    """Split big documents at paragraph boundaries, each chunk under ``limit``.
+
+    Deterministic: the same text always yields the same chunks (resume relies on it)."""
+    if len(text) <= limit:
+        return [text]
+    chunks: list[str] = []
+    current: list[str] = []
+    size = 0
+    for paragraph in text.split("\n\n"):
+        block = paragraph + "\n\n"
+        if size + len(block) > limit and current:
+            chunks.append("".join(current).strip())
+            current, size = [], 0
+        while len(block) > limit:  # a single paragraph larger than the limit
+            chunks.append(block[:limit].strip())
+            block = block[limit:]
+        current.append(block)
+        size += len(block)
+    if current and "".join(current).strip():
+        chunks.append("".join(current).strip())
+    return chunks
+
+
+def estimate_chunks(paths: TalamusPaths, file_path: Path) -> dict:
+    """Cost preview for a big-document ingest: chunks = LLM calls. No LLM, no writes."""
+    text = extract_text(file_path)
+    chunks = split_chunks(text)
+    return {
+        "source": file_path.name,
+        "chars": len(text),
+        "chunks": len(chunks),
+        "est_llm_calls": len(chunks),
+        "est_input_tokens": len(text) // 4,
+    }
+
+
 def ingest_file(paths: TalamusPaths, file_path: Path, llm: LLMProvider) -> dict:
     paths.ensure_directories()
     text = extract_text(file_path)
     raw_copy = paths.raw / file_path.name
     shutil.copyfile(file_path, raw_copy)
-    package = normalize_text(raw_copy.as_posix(), text)
-    written = _compile_package(paths, package, llm)
+    chunks = split_chunks(text)
+    if len(chunks) == 1:
+        package = normalize_text(raw_copy.as_posix(), text)
+        written = _compile_package(paths, package, llm)
+        hashes = _load_hashes(paths)
+        hashes[file_path.name] = _content_hash(text)
+        _save_hashes(paths, hashes)
+        return {"notes_written": written, "source": file_path.name}
+    return ingest_large(paths, file_path, llm)
+
+
+def ingest_large(paths: TalamusPaths, file_path: Path, llm: LLMProvider, job_record=None) -> dict:
+    """Big-document ingest as a persistent, resumable job: one extraction call per
+    chunk, progress saved after each — a 500-page book survives crashes and
+    interruptions, and `talamus jobs resume` picks up exactly where it stopped."""
+    from talamus.jobs import JobStore, run_items
+
+    paths.ensure_directories()
+    text = extract_text(file_path)
+    raw_copy = paths.raw / file_path.name
+    if file_path.resolve() != raw_copy.resolve():
+        shutil.copyfile(file_path, raw_copy)
+    chunks = split_chunks(text)
+    store = JobStore(paths)
+    record = job_record or store.create(
+        "ingest", payload={"file": str(file_path), "chunks": len(chunks)}
+    )
+    notes_total = 0
+    failed: list[dict] = []
+
+    def handle(item: str) -> None:
+        nonlocal notes_total
+        index = int(item.split("-")[1])
+        chunk_name = f"{file_path.stem}-c{index:03d}{file_path.suffix or '.md'}"
+        chunk_raw = paths.raw / chunk_name
+        chunk_raw.write_text(chunks[index], encoding="utf-8")
+        try:
+            package = normalize_text(chunk_raw.as_posix(), chunks[index])
+            notes_total += _compile_package(paths, package, llm)
+        except (EngineFailed, EngineNotFound):
+            raise  # motore giù: il job si ferma resumabile, non si bruciano i chunk
+        except Exception as exc:  # errore di contenuto del singolo chunk: non abortire il libro
+            failed.append({"chunk": index, "error": str(exc)})
+            store.log(record.job_id, f"chunk {index}: FAILED {exc}")
+
+    items = [f"chunk-{i:03d}" for i in range(len(chunks))]
+    final = run_items(store, record, items, handle, stage="ingest")
     hashes = _load_hashes(paths)
     hashes[file_path.name] = _content_hash(text)
     _save_hashes(paths, hashes)
-    return {"notes_written": written, "source": file_path.name}
+    final.result = {"notes_written": notes_total, "failed": failed, "chunks": len(chunks)}
+    store.save(final)
+    return {
+        "notes_written": notes_total,
+        "source": file_path.name,
+        "chunks": len(chunks),
+        "job_id": final.job_id,
+        "state": final.state,
+        "failed": failed,
+    }
 
 
 def ingest_url(paths: TalamusPaths, url: str, llm: LLMProvider) -> dict:

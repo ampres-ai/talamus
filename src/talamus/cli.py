@@ -72,10 +72,13 @@ from talamus.timeline import note_as_of, note_history
 
 _ENGINE_COMMANDS: dict[str, str | None] = {
     "claude-cli": "claude",
+    "codex-cli": "codex",
+    "gemini-cli": "gemini",
     "ollama": "ollama",
     "codex": "codex",
     "gemini": "gemini",
     "api": None,
+    "anthropic-api": None,
 }
 
 
@@ -339,6 +342,25 @@ def _run_scan_job(root: Path, record: JobRecord) -> int:
 
 
 JOB_RUNNERS["scan"] = _run_scan_job
+
+
+def _run_ingest_job(root: Path, record: JobRecord) -> int:
+    """Resume a chunked big-document ingest (talamus jobs resume)."""
+    from talamus.ingest import ingest_large
+
+    file_path = Path(str(record.payload.get("file", "")))
+    if not file_path.is_file():
+        print(f"error: source file missing: {file_path}", file=sys.stderr)
+        return 1
+    report = ingest_large(TalamusPaths(root), file_path, _provider_for(root), job_record=record)
+    print(
+        f"ingest {report['state']}: {report['notes_written']} schede da "
+        f"{report['chunks']} chunk (job {report['job_id']})"
+    )
+    return 0
+
+
+JOB_RUNNERS["ingest"] = _run_ingest_job
 
 
 def _cmd_ontology_group(
@@ -888,8 +910,27 @@ def _cmd_reindex(root: Path, json_out: bool) -> int:
     return 0
 
 
-def _cmd_ingest(root: Path, target: str, llm: LLMProvider, json_out: bool) -> int:
-    result = ingest_path(TalamusPaths(root), target, llm)
+def _cmd_ingest(
+    root: Path, target: str, llm: LLMProvider, json_out: bool, yes: bool = False
+) -> int:
+    from talamus.ingest import estimate_chunks
+    from talamus.sources import is_url
+
+    paths = TalamusPaths(root)
+    target_path = Path(target)
+    if not is_url(target) and target_path.is_file():
+        estimate = estimate_chunks(paths, target_path)
+        if estimate["chunks"] > 3 and not yes:
+            print(f"Documento grande: {estimate['source']}")
+            print(
+                f"  {estimate['chars']:,} caratteri -> {estimate['chunks']} chunk = "
+                f"{estimate['est_llm_calls']} chiamate LLM "
+                f"(~{estimate['est_input_tokens']:,} token input)"
+            )
+            print("  Il lavoro gira come job resumabile (talamus jobs).")
+            print(f'  Conferma con:  talamus ingest "{target}" --yes')
+            return 0
+    result = ingest_path(paths, target, llm)
     if json_out:
         _print_json(result)
     elif "files" in result:
@@ -900,7 +941,12 @@ def _cmd_ingest(root: Path, target: str, llm: LLMProvider, json_out: bool) -> in
         for failure in result.get("failed", []):
             print(f"  ! saltato {failure['file']}: {failure['error']}")
     else:
-        print(f"ingerite {result['notes_written']} schede da {result['source']}")
+        suffix = ""
+        if "chunks" in result:
+            suffix = f" ({result['chunks']} chunk, job {result.get('job_id', '?')})"
+        print(f"ingerite {result['notes_written']} schede da {result['source']}{suffix}")
+        for failure in result.get("failed", []):
+            print(f"  ! chunk {failure['chunk']}: {failure['error']}")
     return 0
 
 
@@ -1446,6 +1492,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     ingest = sub.add_parser("ingest", parents=[common], help="add a file, folder, or URL")
     ingest.add_argument("target", help="a file, a folder (recursive), or a URL")
+    ingest.add_argument(
+        "--yes", action="store_true", help="confirm a multi-chunk ingest (big documents)"
+    )
     scan = sub.add_parser(
         "scan", parents=[common], help="compile an existing repository (plan first, spend later)"
     )
@@ -1626,7 +1675,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             )
         provider = llm if llm is not None else _provider_for(root)
         if command == "ingest":
-            return _cmd_ingest(root, args.target, provider, json_out)
+            return _cmd_ingest(root, args.target, provider, json_out, args.yes)
         if command == "consolidate":
             return _cmd_consolidate(root, args.apply, provider, json_out)
         if command == "verify":
