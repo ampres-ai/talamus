@@ -70,6 +70,22 @@ class RunItemsTests(unittest.TestCase):
             # "a" was NOT re-done: only b and c ran on resume
             self.assertEqual(handled, ["a", "b", "c"])
 
+    def test_hard_killed_running_record_is_adoptable(self) -> None:
+        """A process killed mid-run (power loss, OS kill) leaves the record in
+        'running' on disk: resume must adopt it from done_items, not raise an
+        illegal running->running transition."""
+        with tempfile.TemporaryDirectory() as tmp:
+            store = JobStore(TalamusPaths(Path(tmp)))
+            record = store.create("ingest")
+            record.state = "running"
+            record.progress = {"done_items": ["a"], "done": 1, "total": 3}
+            store.save(record)
+
+            handled: list[str] = []
+            resumed = run_items(store, store.load(record.job_id), ["a", "b", "c"], handled.append)
+            self.assertEqual(resumed.state, "completed")
+            self.assertEqual(handled, ["b", "c"])  # "a" not re-done
+
     def test_cooperative_cancel_stops_without_corruption(self) -> None:
         """The M2 gate: cancelling mid-run keeps completed writes intact, does no more."""
         with tempfile.TemporaryDirectory() as tmp:

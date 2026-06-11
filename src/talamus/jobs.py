@@ -155,7 +155,13 @@ def run_items(
     re-raised — nothing already written is touched.
     """
     done: set[str] = set(record.progress.get("done_items", []))
-    record = store.transition(record, "running")
+    if record.state == "running":
+        # record orfano di un processo morto di colpo (crash/kill): si adotta
+        # e si riparte dai done_items, senza transizione illegale running->running
+        store.save(record)
+        store.log(record.job_id, "adopted a stale running record (previous process died)")
+    else:
+        record = store.transition(record, "running")
     store.log(record.job_id, f"running: {len(items) - len(done)}/{len(items)} items to do")
     for item in items:
         if item in done:
