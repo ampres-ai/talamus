@@ -142,19 +142,24 @@ def ingest_large(paths: TalamusPaths, file_path: Path, llm: LLMProvider, job_rec
     def handle(item: str) -> None:
         nonlocal notes_total
         index = int(item.split("-")[1])
-        chunk_name = f"{file_path.stem}-c{index:03d}{file_path.suffix or '.md'}"
-        chunk_raw = paths.raw / chunk_name
+        # sempre .md: il chunk è testo estratto, mai il binario originale
+        chunk_raw = paths.raw / f"{file_path.stem}-c{index:03d}.md"
         chunk_raw.write_text(chunks[index], encoding="utf-8")
-        try:
-            package = normalize_text(chunk_raw.as_posix(), chunks[index])
-            # niente reindex per chunk: un libro farebbe N rebuild su un brain
-            # che cresce — si ricostruisce UNA volta a fine job (anche su crash)
-            notes_total += _compile_package(paths, package, llm, reindex=False)
-        except (EngineFailed, EngineNotFound):
-            raise  # motore giù: il job si ferma resumabile, non si bruciano i chunk
-        except Exception as exc:  # errore di contenuto del singolo chunk: non abortire il libro
-            failed.append({"chunk": index, "error": str(exc)})
-            store.log(record.job_id, f"chunk {index}: FAILED {exc}")
+        package = normalize_text(chunk_raw.as_posix(), chunks[index])
+        for attempt in (1, 2):
+            try:
+                # niente reindex per chunk: un libro farebbe N rebuild su un brain
+                # che cresce — si ricostruisce UNA volta a fine job (anche su crash)
+                notes_total += _compile_package(paths, package, llm, reindex=False)
+                return
+            except (EngineFailed, EngineNotFound):
+                raise  # motore giù: il job si ferma resumabile, non si bruciano i chunk
+            except Exception as exc:  # errore di contenuto (es. JSON malformato)
+                if attempt == 1:  # il modello è nondeterministico: un retry quasi sempre basta
+                    store.log(record.job_id, f"chunk {index}: retry dopo {exc}")
+                    continue
+                failed.append({"chunk": index, "error": str(exc)})
+                store.log(record.job_id, f"chunk {index}: FAILED {exc}")
 
     items = [f"chunk-{i:03d}" for i in range(len(chunks))]
     try:

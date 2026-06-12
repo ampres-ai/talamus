@@ -137,17 +137,48 @@ class ChunkedIngestTests(unittest.TestCase):
             self.assertEqual(report["state"], "completed")
             self.assertEqual(len(resumed.prompts), len(chunks) - 2)  # done chunks NOT redone
 
-    def test_bad_chunk_content_is_recorded_not_fatal(self) -> None:
+    def test_bad_chunk_content_is_retried_once_then_recorded(self) -> None:
+        """Real-world case from the AI Engineering book run: flash models emit
+        malformed JSON ~3% of the time; one retry almost always rescues it."""
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp)
             book = self._book(tmp)
             expected = len(split_chunks(book.read_text(encoding="utf-8")))
-            responses = ["NON-JSON" if i == 1 else _note_json(f"Nota {i}") for i in range(expected)]
+            # chunk 1: bad first answer, good on retry -> rescued, NOT failed
+            responses = [_note_json("Nota 0"), "NON-JSON", _note_json("Riprovata")]
+            responses += [_note_json(f"Nota {i}") for i in range(2, expected)]
+            result = ingest_file(paths, book, FakeLLMProvider(responses))
+            self.assertEqual(result["state"], "completed")
+            self.assertEqual(result["failed"], [])
+            self.assertEqual(result["notes_written"], expected)
+
+    def test_chunk_failing_twice_is_recorded_not_fatal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = _brain(tmp)
+            book = self._book(tmp)
+            expected = len(split_chunks(book.read_text(encoding="utf-8")))
+            # chunk 1: bad twice (first try + retry) -> recorded, book continues
+            responses = [_note_json("Nota 0"), "NON-JSON", "ANCORA-NON-JSON"]
+            responses += [_note_json(f"Nota {i}") for i in range(2, expected)]
             result = ingest_file(paths, book, FakeLLMProvider(responses))
             self.assertEqual(result["state"], "completed")
             self.assertEqual(len(result["failed"]), 1)
             self.assertEqual(result["failed"][0]["chunk"], 1)
             self.assertEqual(result["notes_written"], expected - 1)
+
+    def test_chunk_files_are_always_markdown(self) -> None:
+        """Chunks hold extracted text: never the source binary extension (a
+        .pdf-named text chunk would break verify, which dispatches on suffix)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = _brain(tmp)
+            book = self._book(tmp)
+            book_pdfish = book.rename(Path(tmp) / "libro.txt")
+            expected = len(split_chunks(book_pdfish.read_text(encoding="utf-8")))
+            llm = FakeLLMProvider([_note_json(f"Nota {i}") for i in range(expected)])
+            ingest_file(paths, book_pdfish, llm)
+            chunk_files = sorted(paths.raw.glob("libro-c*"))
+            self.assertEqual(len(chunk_files), expected)
+            self.assertTrue(all(f.suffix == ".md" for f in chunk_files))
 
 
 class CliConsentGateTests(unittest.TestCase):
