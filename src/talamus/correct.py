@@ -115,12 +115,24 @@ LOW_CONFIDENCE = 0.5
 
 
 def _resolve_source(paths: TalamusPaths, note: CanonicalNote):
+    """Prefer the RAW file: source_hash was computed on its extracted text.
+    The normalized view is derived (different bytes) and only proves existence."""
     for source in note.sources:
         rel = source.normalized_path.split("#")[0]
-        for candidate in (paths.project_root / rel, paths.project_root / source.raw_path):
+        for candidate in (paths.project_root / source.raw_path, paths.project_root / rel):
             if candidate.is_file():
                 return source, candidate
     return None, None
+
+
+def _extracted_hash(path) -> str:
+    """Hash of the re-extracted TEXT (the same artifact the ingest hashed):
+    comparing raw file bytes breaks on Windows newlines and binary sources."""
+    import hashlib
+
+    from talamus.sources import extract_text
+
+    return hashlib.sha256(extract_text(path).encode("utf-8")).hexdigest()
 
 
 def provenance_status(paths: TalamusPaths, note: CanonicalNote) -> dict:
@@ -135,15 +147,19 @@ def provenance_status(paths: TalamusPaths, note: CanonicalNote) -> dict:
         detail = f"fonte non trovata: {note.sources[0].normalized_path}"
     else:
         stored = source.source_hash.removeprefix("sha256:")
-        if len(stored) >= 16 and all(c in "0123456789abcdef" for c in stored):
-            import hashlib
-
-            current = hashlib.sha256(resolved.read_bytes()).hexdigest()
-            if not current.startswith(stored[: len(current)]) and not stored.startswith(
-                current[: len(stored)]
-            ):
-                status = "source_changed"
-                detail = f"la fonte {resolved.name} è cambiata dopo l'estrazione"
+        is_raw = resolved == paths.project_root / source.raw_path
+        if is_raw and len(stored) >= 16 and all(c in "0123456789abcdef" for c in stored):
+            try:
+                current = _extracted_hash(resolved)
+            except Exception:
+                status = "source_missing"
+                detail = f"fonte illeggibile: {resolved.name}"
+            else:
+                if not current.startswith(stored[: len(current)]) and not stored.startswith(
+                    current[: len(stored)]
+                ):
+                    status = "source_changed"
+                    detail = f"la fonte {resolved.name} è cambiata dopo l'estrazione"
     if status == "ok" and note.confidence < LOW_CONFIDENCE:
         status, detail = "low_confidence", f"confidence di estrazione {note.confidence}"
     return {"note_id": note.note_id, "title": note.title, "status": status, "detail": detail}

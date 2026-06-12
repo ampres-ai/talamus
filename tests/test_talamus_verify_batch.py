@@ -19,8 +19,14 @@ from talamus.timeline import note_history
 from tests.support import FakeLLMProvider
 
 
-def _note(title: str, summary: str, source_rel: str, confidence: float = 0.9) -> CanonicalNote:
-    src = SourceRef(source_rel, f"{source_rel}#1", "s", "sha256:x", ["c"])
+def _note(
+    title: str,
+    summary: str,
+    source_rel: str,
+    confidence: float = 0.9,
+    source_hash: str = "sha256:x",
+) -> CanonicalNote:
+    src = SourceRef(source_rel, f"{source_rel}#1", "s", source_hash, ["c"])
     return CanonicalNote(
         note_id=title.lower().replace(" ", "-"),
         title=title,
@@ -68,6 +74,29 @@ class ProvenanceTests(unittest.TestCase):
             paths = _brain(tmp)
             report = provenance_report(paths)
             self.assertEqual(len(report), 4)
+
+    def test_real_hash_matches_despite_windows_newlines(self) -> None:
+        """Book-run regression: source_hash is computed on the extracted TEXT;
+        the check must re-extract from the RAW file, not hash file bytes —
+        otherwise CRLF on disk (or resolving the derived normalized view)
+        marks every healthy note as changed (243/243 stale on the real book)."""
+        import hashlib
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            paths.ensure_directories()
+            text = "Il valore è 42.\nSeconda riga.\n"
+            raw = Path(tmp) / "raw"
+            raw.mkdir(exist_ok=True)
+            (raw / "vera.md").write_text(text, encoding="utf-8")  # CRLF su Windows
+            real_hash = "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+            write_note(paths, _note("Vera", "Il valore è 42.", "raw/vera.md", 0.9, real_hash))
+            rebuild_indexes(paths)
+            by_title = {n.title: n for n in load_notes(paths)}
+            self.assertEqual(provenance_status(paths, by_title["Vera"])["status"], "ok")
+            # e quando la fonte cambia DAVVERO, lo dice
+            (raw / "vera.md").write_text("Contenuto riscritto.", encoding="utf-8")
+            self.assertEqual(provenance_status(paths, by_title["Vera"])["status"], "source_changed")
 
 
 class VerifyBatchTests(unittest.TestCase):
