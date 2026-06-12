@@ -113,10 +113,18 @@ def merge_notes(existing: CanonicalNote, new: CanonicalNote) -> CanonicalNote:
         s for s in new.sources if (s.source_hash, s.normalized_path) not in seen_src
     ]
     base = new if new.confidence > existing.confidence else existing
+    # il retrieval_text è un campo di RICERCA, non prosa: si unisce, mai scartare
+    # (la consolidazione del libro buttava i sintomi delle note assorbite e il
+    # recall vago crollava da 0.625 a 0.375 di hit)
+    other = existing if base is new else new
+    retrieval_text = base.retrieval_text
+    if other.retrieval_text and other.retrieval_text not in retrieval_text:
+        retrieval_text = f"{retrieval_text} {other.retrieval_text}".strip()
     return dataclasses.replace(
         base,
         aliases=list(dict.fromkeys(existing.aliases + new.aliases)),
         tags=list(dict.fromkeys(existing.tags + new.tags)),
+        retrieval_text=retrieval_text,
         relations=_dedup_relations(existing.relations + new.relations),
         proposed_links=_dedup_links(existing.proposed_links + new.proposed_links),
         sources=sources,
