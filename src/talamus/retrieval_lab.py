@@ -210,3 +210,132 @@ def run_ablations(paths: TalamusPaths, cases_file, k: int = 5) -> dict[str, dict
             "categories": {cat: stats["recall_at_k"] for cat, stats in report.categories.items()},
         }
     return results
+
+
+# --- RS2.1: il bundle dell'ask espande 1 salto via ontologia, ma a limit pieno
+# l'espansione è un no-op (i seed riempiono già il taglio). Domanda misurabile:
+# "espandere via archi tipizzati batte semplicemente prendere più hit di ricerca?"
+
+
+def make_bundle_variant(
+    paths: TalamusPaths,
+    seed_k: int = 5,
+    expand: bool = False,
+    typed_only: bool = False,
+    typed_first: bool = True,
+) -> Retriever:
+    """Variante del percorso-bundle: seed dall'indice persistente, poi espansione
+    1 salto sull'ontologia fino a k. Tutto deterministico, zero LLM."""
+    from talamus.indexes import search_index
+    from talamus.ontology import neighbors as onto_neighbors
+
+    ontology = load_ontology(paths)
+
+    def run(question: str, k: int) -> list[str]:
+        seeds = [h["title"] for h in search_index(paths, question, limit=min(seed_k, k))]
+        ranked = list(seeds)
+        if expand:
+            for title in seeds:
+                connected = onto_neighbors(ontology, title)
+                if typed_first:
+                    connected = sorted(
+                        connected, key=lambda n: 0 if n.get("relation") != "related" else 1
+                    )
+                for neighbor in connected:
+                    if typed_only and neighbor.get("relation") == "related":
+                        continue
+                    if neighbor["title"] not in ranked:
+                        ranked.append(neighbor["title"])
+        return ranked[:k]
+
+    return run
+
+
+BUNDLE_VARIANTS: dict[str, dict] = {
+    "B-seeds-only": {"seed_k": 99},  # solo ricerca: i primi k hit
+    "B-seeds3+exp": {"seed_k": 3, "expand": True},
+    "B-seeds3+exp-typed": {"seed_k": 3, "expand": True, "typed_only": True},
+    "B-seeds3+exp-flat": {"seed_k": 3, "expand": True, "typed_first": False},
+    "B-seeds4+exp": {"seed_k": 4, "expand": True},
+}
+
+
+def run_bundle_ablations(paths: TalamusPaths, cases_file, k: int = 5) -> dict[str, dict]:
+    """RS2.1: confronta le varianti bundle sullo stesso harness dei retriever."""
+    from talamus.eval import evaluate, load_cases
+
+    cases = load_cases(cases_file)
+    results: dict[str, dict] = {}
+    for name, knobs in BUNDLE_VARIANTS.items():
+        retriever = make_bundle_variant(paths, **knobs)
+        report = evaluate(cases, retriever, k=k)
+        results[name] = {
+            "recall_at_k": round(report.recall_at_k, 4),
+            "mrr": round(report.mrr, 4),
+            "hit_rate": round(report.hit_rate, 4),
+            "categories": {cat: stats["recall_at_k"] for cat, stats in report.categories.items()},
+        }
+    return results
+
+
+# --- RS2.6: rifiuto dei negativi. Gli score blended sono normalizzati per query
+# (l'assoluto non separa), ma QUALI canali si accendono sì: una query fuori
+# dominio non accende il canale lessicale stemmato, solo rumore trigram.
+
+
+# parole funzionali IT+EN (stems post-tokenizer): NON semantica, pura grammatica.
+# Servono perché in un corpus a prosa italiana "what/is/of" risultano fuori
+# vocabolario e affondano la copertura delle domande inglesi legittime (it. 2).
+_FUNCTION_STEMS = frozenset(
+    """come cosa cos qual quale quali quando dove perche chi che con per tra fra
+    una uno della dello delle degli nella nelle sono stato fare faccio puo posso
+    voglio devo meglio piu meno molto poco tutto ogni questo quello senza dopo
+    prima anche ancora gia mai sempre
+    what when where which who why how does did doe can could should would want
+    need make get use using used keep keeps there their them they this that
+    these those with without from into onto about have has had will shall
+    other another same different""".split()
+)
+
+
+def rejection_report(paths: TalamusPaths, cases_file) -> dict:
+    """RS2.6, iterazione 3. Il top lessicale non separa (overlap di vocabolario);
+    la copertura su TUTTI i token informativi nemmeno (le function words inglesi
+    sono OOV in un corpus italiano). Candidato: copertura dei soli termini di
+    CONTENUTO — 'carbonara' df=0 vs 'mixture' df>0."""
+    from talamus.eval import load_cases
+
+    notes = load_notes(paths)
+    index = MemoryIndex(notes, tokens_bilingual, title_weight=3, alias_weight=2)
+    n_docs = max(len(index.docs), 1)
+    ubiquity_cap = 0.3 * n_docs  # token in piu' del 30% dei doc = di fatto funzionale
+
+    rows: list[dict] = []
+    for case in load_cases(cases_file):
+        content = [
+            t
+            for t in set(tokens_bilingual(case.question))
+            if t not in _FUNCTION_STEMS and index.df.get(t, 0) < ubiquity_cap
+        ]
+        known = [t for t in content if index.df.get(t, 0) > 0]
+        coverage = len(known) / len(content) if content else 1.0
+        rows.append(
+            {
+                "question": case.question,
+                "negative": case.negative,
+                "coverage": round(coverage, 3),
+                "unknown_terms": sorted(set(content) - set(known)),
+            }
+        )
+    negatives = [r for r in rows if r["negative"]]
+    sweep: list[dict] = []
+    for tau in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8):
+        rejected = [r for r in rows if r["coverage"] < tau]
+        sweep.append(
+            {
+                "coverage<": tau,
+                "neg_rejected": f"{len([r for r in rejected if r['negative']])}/{len(negatives)}",
+                "false_rejects": [r["question"] for r in rejected if not r["negative"]],
+            }
+        )
+    return {"rows": rows, "sweep": sweep}
