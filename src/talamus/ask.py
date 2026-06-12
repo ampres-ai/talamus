@@ -107,19 +107,19 @@ QUESTION: {question}
 """
 
 
-def _overview_bundle(
+def _route_member_titles(
     paths: TalamusPaths,
     question: str,
     llm: LLMProvider,
-    limit: int = 8,
     trace: dict | None = None,
-) -> ContextBundle:
-    """Route via the domain overview. Domains are picked by **stable id** (F3.7/F3.8):
-    the LLM answers with ids, parsed and validated against the map — substring
+) -> list[str]:
+    """Route via the domain overview and return the chosen domains' member titles
+    (un-ranked, un-sliced). Domains are picked by **stable id** (F3.7/F3.8): the
+    LLM answers with ids, parsed and validated against the map — substring
     matching on names survives only as a fallback for pre-id overviews."""
     overview = load_overview(paths)
     if not overview:
-        return ContextBundle(question=question, items=[])
+        return []
     tree = load_overview_tree(paths)
     if tree:
         # Fase R5: two-level routing — pick macro-areas first, then only their
@@ -167,16 +167,49 @@ def _overview_bundle(
         trace["domains_available"] = [str(d.get("id") or d.get("name", "?")) for d in overview]
         trace["domains_chosen"] = chosen_ids
         trace["routing_fallback"] = fallback
+    return titles
+
+
+GLOBAL_ESCAPE_SEEDS = 2  # hit globali fuori dai domini scelti: scialuppa anti-routing-sbagliato
+
+
+def _select_bundle_titles(
+    paths: TalamusPaths, question: str, member_titles: list[str], limit: int
+) -> list[tuple[str, str]]:
+    """RS2.2: i membri dei domini scelti vanno CLASSIFICATI contro la domanda —
+    prima si prendevano i primi ``limit`` nell'ordine di elenco del dominio, e la
+    nota giusta poteva non essere mai letta pur essendo il primo hit della search
+    globale (caso RLHF/DPO sul libro). Ranking via indice persistente + un paio
+    di seed globali fuori-dominio. Deterministico, zero chiamate LLM."""
+    from talamus.indexes import search_index
+
+    members = list(dict.fromkeys(member_titles))
+    hits = search_index(paths, question, limit=max(24, limit * 3))
+    order = {h["title"]: i for i, h in enumerate(hits)}
+    ranked = sorted((t for t in members if t in order), key=lambda t: order[t])
+    ranked += [t for t in members if t not in order]  # coda: ordine del dominio
+    member_set = set(members)
+    extras = [h["title"] for h in hits if h["title"] not in member_set][:GLOBAL_ESCAPE_SEEDS]
+    keep = max(limit - len(extras), 1)
+    return [(t, "overview") for t in ranked[:keep]] + [(t, "index") for t in extras]
+
+
+def _overview_bundle(
+    paths: TalamusPaths,
+    question: str,
+    llm: LLMProvider,
+    limit: int = 8,
+    trace: dict | None = None,
+) -> ContextBundle:
+    titles = _route_member_titles(paths, question, llm, trace=trace)
+    if not titles:
+        return ContextBundle(question=question, items=[])
     items: list[dict] = []
-    for title in titles[:limit]:
+    for title, route in _select_bundle_titles(paths, question, titles, limit):
         path = _note_path(paths, title)
         if path.is_file():
             items.append(
-                {
-                    "route": "overview",
-                    "path": path.as_posix(),
-                    "content": path.read_text(encoding="utf-8"),
-                }
+                {"route": route, "path": path.as_posix(), "content": path.read_text("utf-8")}
             )
     return ContextBundle(question=question, items=items)
 

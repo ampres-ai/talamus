@@ -62,6 +62,14 @@ class ExtractionPromptTests(unittest.TestCase):
         self.assertIn("AND in English", prompt)  # bilingual retrieval_text
         self.assertIn("ENGLISH verbs", prompt)  # canonical relation surfaces
 
+    def test_symptom_vocabulary_directive_present(self) -> None:
+        """RS2.4-bis: il ponte semantico per le domande vaghe si paga all'ingest —
+        il retrieval_text deve contenere le frasi-sintomo con cui un utente
+        porrebbe il problema senza conoscerne il nome."""
+        prompt = self._prompt_for("Italian")
+        self.assertIn("SYMPTOM PHRASINGS", prompt)
+        self.assertIn("WITHOUT knowing its name", prompt)
+
     def test_structural_section_keys_are_fixed(self) -> None:
         prompt = self._prompt_for("German")
         for key in ("definizione", "funzionamento", "relazioni"):

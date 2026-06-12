@@ -278,6 +278,78 @@ def run_bundle_ablations(paths: TalamusPaths, cases_file, k: int = 5) -> dict[st
     return results
 
 
+# --- RS2 mossa 2: TRIANGOLAZIONE. Le bocciature precedenti (propagazione V4,
+# espansione 1-salto) spingevano i vicini del singolo top hit -> hub pollution.
+# Qui un nodo emerge solo se PIU' hit deboli e indipendenti convergono su di lui
+# via archi: la domanda vaga descrive una situazione TRA concetti, e l'accordo
+# di piu' segnali e' il filtro contro gli hub.
+
+
+def make_triangulation_variant(
+    paths: TalamusPaths,
+    base_k: int = 10,
+    boost: float = 0.4,
+    min_converge: int = 2,
+    typed_only: bool = False,
+) -> Retriever:
+    notes = load_notes(paths)
+    index = MemoryIndex(notes, tokens_bilingual, title_weight=3, alias_weight=2)
+    adjacency: dict[str, set[str]] = {}
+    for edge in load_ontology(paths).get("edges", []):
+        if typed_only and edge.get("type") == "related":
+            continue
+        adjacency.setdefault(str(edge["source"]), set()).add(str(edge["target"]))
+        adjacency.setdefault(str(edge["target"]), set()).add(str(edge["source"]))
+
+    def run(question: str, k: int) -> list[str]:
+        scores = _normalize(index.bm25(question))
+        for title, dice in _normalize(index.trigram_scores(question)).items():
+            scores[title] = scores.get(title, 0.0) + 0.8 * dice
+        ranked = sorted(scores.items(), key=lambda i: (-i[1], i[0]))[:base_k]
+        hits = dict(ranked)
+        votes: dict[str, list[float]] = {}
+        for title, score in hits.items():
+            for neighbor in adjacency.get(title, ()):  # i voti arrivano dagli hit
+                votes.setdefault(neighbor, []).append(score)
+        final = dict(hits)
+        for node, supporters in votes.items():
+            if len(supporters) < min_converge:
+                continue  # un solo segnale = propagazione, gia' bocciata
+            final[node] = final.get(node, 0.0) + boost * sum(supporters) / len(supporters) * len(
+                supporters
+            )
+        ordered = sorted(final.items(), key=lambda i: (-i[1], i[0]))
+        return [t for t, _ in ordered[:k]]
+
+    return run
+
+
+TRIANGULATION_VARIANTS: dict[str, dict] = {
+    "T-base": {"boost": 0.0},  # riferimento: stesso scorer, nessuna triangolazione
+    "T-all-0.3": {"boost": 0.3},
+    "T-all-0.5": {"boost": 0.5},
+    "T-typed-0.3": {"boost": 0.3, "typed_only": True},
+    "T-typed-0.5": {"boost": 0.5, "typed_only": True},
+    "T-conv3-0.5": {"boost": 0.5, "min_converge": 3},
+}
+
+
+def run_triangulation_ablations(paths: TalamusPaths, cases_file, k: int = 5) -> dict[str, dict]:
+    from talamus.eval import evaluate, load_cases
+
+    cases = load_cases(cases_file)
+    results: dict[str, dict] = {}
+    for name, knobs in TRIANGULATION_VARIANTS.items():
+        report = evaluate(cases, make_triangulation_variant(paths, **knobs), k=k)
+        results[name] = {
+            "recall_at_k": round(report.recall_at_k, 4),
+            "mrr": round(report.mrr, 4),
+            "hit_rate": round(report.hit_rate, 4),
+            "categories": {cat: stats["recall_at_k"] for cat, stats in report.categories.items()},
+        }
+    return results
+
+
 # --- RS2.6: rifiuto dei negativi. Gli score blended sono normalizzati per query
 # (l'assoluto non separa), ma QUALI canali si accendono sì: una query fuori
 # dominio non accende il canale lessicale stemmato, solo rumore trigram.

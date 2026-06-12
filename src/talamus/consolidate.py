@@ -22,17 +22,20 @@ from talamus.store import (
     render_note_markdown,
 )
 
-_PROMPT = """Sei un bibliotecario. Qui sotto una lista di SCHEDE (id, titolo: riassunto).
-Trova i gruppi di schede che descrivono lo STESSO identico concetto, anche se con nomi
-diversi o in lingue diverse (es. "Hybrid search" e "Ricerca ibrida" sono lo stesso
-concetto). NON raggruppare concetti solo correlati o simili: solo veri sinonimi o
-traduzioni dello stesso concetto.
+# English instructions (three-layer language rule); titles are echoed verbatim.
+_PROMPT = """You are a librarian. Below is a list of NOTES (id, title: summary).
+Find the groups of notes that describe the EXACT same concept, even under
+different names or languages (e.g. "Hybrid search" and "Ricerca ibrida" are the
+same concept; "Fine-tuning" and "Finetuning" too). Do NOT group concepts that are
+merely related or similar: only true synonyms, spelling variants, or translations
+of the same concept.
 
-Restituisci SOLO un array JSON di gruppi; ogni gruppo:
-{"canonical": "<titolo da tenere>", "members": ["<titolo>", "<titolo>", ...]}
-Includi solo gruppi con 2 o piu' membri. Se non ci sono doppioni, restituisci [].
+Return ONLY a JSON array of groups; each group:
+{"canonical": "<title to keep>", "members": ["<title>", "<title>", ...]}
+Echo the titles EXACTLY as written. Only include groups with 2 or more members.
+If there are no duplicates, return [].
 
-SCHEDE:
+NOTES:
 __NOTES__
 """
 

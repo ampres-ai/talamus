@@ -20,7 +20,11 @@ concept, with these fields:
 - "summary": 1-2 sentences in {language}: what it is and why it matters
   (do NOT repeat them in the body).
 - "retrieval_text": search keywords in ONE string. Include the key terms BOTH in
-  {language} AND in English, so the note is findable in either language.
+  {language} AND in English, so the note is findable in either language. THEN add
+  3-6 SYMPTOM PHRASINGS: the colloquial words someone would actually use when they
+  face the problem this note solves, WITHOUT knowing its name — in {language} AND
+  English (e.g. for hallucination: "si inventa le cose, risponde cose false,
+  makes things up, wrong facts"). This is what makes vague questions findable.
 - "body_sections": object using ONLY these keys, when pertinent, in this order:
     "definizione"  : what it is, in connected full sentences.
     "funzionamento": how it works / how to use it, explaining WHY.
