@@ -65,8 +65,11 @@ class DomainsTests(unittest.TestCase):
                 ),
             )
 
+            # coda: routing, espansione query (RS3), risposta
             answer = answer_question(
-                paths, "come funziona?", FakeLLMProvider(["Retrieval", "Risposta [1]."])
+                paths,
+                "come funziona?",
+                FakeLLMProvider(["Retrieval", "retrieval rag", "Risposta [1]."]),
             )
 
             self.assertIn("[1]", answer)

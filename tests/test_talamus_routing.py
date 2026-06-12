@@ -69,7 +69,8 @@ class StructuredRoutingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp)
             trace: dict = {}
-            llm = FakeLLMProvider(["dom-tempo", "Risposta sul tempo [1]."])
+            # coda: routing, espansione query (RS3), risposta
+            llm = FakeLLMProvider(["dom-tempo", "tempo versioni", "Risposta sul tempo [1]."])
             answer = answer_question(paths, "che versioni esistono?", llm, trace=trace)
             self.assertIn("Risposta sul tempo", answer)
             self.assertEqual(trace["domains_chosen"], ["dom-tempo"])
@@ -82,7 +83,8 @@ class StructuredRoutingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp)
             trace: dict = {}
-            llm = FakeLLMProvider(["Recupero", "Risposta sul recupero [1]."])
+            # coda: routing (fallback per nome), espansione query (RS3), risposta
+            llm = FakeLLMProvider(["Recupero", "recupero ricerca", "Risposta sul recupero [1]."])
             answer = answer_question(paths, "come cerco?", llm, trace=trace)
             self.assertIn("Risposta sul recupero", answer)
             self.assertTrue(trace["routing_fallback"])

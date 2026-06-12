@@ -51,18 +51,52 @@ def _dedup_relations(relations: list[Relation]) -> list[Relation]:
     return out
 
 
+def _balanced_objects(raw: str) -> list[dict]:
+    """Estrae gli oggetti {...} di primo livello uno a uno, saltando quelli rotti.
+
+    Le risposte lunghe dei modelli arrivano troncate a metà JSON: il parse
+    all-or-nothing buttava TUTTI i gruppi in silenzio (misurato sul libro:
+    'no duplicate concepts found' con 20+ gruppi veri nella risposta cruda)."""
+    objects: list[dict] = []
+    depth = 0
+    start = -1
+    in_string = False
+    escape = False
+    for i, ch in enumerate(raw):
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}" and depth > 0:
+            depth -= 1
+            if depth == 0 and start != -1:
+                try:
+                    parsed = json.loads(raw[start : i + 1], strict=False)
+                except json.JSONDecodeError:
+                    parsed = None
+                if isinstance(parsed, dict):
+                    objects.append(parsed)
+                start = -1
+    return objects
+
+
 def _detect_groups(notes: list[CanonicalNote], llm: LLMProvider) -> list[dict]:
     if len(notes) < 2:
         return []
     listing = "\n".join(f"- [{n.note_id}] {n.title}: {n.summary}" for n in notes)
     raw = llm.complete(_PROMPT.replace("__NOTES__", listing))
-    start, end = raw.find("["), raw.rfind("]")
-    if start == -1 or end == -1 or end < start:
-        return []
-    try:
-        parsed = json.loads(raw[start : end + 1])
-    except json.JSONDecodeError:
-        return []
+    parsed = _balanced_objects(raw)
     titles = {n.title for n in notes}
     groups: list[dict] = []
     for group in parsed:
@@ -83,10 +117,17 @@ def find_duplicates(paths: TalamusPaths, llm: LLMProvider) -> list[dict]:
     return _detect_groups(load_notes(paths), llm)
 
 
-def apply_consolidation(paths: TalamusPaths, llm: LLMProvider) -> int:
-    """Merge the detected duplicate groups. Returns how many notes were merged away."""
+def apply_consolidation(
+    paths: TalamusPaths, llm: LLMProvider, groups: list[dict] | None = None
+) -> int:
+    """Merge duplicate groups. Returns how many notes were merged away.
+
+    ``groups`` lets the caller pass REVIEWED groups (the model sometimes lumps
+    related-but-distinct concepts, e.g. Perplexity with Cross-Entropy on the
+    book brain): detection proposes, a human or a filter decides."""
     notes = load_notes(paths)
-    groups = _detect_groups(notes, llm)
+    if groups is None:
+        groups = _detect_groups(notes, llm)
     if not groups:
         return 0
 

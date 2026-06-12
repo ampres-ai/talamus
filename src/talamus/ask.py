@@ -204,8 +204,15 @@ def _overview_bundle(
     titles = _route_member_titles(paths, question, llm, trace=trace)
     if not titles:
         return ContextBundle(question=question, items=[])
+    # RS3: l'LLM fa da modello di embedding — traduce la domanda nel vocabolario
+    # del corpus PRIMA della selezione. Misurato sul libro: hit ask 0.861 -> 0.972,
+    # vague 0.50 -> 0.81, cross 0.50 -> 0.88. Costa una chiamata in piu' per ask.
+    expanded = _expand_query(question, llm)
+    ranking_query = f"{question} {expanded}".strip() if expanded != question else question
+    if trace is not None:
+        trace["expanded_query"] = expanded
     items: list[dict] = []
-    for title, route in _select_bundle_titles(paths, question, titles, limit):
+    for title, route in _select_bundle_titles(paths, ranking_query, titles, limit):
         path = _note_path(paths, title)
         if path.is_file():
             items.append(
