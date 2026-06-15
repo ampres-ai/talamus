@@ -1219,9 +1219,20 @@ def _cmd_remember(
 
 
 def _cmd_search(
-    root: Path, query: str, json_out: bool, limit: int = 5, policy: str | None = None
+    root: Path,
+    query: str,
+    json_out: bool,
+    limit: int = 5,
+    policy: str | None = None,
+    smart: bool = False,
+    llm: LLMProvider | None = None,
 ) -> int:
     policy = policy or default_scope(root)
+    if smart:  # Query2doc: expand the query with the user's LLM (cached), then search
+        from talamus.smartsearch import expand_query
+
+        provider = llm if llm is not None else _provider_for(root)
+        query = expand_query(TalamusPaths(root), query, provider)
     results, warnings = scoped_search(root, query, policy, limit=limit)
     if json_out:
         _print_json(results)
@@ -1569,6 +1580,11 @@ def build_parser() -> argparse.ArgumentParser:
     search = sub.add_parser("search", parents=[common], help="find relevant notes")
     search.add_argument("query")
     search.add_argument("--limit", type=int, default=5, help="max results (default 5)")
+    search.add_argument(
+        "--smart",
+        action="store_true",
+        help="expand the query with the LLM before searching (cached); breaks the lexical ceiling",
+    )
     for scoped in (overview, ask, search):
         scoped.add_argument(
             "--scope", choices=list(SCOPE_POLICIES), default=None, help="brain scope policy"
@@ -1681,7 +1697,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "reindex":
             return _cmd_reindex(root, json_out)
         if command == "search":
-            return _cmd_search(root, args.query, json_out, args.limit, policy)
+            return _cmd_search(root, args.query, json_out, args.limit, policy, args.smart, llm)
         if command == "read":
             return _cmd_read(root, args.title, json_out, args.as_of)
         if command == "timeline":

@@ -22,7 +22,8 @@ options. Most commands accept the [global flags](#global-flags) below.
 | `talamus init --scan` | Initialize here and show the scan plan (dry-run; never spends silently). |
 | `talamus ask "<question>"` | Cited answer composed from your brain. |
 | `talamus overview [--rebuild]` | Show the hierarchical domain map induced from the graph. |
-| `talamus search "<query>" [--limit N]` | List relevant notes (token-cheap). |
+| `talamus search "<query>" [--limit N]` | List relevant notes (token-cheap, instant). |
+| `talamus search "<query>" --smart` | Same, but the LLM expands the query first (cached) — finds vague/paraphrased queries the plain search misses. |
 | `talamus read "<title>"` | Print one note. |
 | `talamus recall "<question>" [--limit N]` | Retrieve the relevant context (for agents to reason over). |
 | `talamus neighbors "<concept>"` | Show a concept's typed connections. |

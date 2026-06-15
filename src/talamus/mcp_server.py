@@ -45,9 +45,18 @@ def _provider() -> LLMProvider:
 
 
 @server.tool()
-def search(query: str) -> str:
-    """Cerca nel brain Talamus le schede pertinenti a una query; restituisce titoli e riassunti."""
-    results = search_notes(_paths(), query)
+def search(query: str, smart: bool = False) -> str:
+    """Cerca nel brain Talamus le schede pertinenti a una query; restituisce titoli e riassunti.
+
+    Con smart=True la query viene espansa dall'LLM prima della ricerca (Query2doc,
+    cacheato): rompe il soffitto lessicale sulle domande vaghe, al costo di una
+    chiamata LLM per query nuova."""
+    query_text = query
+    if smart:
+        from talamus.smartsearch import expand_query
+
+        query_text = expand_query(_paths(), query, _provider())
+    results = search_notes(_paths(), query_text)
     if not results:
         return "Nessuna scheda pertinente nel brain."
     return "\n".join(f"- {item['title']}: {item['summary']}" for item in results)

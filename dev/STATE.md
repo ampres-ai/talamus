@@ -9,7 +9,8 @@ re-measure what is already here unless the code path changed.
 | Metric | Value | Bar (PRODUCT.md) |
 |---|---|---|
 | Ask path hit-rate@8 | **0.972** (pre-consolidation brain; re-measure post-consolidation pending) | ≥ 0.95 ✓ |
-| Search hit-rate@5 | **0.861** | ≥ 0.92 — gap 0.06 |
+| Search hit-rate@5 (plain) | **0.861** | lexical ceiling ~0.86–0.89 |
+| Search hit-rate@5 (`--smart`, Query2doc) | **0.972** book / **0.782** docs | ≥ 0.92 ✓ (book) |
 | Search MRR | 0.726 | — |
 | direct / direct-en recall | 1.000 / 1.000 (MRR 0.958 / 1.000) | — |
 | vague hit (search) | 0.750 | weakest front |
@@ -44,7 +45,8 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | Engine speed | Model passthrough (`llm_model` → `-m`); gemini hardened (read-only + skip-trust); measured: flash-lite 16 s vs codex default 46 s per call |
 | RS2 | Two-corpora law; book eval-set; **ask selection fix** (domain members ranked vs question + global escape seeds): ask hit 0.361 → 0.750; **`talamus enrich`** (symptom vocabulary, batched, consented): search hit 0.806 → 0.833, zero regressions; strict=False JSON salvage |
 | RS3 | **LLM query expansion before routed selection** ("the LLM is the embedding model"): ask hit → **0.972**, vague 0.50 → 0.81; **consolidation** (20 reviewed groups, 31 notes merged): search hit → **0.861**, direct MRR → 1.0; merge_notes retrieval_text union fix; truncation-salvage parser; hostile-model CI battery + enrich guard-rails |
-| RS4 | **Hub-note suppression** (length penalty LP=0.5, self-targeting): docs hit 0.600 → 0.618, book neutral; CACHE_VERSION 4. **Symptoms from body** (not summary): neutral-to-better, lifts vague-en. **THE SEARCH CEILING** (research/2026-06-rs4): symptom generation is nondeterministic (0.861–0.917 same procedure) and symptom bloat self-pollutes (union x2 0.889 > x3 0.833) → lexical+trigram search plateaus ~0.86–0.89 on a curated brain; the path past it is the LLM-in-loop ask (0.972). Search and ask are different tools with different ceilings |
+| RS4 | **Hub-note suppression** (length penalty LP=0.5, self-targeting): docs hit 0.600 → 0.618, book neutral; CACHE_VERSION 4. **Symptoms from body** (not summary): neutral-to-better, lifts vague-en. **THE SEARCH CEILING** (research/2026-06-rs4): symptom generation is nondeterministic and symptom bloat self-pollutes (union x2 0.889 > x3 0.833) → lexical+trigram search plateaus ~0.86–0.89 on a curated brain |
+| RS3-lit | **Literature review** (doc2query, Query2doc, RM3, SDM/proximity, SPLADE): mapped every no-embedding lever to Talamus. Rejected with data: field separation (BM25F) doesn't transfer to small brains; proximity/coverage fails two-corpora (helps book, hurts docs). **THE WIN: Query2doc on search** — `talamus search --smart` expands the query with the user's LLM (cached) before searching: **book hit 0.861 → 0.972, docs 0.618 → 0.782**, vague 0.62 → 1.00. Wins on BOTH corpora; breaks the lexical ceiling; ≥0.92 bar met. The "LLM is the embedding model" thesis, literature-grounded and now on search, not just ask |
 
 ## Rejected with data — do NOT redo without new evidence
 
@@ -63,12 +65,13 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 
 ## Open fronts (current queue)
 
-1. **DECISION NEEDED (maintainer)**: the "search hit ≥0.92" bar targets a tool
-   with a measured ~0.88 ceiling. Revise the bar to lean on `ask` (≥0.95,
-   achieved) for natural-language questions, vs keep pushing search? See
-   research/2026-06-rs4-search-ceiling.md §"Open question".
+1. RESOLVED: the search ≥0.92 bar is met by `search --smart` (Query2doc).
+   Plain search keeps its ~0.86 lexical ceiling as the instant/free path;
+   smart search is the quality path. PRODUCT.md could note both tiers
+   (maintainer approval).
 2. Symptom-generation variance: pin sampling (temperature 0) or opt-in 2-pass
-   union (`--passes 2`, +0.028 hit, 2× ingest cost) — not shipped pending #1.
+   union (`--passes 2`, +0.028 hit, 2× ingest cost) — lower priority now that
+   smart search covers the vague gap.
 3. Ask re-measure on the post-consolidation brain (routing cache invalidated).
 4. RS2.6: negative rejection as a SOFT coverage signal passed to ask.
 5. RS2.5: extraction granularity vs model (lite models compress specifics).
