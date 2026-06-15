@@ -30,12 +30,25 @@ problem the note solves, WITHOUT knowing its name. 2-4 short phrases per note,
 in {language} AND in English (e.g. for hallucination: "si inventa le cose,
 risponde cose false, makes things up, wrong facts").
 
+Use the note's definition and details (not just its name) to find the symptoms
+a user would actually describe.
+
 Return ONLY a JSON array, echoing the note id:
 [{{"id": "<note id>", "symptoms": "<phrases separated by commas>"}}]
 
-NOTES (id | title: summary):
+NOTES (id | title — summary — details):
 {notes}
 """
+
+_BODY_CHARS = 360  # quanto corpo dare al modello per inferire i sintomi
+
+
+def _note_brief(note) -> str:
+    """id, titolo, summary e un estratto del CORPO: i sintomi inferiti dal corpo
+    (non dal solo summary) catturano piu' modi di descrivere il problema."""
+    body = " ".join(str(v) for v in note.body_sections.values()).strip()
+    body = body[:_BODY_CHARS]
+    return f"- {note.note_id} | {note.title} — {note.summary} — {body}"
 
 
 def enrich_estimate(paths: TalamusPaths) -> dict:
@@ -56,7 +69,7 @@ def enrich_notes(paths: TalamusPaths, llm: LLMProvider, language: str = "English
     failed_batches = 0
     for offset in range(0, len(notes), BATCH_SIZE):
         batch = notes[offset : offset + BATCH_SIZE]
-        listing = "\n".join(f"- {n.note_id} | {n.title}: {n.summary}" for n in batch)
+        listing = "\n".join(_note_brief(n) for n in batch)
         raw = llm.complete(_PROMPT.format(language=language, notes=listing))
         start, end = raw.find("["), raw.rfind("]")
         if start == -1 or end == -1 or end <= start:

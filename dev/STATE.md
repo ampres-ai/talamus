@@ -44,6 +44,7 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | Engine speed | Model passthrough (`llm_model` → `-m`); gemini hardened (read-only + skip-trust); measured: flash-lite 16 s vs codex default 46 s per call |
 | RS2 | Two-corpora law; book eval-set; **ask selection fix** (domain members ranked vs question + global escape seeds): ask hit 0.361 → 0.750; **`talamus enrich`** (symptom vocabulary, batched, consented): search hit 0.806 → 0.833, zero regressions; strict=False JSON salvage |
 | RS3 | **LLM query expansion before routed selection** ("the LLM is the embedding model"): ask hit → **0.972**, vague 0.50 → 0.81; **consolidation** (20 reviewed groups, 31 notes merged): search hit → **0.861**, direct MRR → 1.0; merge_notes retrieval_text union fix; truncation-salvage parser; hostile-model CI battery + enrich guard-rails |
+| RS4 | **Hub-note suppression** (mild length penalty LP=0.5, self-targeting): docs hit 0.600 → 0.618 (code/cross-source/direct up), book neutral; CACHE_VERSION 4. Two-corpora error analysis confirmed search's two failure classes: hub pollution (index-fixable, done) vs pure-semantic vague (needs ingest-time enrichment) |
 
 ## Rejected with data — do NOT redo without new evidence
 
