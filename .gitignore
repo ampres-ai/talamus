@@ -1,36 +1,73 @@
-.worktrees/
+# --- Agent / tooling runtime caches -----------------------------------------
 .claude/
-# Superpowers brainstorming-companion runtime cache (servers, logs, pids)
+.worktrees/
+# brainstorming-companion servers, logs, pids
 .superpowers/
 
-# Python
+# --- Python -----------------------------------------------------------------
 __pycache__/
 *.py[cod]
+*$py.class
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.pyre/
+.pytype/
+.hypothesis/
+.tox/
+.nox/
+.ipynb_checkpoints/
 
-# Packaging
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# --- Packaging --------------------------------------------------------------
 build/
 dist/
 *.egg-info/
+*.egg
+pip-wheel-metadata/
 
-# Virtual environments
+# --- Virtual environments ---------------------------------------------------
 .venv/
 venv/
 env/
+ENV/
+.python-version
 
-# Talamus brains created inside the repo (derived caches are never source truth)
+# --- Secrets (never in the repo: keys live in TALAMUS_HOME or env) ----------
+.env
+.env.*
+credentials.json
+*.pem
+*.key
+
+# --- Talamus brains created inside the repo (derived caches, never truth) ---
+# (the leading-dot dir; never the dev/ docs)
 .talamus/
 
-# Built docs site (mkdocs build output)
+# --- Built docs site (mkdocs build output) ----------------------------------
 site/
 
-# OS / editor cruft
+# --- OS cruft (multi-OS: macOS / Windows / Linux) ---------------------------
 .DS_Store
+.AppleDouble
 Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*~
+
+# --- Editor / IDE cruft -----------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+
+# --- Scratch ----------------------------------------------------------------
 *.tmp
 *.temp
 ~$*
-.vscode/
-.idea/
