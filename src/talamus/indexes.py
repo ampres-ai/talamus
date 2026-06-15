@@ -35,6 +35,11 @@ _B = 0.75
 W_TRI_TITLE = 0.7
 W_TRI_SUMMARY = 0.3
 _MAX_QUERY_TRIGRAMS = 64  # bound the OR-query cost
+# Hub suppression (RS4): long "hub" notes accumulate blended score across many
+# weak matches and crowd out short, precisely-titled notes. A mild length
+# penalty divides by (avglen + LP·len)/avglen — it bites only where note lengths
+# vary a lot (measured: docs cross-source +0.10, neutral on the uniform book).
+_LENGTH_PENALTY = 0.5
 
 _WORD = re.compile(r"[a-zà-ÿ0-9]+")
 
@@ -112,20 +117,28 @@ def _build_sqlite(paths: TalamusPaths, notes: list[CanonicalNote]) -> None:
     conn = sqlite3.connect(tmp)
     try:
         conn.execute(
-            "CREATE TABLE meta (note_id TEXT PRIMARY KEY, title TEXT, summary TEXT, aliases TEXT)"
+            "CREATE TABLE meta "
+            "(note_id TEXT PRIMARY KEY, title TEXT, summary TEXT, aliases TEXT, hay_len INTEGER)"
         )
         conn.execute(
             "CREATE VIRTUAL TABLE search USING "
             "fts5(note_id UNINDEXED, haystack, tri_title, tri_summary)"
         )
         for note in notes:
+            haystack = _haystack(note)
             conn.execute(
-                "INSERT INTO meta VALUES (?, ?, ?, ?)",
-                (note.note_id, note.title, note.summary, json.dumps(note.aliases)),
+                "INSERT INTO meta VALUES (?, ?, ?, ?, ?)",
+                (
+                    note.note_id,
+                    note.title,
+                    note.summary,
+                    json.dumps(note.aliases),
+                    len(haystack.split()),
+                ),
             )
             conn.execute(
                 "INSERT INTO search VALUES (?, ?, ?, ?)",
-                (note.note_id, _haystack(note), _tri_title(note), _tri_summary(note)),
+                (note.note_id, haystack, _tri_title(note), _tri_summary(note)),
             )
         conn.commit()
     finally:
@@ -183,6 +196,27 @@ def _blend(channels: list[tuple[dict[str, float], float]]) -> dict[str, float]:
     return combined
 
 
+def _apply_length_penalty(blended: dict[str, float], hay_len: dict[str, int]) -> dict[str, float]:
+    """Damp hub notes by haystack length (RS4). avglen over the CANDIDATES so the
+    penalty is relative, not absolute; missing lengths are left untouched."""
+    if not _LENGTH_PENALTY or not hay_len:
+        return blended
+    lengths = [hay_len[n] for n in blended if n in hay_len]
+    if not lengths:
+        return blended
+    avglen = sum(lengths) / len(lengths)
+    if avglen <= 0:
+        return blended
+    out: dict[str, float] = {}
+    for note_id, score in blended.items():
+        length = hay_len.get(note_id)
+        if length is None:
+            out[note_id] = score
+        else:
+            out[note_id] = score * avglen / (avglen + _LENGTH_PENALTY * length)
+    return out
+
+
 def search_index(paths: TalamusPaths, query: str, limit: int = 5) -> list[dict]:
     """Query the persistent index (three blended channels).
 
@@ -231,6 +265,12 @@ def _search_sqlite(paths: TalamusPaths, query: str, limit: int) -> list[dict]:
         )
         if not blended:
             return []
+        hay_len = {
+            str(nid): int(length)
+            for nid, length in conn.execute("SELECT note_id, hay_len FROM meta").fetchall()
+            if length is not None
+        }
+        blended = _apply_length_penalty(blended, hay_len)
         top = sorted(blended.items(), key=lambda item: (-item[1], item[0]))[:limit]
         results = []
         for note_id, score in top:
@@ -288,6 +328,8 @@ def _search_postings(paths: TalamusPaths, query: str, limit: int) -> list[dict]:
             (_field_bm25(fields.get("tri_summary", {}), grams), W_TRI_SUMMARY),
         ]
     )
+    hay_lengths = fields.get("haystack", {}).get("lengths", {})
+    blended = _apply_length_penalty(blended, {nid: int(v) for nid, v in hay_lengths.items()})
     ranked = sorted(blended.items(), key=lambda item: (-item[1], item[0]))[:limit]
     return [
         {
