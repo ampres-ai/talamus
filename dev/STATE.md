@@ -44,7 +44,7 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | Engine speed | Model passthrough (`llm_model` → `-m`); gemini hardened (read-only + skip-trust); measured: flash-lite 16 s vs codex default 46 s per call |
 | RS2 | Two-corpora law; book eval-set; **ask selection fix** (domain members ranked vs question + global escape seeds): ask hit 0.361 → 0.750; **`talamus enrich`** (symptom vocabulary, batched, consented): search hit 0.806 → 0.833, zero regressions; strict=False JSON salvage |
 | RS3 | **LLM query expansion before routed selection** ("the LLM is the embedding model"): ask hit → **0.972**, vague 0.50 → 0.81; **consolidation** (20 reviewed groups, 31 notes merged): search hit → **0.861**, direct MRR → 1.0; merge_notes retrieval_text union fix; truncation-salvage parser; hostile-model CI battery + enrich guard-rails |
-| RS4 | **Hub-note suppression** (mild length penalty LP=0.5, self-targeting): docs hit 0.600 → 0.618 (code/cross-source/direct up), book neutral; CACHE_VERSION 4. Two-corpora error analysis confirmed search's two failure classes: hub pollution (index-fixable, done) vs pure-semantic vague (needs ingest-time enrichment) |
+| RS4 | **Hub-note suppression** (length penalty LP=0.5, self-targeting): docs hit 0.600 → 0.618, book neutral; CACHE_VERSION 4. **Symptoms from body** (not summary): neutral-to-better, lifts vague-en. **THE SEARCH CEILING** (research/2026-06-rs4): symptom generation is nondeterministic (0.861–0.917 same procedure) and symptom bloat self-pollutes (union x2 0.889 > x3 0.833) → lexical+trigram search plateaus ~0.86–0.89 on a curated brain; the path past it is the LLM-in-loop ask (0.972). Search and ask are different tools with different ceilings |
 
 ## Rejected with data — do NOT redo without new evidence
 
@@ -63,15 +63,20 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 
 ## Open fronts (current queue)
 
-1. Search hit 0.861 → ≥ 0.92: symptoms generated from note BODY (not just
-   summary); remaining 5 vague/cross misses on the book corpus.
-2. Ask re-measure on the post-consolidation brain (routing cache invalidated).
-3. RS2.6: negative rejection as a SOFT coverage signal passed to ask.
-4. RS2.5: extraction granularity vs model (lite models compress specifics).
-5. RS-GEN: full e2e with ollama + small local model (the zero-subscription
+1. **DECISION NEEDED (maintainer)**: the "search hit ≥0.92" bar targets a tool
+   with a measured ~0.88 ceiling. Revise the bar to lean on `ask` (≥0.95,
+   achieved) for natural-language questions, vs keep pushing search? See
+   research/2026-06-rs4-search-ceiling.md §"Open question".
+2. Symptom-generation variance: pin sampling (temperature 0) or opt-in 2-pass
+   union (`--passes 2`, +0.028 hit, 2× ingest cost) — not shipped pending #1.
+3. Ask re-measure on the post-consolidation brain (routing cache invalidated).
+4. RS2.6: negative rejection as a SOFT coverage signal passed to ask.
+5. RS2.5: extraction granularity vs model (lite models compress specifics).
+6. RS-GEN: full e2e with ollama + small local model (the zero-subscription
    promise) — ollama installed on the dev machine, no model pulled yet.
-6. RS-GEN: third corpus, different domain, anti-overfitting.
-7. 100k-note bench; UI visual verdict from the maintainer; clean-venv install
+7. RS-GEN: third corpus, different domain, anti-overfitting (this would give
+   the second LLM-enriched corpus the enrich findings still lack).
+8. 100k-note bench; UI visual verdict from the maintainer; clean-venv install
    checklist.
 
 ## Live artifacts (not in repo)
