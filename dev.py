@@ -18,12 +18,14 @@ def run(cmd: list[str]) -> int:
 
 def main() -> int:
     if "--fix" in sys.argv:
-        run(["ruff", "check", "--fix", "src", "tests"])
-        run(["ruff", "format", "src", "tests"])
+        run(["ruff", "check", "--fix", "src", "tests", "benchmarks"])
+        run(["ruff", "format", "src", "tests", "benchmarks"])
 
     checks = [
-        ["ruff", "check", "src", "tests"],
-        ["ruff", "format", "--check", "src", "tests"],
+        # benchmarks/ is dev-only (competitor deps) — linted/formatted but mypy
+        # stays on src (the shipped, fully-typed package)
+        ["ruff", "check", "src", "tests", "benchmarks"],
+        ["ruff", "format", "--check", "src", "tests", "benchmarks"],
         ["mypy", "src"],
         [sys.executable, "-m", "unittest", "discover", "-s", "tests"],
     ]

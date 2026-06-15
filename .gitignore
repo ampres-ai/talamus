@@ -49,6 +49,10 @@ credentials.json
 # (the leading-dot dir; never the dev/ docs)
 .talamus/
 
+# --- Transient CI-tier benchmark artifacts (real shootout results stay tracked) ---
+benchmarks/results/*-ci.json
+benchmarks/results/*-ci.md
+
 # --- Built docs site (mkdocs build output) ----------------------------------
 site/
 

@@ -50,10 +50,12 @@ def main(argv: list[str]) -> int:
     avg_recall = sum(recall) / len(recall)
     avg_search = sum(search) / len(search)
 
+    recall_pct = (1 - avg_recall / load_all) * 100
+    search_pct = (1 - avg_search / load_all) * 100
     print(f"notes in brain         : {len(notes)}")
     print(f"load-all (whole brain) : {load_all:>7} tok")
-    print(f"recall (avg, targeted) : {avg_recall:>7.0f} tok   ({(1 - avg_recall / load_all) * 100:5.1f}% less)")
-    print(f"search (avg, titles)   : {avg_search:>7.0f} tok   ({(1 - avg_search / load_all) * 100:5.1f}% less)")
+    print(f"recall (avg, targeted) : {avg_recall:>7.0f} tok   ({recall_pct:5.1f}% less)")
+    print(f"search (avg, titles)   : {avg_search:>7.0f} tok   ({search_pct:5.1f}% less)")
     return 0
 
 
