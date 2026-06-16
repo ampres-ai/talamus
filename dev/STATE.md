@@ -39,6 +39,7 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | M7 | Active verify: provenance status, batch verify, corrections → review |
 | M8–M11 | Dashboard CLI; UI workbench 11 views; MCP final; release hardening |
 | Fase R | UI revolution (physics graph, inspector, full settings); codex/gemini adapters; `talamus setup`; hierarchical overview (areas) |
+| UI readiness foundation | Readiness service, status JSON and home next-actions now preserve onboarding state; the full product UI/redesign remains pending |
 | RS1 (recall research) | **Trigram cognate bridge** (no embeddings): 3-channel index → recall +25%, MRR +35%, cross-source +76%; CI floors. Rejected with data: graph propagation (−2 pt), RRF, seed displacement |
 | Language | Three-layer architecture (English prompts / user-language prose / English-canonical machine layer); validated e2e with real codex |
 | Book test | 500-page real PDF: 58 chunks, ~33 min, 267 notes, resumable job, consent gate. Found+fixed 4 real bugs: self-links, stale running jobs, domain induction collapse at scale (→ batched), verify hashing wrong artifact (243/243 false stale → 0) |

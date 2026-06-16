@@ -4,6 +4,7 @@ import os
 import tempfile
 import unittest
 from contextlib import redirect_stdout
+from pathlib import Path
 from unittest import mock
 
 from talamus.cli import build_parser, main
@@ -61,11 +62,71 @@ class JsonCoverageTests(unittest.TestCase):
             self.assertEqual(0, code)
             self.assertTrue(json.loads(out.getvalue())["ok"])
 
+    def test_status_json_includes_readiness(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            main(["init", "--root", tmp])
+            out = io.StringIO()
+            with redirect_stdout(out):
+                code = main(["status", "--root", tmp, "--json"])
+
+            payload = json.loads(out.getvalue())
+            self.assertEqual(0, code)
+            self.assertTrue(payload["ok"])
+            self.assertIn("readiness", payload)
+            readiness = payload["readiness"]
+            self.assertEqual(str(Path(tmp).resolve()), readiness["root"])
+            self.assertTrue(readiness["config_exists"])
+            self.assertIsInstance(readiness["next_actions"], list)
+
+    def test_status_json_preserves_brain_resolution_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as home:
+            with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}, clear=False):
+                main(["init", "--root", tmp])
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    code = main(["status", "--brain", Path(tmp).name, "--json"])
+
+            payload = json.loads(out.getvalue())
+            self.assertEqual(0, code)
+            readiness = payload["readiness"]
+            self.assertEqual(str(Path(tmp).resolve()), readiness["root"])
+            self.assertEqual("named", readiness["scope"])
+            self.assertEqual("--brain", readiness["source"])
+
+    def test_status_json_degrades_with_malformed_registry_before_root_resolution(self) -> None:
+        with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as cwd:
+            Path(home, "registry.json").write_text(
+                json.dumps({"brains": [{"name": "broken"}]}), encoding="utf-8"
+            )
+            out = io.StringIO()
+            previous = os.getcwd()
+            try:
+                os.chdir(cwd)
+                with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}, clear=False):
+                    with redirect_stdout(out):
+                        code = main(["status", "--json"])
+            finally:
+                os.chdir(previous)
+
+        payload = json.loads(out.getvalue())
+        self.assertEqual(1, code)
+        self.assertFalse(payload["ok"])
+        readiness = payload["readiness"]
+        self.assertEqual(str(Path(home, "default").resolve()), readiness["root"])
+        self.assertFalse(readiness["config_exists"])
+
     def test_plain_flag_is_accepted_everywhere_common(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             main(["init", "--root", tmp])
             self.assertEqual(0, main(["status", "--root", tmp, "--plain"]))
             self.assertEqual(0, main(["where", "--root", tmp, "--no-color"]))
+
+    def test_plain_status_does_not_compute_readiness(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            main(["init", "--root", tmp])
+            with mock.patch("talamus.cli.inspect_readiness") as inspect:
+                self.assertEqual(0, main(["status", "--root", tmp, "--plain"]))
+            inspect.assert_not_called()
 
 
 class HelpSnapshotTests(unittest.TestCase):

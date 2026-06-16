@@ -15,11 +15,11 @@ from collections.abc import Callable
 import flet as ft
 
 from talamus.domains import load_overview
-from talamus.jobs import JobStore
 from talamus.ontology import load_ontology, neighbors
 from talamus.ontology_lab import load_schema, schema_status
 from talamus.paths import TalamusPaths
 from talamus.review import ReviewQueue
+from talamus.services.readiness import EngineReadiness, NextAction, inspect_readiness
 from talamus.store import load_notes
 from talamus.temporal import note_timeline
 
@@ -45,53 +45,110 @@ def subtle(text: str) -> ft.Control:
 # ------------------------------------------------------------------- home
 
 
-def build_home(paths: TalamusPaths) -> ft.Control:
+def build_home(paths: TalamusPaths, on_action: Callable[[str], None] | None = None) -> ft.Control:
     from talamus.ui import theme
 
-    notes = len(list(paths.notes.glob("*.md"))) if paths.notes.exists() else 0
-    sources = len(list(paths.raw.glob("*"))) if paths.raw.exists() else 0
-    reviews = len(ReviewQueue(paths).list(status="pending"))
-    jobs = [j for j in JobStore(paths).list() if j.state in ("running", "queued")]
-    schema = schema_status(paths)
-    active = schema["types"].get("active", 0)
-    candidates = schema["types"].get("candidate", 0)
+    report = inspect_readiness(root=str(paths.project_root))
     tiles = ft.Row(
         [
-            theme.stat("note", str(notes)),
-            theme.stat("fonti", str(sources)),
-            theme.stat("review", str(reviews), color=theme.WARN if reviews else theme.TEXT),
-            theme.stat("tipi attivi", str(active), color=theme.ACCENT),
-            theme.stat("job", str(len(jobs))),
+            theme.stat("note", str(report.notes)),
+            theme.stat("fonti", str(report.sources)),
+            theme.stat(
+                "review",
+                str(report.reviews_pending),
+                color=theme.WARN if report.reviews_pending else theme.TEXT,
+            ),
+            theme.stat(
+                "job",
+                str(report.jobs_active),
+                color=theme.WARN if report.jobs_active else theme.TEXT,
+            ),
+            theme.stat("indice", report.index_backend, color=theme.ACCENT),
         ],
         wrap=True,
         spacing=theme.GAP,
     )
     rows: list[ft.Control] = [
         heading("Talamus"),
-        theme.muted(str(paths.project_root)),
+        theme.muted(report.root),
         tiles,
     ]
-    if not paths.config_path.exists():
+    if not report.config_exists:
         rows.append(
             theme.empty_state(
                 ft.Icons.PSYCHOLOGY_ALT,
-                "Nessun brain qui",
-                "Crea il brain di questo progetto con `talamus init` (o usa la vista Ingest).",
+                "No brain selected",
+                "Open an existing brain, try the demo, or create a new brain when you choose. "
+                "This screen does not create files.",
             )
         )
-        return ft.Column(rows, spacing=14)
-    suggestions: list[str] = []
-    if notes == 0:
-        suggestions.append("Ingerisci un documento o lancia uno scan dalla vista Ingest.")
-    if reviews:
-        suggestions.append(f"{reviews} decisioni ti aspettano nella vista Review.")
-    if candidates:
-        suggestions.append(f"{candidates} tipi candidati da valutare nell'Ontology Lab.")
-    if not suggestions:
-        suggestions.append("Tutto in ordine: fai una domanda dalla Chat.")
-    rows.append(theme.section("Prossimi passi"))
-    rows.extend(theme.card(ft.Text(s, size=13)) for s in suggestions)
+
+    rows.append(theme.section("System status"))
+    rows.extend(_engine_card(engine) for engine in report.engines)
+
+    rows.append(theme.section("Next steps"))
+    if report.next_actions:
+        rows.extend(_next_action_card(action, on_action) for action in report.next_actions)
+    else:
+        rows.append(
+            theme.card(
+                ft.Column(
+                    [
+                        ft.Text("Ready", weight=ft.FontWeight.BOLD),
+                        theme.muted("This brain is ready for questions."),
+                    ],
+                    spacing=4,
+                ),
+                padding=12,
+            )
+        )
     return ft.Column(rows, spacing=14)
+
+
+def _engine_card(engine: EngineReadiness) -> ft.Control:
+    from talamus.ui import theme
+
+    marker = "selected" if engine.configured else engine.status
+    return theme.card(
+        ft.Column(
+            [
+                ft.Row(
+                    [
+                        ft.Text(engine.label, weight=ft.FontWeight.BOLD),
+                        theme.muted(marker),
+                    ],
+                    spacing=8,
+                    wrap=True,
+                ),
+                theme.muted(engine.detail),
+            ],
+            spacing=4,
+        ),
+        padding=12,
+    )
+
+
+def _next_action_card(
+    action: NextAction, on_action: Callable[[str], None] | None = None
+) -> ft.Control:
+    from talamus.ui import theme
+
+    controls: list[ft.Control] = [
+        ft.Text(action.label, weight=ft.FontWeight.BOLD),
+        theme.muted(action.detail),
+    ]
+    if on_action is not None:
+        callback = on_action
+        controls.append(
+            ft.TextButton("Apri", on_click=lambda e, target=action.target: callback(target))
+        )
+    return theme.card(
+        ft.Column(
+            controls,
+            spacing=4,
+        ),
+        padding=12,
+    )
 
 
 def build_sources_panel(paths: TalamusPaths, title: str) -> ft.Control:

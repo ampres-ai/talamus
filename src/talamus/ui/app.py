@@ -20,6 +20,19 @@ from talamus.paths import TalamusPaths
 from talamus.recall import read_note_text, search_notes
 from talamus.ui import views
 
+_HOME_ACTION_ALIASES = {
+    "ask": "chat",
+    "import": "ingest",
+    "system": "impostazioni",
+    "demo": "home",
+    "brains": "impostazioni",
+    "ontology": "ontologia",
+}
+
+
+def _view_name_for_home_action(name: str) -> str:
+    return _HOME_ACTION_ALIASES.get(name, name)
+
 
 def _provider(paths: TalamusPaths):
     config = load_or_default(paths.config_path)
@@ -232,12 +245,13 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
     builders: dict[str, object] = {}
 
     def show_view(name: str) -> None:
+        name = _view_name_for_home_action(name)
         builder = builders[name]
         show(builder())  # type: ignore[operator]
 
     builders.update(
         {
-            "home": lambda: views.build_home(paths),
+            "home": lambda: views.build_home(paths, show_view),
             "chat": chat_view,
             "cerca": search_view,
             "note": lambda: views.build_notes(paths, open_note),

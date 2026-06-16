@@ -11,7 +11,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from talamus import __version__
-from talamus.adapters.llm import LLMProvider, build_provider
+from talamus.adapters.llm import LLMProvider, build_provider, engine_command
 from talamus.ask import answer_from_items, answer_question
 from talamus.config import TalamusConfig, load_config, load_or_default, save_config
 from talamus.consolidate import apply_consolidation, find_duplicates
@@ -66,30 +66,16 @@ from talamus.scope import (
     scoped_context_items,
     scoped_search,
 )
+from talamus.services.readiness import ReadinessReport, inspect_readiness
 from talamus.store import cache_is_current, reindex
 from talamus.temporal import note_timeline, parse_when
 from talamus.timeline import note_as_of, note_history
-
-_ENGINE_COMMANDS: dict[str, str | None] = {
-    "claude-cli": "claude",
-    "codex-cli": "codex",
-    "gemini-cli": "gemini",
-    "ollama": "ollama",
-    "codex": "codex",
-    "gemini": "gemini",
-    "api": None,
-    "anthropic-api": None,
-}
-
-
-def _engine_command(provider: str) -> str | None:
-    return _ENGINE_COMMANDS.get(provider, provider)
 
 
 def _detect_engine() -> str:
     """Pick an LLM engine that is actually installed; fall back to claude-cli."""
     for provider in ("claude-cli", "ollama"):
-        command = _ENGINE_COMMANDS[provider]
+        command = engine_command(provider)
         if command and shutil.which(command):
             return provider
     return "claude-cli"
@@ -764,7 +750,7 @@ def _cmd_init(root: Path, engine: str | None = None, scope_kind: str = "project"
     print(f"initialized talamus project at {root}")
     if created:
         config = load_config(paths.config_path)
-        command = _engine_command(config.llm_provider)
+        command = engine_command(config.llm_provider)
         found = command is None or shutil.which(command) is not None
         print(f"engine: {config.llm_provider} ({'found' if found else 'not on PATH'})")
     brain_type = "central" if scope_kind == "global" else "project"
@@ -837,19 +823,24 @@ def _cmd_hook_run(root: Path) -> int:
     return 0
 
 
-def _cmd_status(root: Path, json_out: bool = False) -> int:
+def _cmd_status(
+    root: Path, json_out: bool = False, readiness: ReadinessReport | None = None
+) -> int:
     paths = TalamusPaths(root)
     missing = [p for p in paths.required_directories() if not p.exists()]
     not_directories = [p for p in paths.required_directories() if p.exists() and not p.is_dir()]
     config_exists = paths.config_path.exists()
     healthy = config_exists and not missing and not not_directories
     if json_out:
+        if readiness is None:
+            readiness = inspect_readiness(root=str(root))
         _print_json(
             {
                 "ok": healthy,
                 "config_exists": config_exists,
                 "missing": [str(p) for p in missing],
                 "not_directories": [str(p) for p in not_directories],
+                "readiness": readiness.to_dict(),
             }
         )
         return 0 if healthy else 1
@@ -863,6 +854,13 @@ def _cmd_status(root: Path, json_out: bool = False) -> int:
         return 1
     print("talamus project status ok")
     return 0
+
+
+def _cmd_status_json(
+    root: str | None = None, brain: str | None = None, use_global: bool = False
+) -> int:
+    readiness = inspect_readiness(root=root, brain=brain, use_global=use_global)
+    return _cmd_status(Path(str(readiness.root)), json_out=True, readiness=readiness)
 
 
 def _cmd_doctor(root: Path) -> int:
@@ -879,7 +877,7 @@ def _cmd_doctor(root: Path) -> int:
     print(f"storage: {config.storage_provider}")
     print(f"pdf converter: {config.pdf_converter}")
     print(f"ocr: {config.ocr_provider}/{config.ocr_model}")
-    command = _engine_command(config.llm_provider)
+    command = engine_command(config.llm_provider)
     engine_status = (
         "ok" if (command is None or shutil.which(command)) else f"NOT on PATH ({command})"
     )
@@ -1657,6 +1655,9 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             print(format_plan(plan))
             print("\n(no LLM call made; review the plan, then run `talamus scan . --yes`)")
         return code
+
+    if command == "status" and bool(getattr(args, "json", False)):
+        return _cmd_status_json(args.root, args.brain, args.use_global)
 
     root = _resolve_root(
         getattr(args, "root", None),

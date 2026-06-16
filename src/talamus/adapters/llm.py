@@ -16,6 +16,33 @@ class LLMProvider(Protocol):
     def complete(self, prompt: str) -> str: ...
 
 
+ENGINE_COMMANDS: dict[str, str | None] = {
+    "claude-cli": "claude",
+    "codex-cli": "codex",
+    "gemini-cli": "gemini",
+    "ollama": "ollama",
+    "anthropic-api": None,
+}
+
+ENGINE_LABELS: dict[str, str] = {
+    "claude-cli": "Claude CLI",
+    "codex-cli": "Codex CLI",
+    "gemini-cli": "Gemini CLI",
+    "ollama": "Ollama",
+    "anthropic-api": "Anthropic API",
+}
+
+_ENGINE_COMMAND_ALIASES: dict[str, str | None] = {
+    "codex": "codex",
+    "gemini": "gemini",
+    "api": None,
+}
+
+
+def engine_command(provider: str) -> str | None:
+    return ENGINE_COMMANDS.get(provider, _ENGINE_COMMAND_ALIASES.get(provider, provider))
+
+
 def _default_runner(args: list[str], prompt: str) -> str:
     executable = shutil.which(args[0])
     if executable is None:
@@ -161,6 +188,10 @@ def _stored_credential(name: str) -> str:
     return str(data.get(name, ""))
 
 
+def stored_credential_present(name: str) -> bool:
+    return bool(_stored_credential(name))
+
+
 def save_credential(name: str, value: str) -> None:
     """Persist a credential machine-wide (used by the Settings view)."""
     from talamus.registry import talamus_home
@@ -181,13 +212,10 @@ def save_credential(name: str, value: str) -> None:
 def detect_engines() -> list[str]:
     """The engines actually usable on this machine, in preference order."""
     available = []
-    for provider, command in (
-        ("claude-cli", "claude"),
-        ("codex-cli", "codex"),
-        ("gemini-cli", "gemini"),
-        ("ollama", "ollama"),
-    ):
-        if shutil.which(command):
+    for provider, command in ENGINE_COMMANDS.items():
+        if command is None:
+            continue
+        if command and shutil.which(command):
             available.append(provider)
     available.append("anthropic-api")  # always offered (needs a key)
     return available
