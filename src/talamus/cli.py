@@ -13,7 +13,6 @@ from talamus import __version__
 from talamus.adapters.llm import LLMProvider, build_provider, engine_command
 from talamus.ask import answer_from_items, answer_question
 from talamus.config import TalamusConfig, load_config, load_or_default, save_config
-from talamus.correct import apply_correction, verify_note
 from talamus.demo import create_demo_brain
 from talamus.domains import build_overview, load_overview
 from talamus.errors import TalamusError
@@ -88,6 +87,13 @@ from talamus.services.review import (
     reject_review_item,
 )
 from talamus.services.scan import ScanActionResult, ScanPreview, preview_scan, run_scan
+from talamus.services.verification import (
+    VerificationBatchResult,
+    VerificationNoteResult,
+    apply_note_correction,
+    run_verification_batch,
+    verify_single_note,
+)
 from talamus.store import reindex
 from talamus.temporal import note_timeline, parse_when
 from talamus.timeline import note_as_of, note_history
@@ -1069,9 +1075,11 @@ def _cmd_enrich(root: Path, yes: bool, llm: LLMProvider, json_out: bool) -> int:
 def _cmd_verify_batch(
     root: Path, llm: LLMProvider, only_stale: bool, source: str | None, json_out: bool
 ) -> int:
-    from talamus.correct import verify_batch
-
-    report = verify_batch(TalamusPaths(root), llm, only_stale=only_stale, source_filter=source)
+    service_result = run_verification_batch(root, llm, only_stale=only_stale, source_filter=source)
+    if not service_result.success or not isinstance(service_result.data, VerificationBatchResult):
+        print(service_result.message, file=sys.stderr)
+        return 1
+    report = service_result.data.raw
     if json_out:
         _print_json(report)
         return 0
@@ -1086,15 +1094,22 @@ def _cmd_verify_batch(
 
 
 def _cmd_verify(root: Path, title: str, do_apply: bool, llm: LLMProvider, json_out: bool) -> int:
-    paths = TalamusPaths(root)
     if do_apply:
-        corrected = apply_correction(paths, title, llm)
+        apply_result = apply_note_correction(root, title, llm)
+        if not apply_result.success or apply_result.data is None:
+            print(apply_result.message, file=sys.stderr)
+            return 1
+        corrected = apply_result.data.corrected
         if json_out:
             _print_json({"corrected": corrected})
         else:
             print(f"verify: {'corrected' if corrected else 'no correction needed for'} '{title}'")
         return 0
-    result = verify_note(paths, title, llm)
+    note_result = verify_single_note(root, title, llm)
+    if not note_result.success or not isinstance(note_result.data, VerificationNoteResult):
+        print(note_result.message, file=sys.stderr)
+        return 1
+    result = note_result.data.raw
     if json_out:
         _print_json(result)
         return 0

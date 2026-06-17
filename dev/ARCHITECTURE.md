@@ -230,7 +230,9 @@ returning the secret. Mutating service calls return `ServiceResult` from
   provider before approval; `enrich.py` exposes typed symptom-vocabulary
   preview/confirmation/run operations over the existing batched enrichment path;
   `consolidation.py` exposes typed duplicate-group proposals and reviewed-group
-  apply operations over the existing consolidation merge path;
+  apply operations over the existing consolidation merge path; `verification.py`
+  exposes typed batch provenance/content verification, single-note verification,
+  and explicit correction application over the existing correction path;
   `brains.py` wraps registry list/register/select/rename/delete/flag operations
   in typed `ServiceResult` contracts for CLI/UI parity; `jobs.py` exposes
   read/cancel/log controls over persisted job records while execution resume

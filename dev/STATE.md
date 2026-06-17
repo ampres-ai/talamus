@@ -55,6 +55,7 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | Milestone 3M | Shared scan service slice: typed repository scan preview/confirmation/secret-block/queue/run for UI/CLI parity, preserving zero LLM construction before approval |
 | Milestone 3N | Shared enrich service slice: typed symptom-vocabulary preview/confirmation/run for UI/CLI parity, preserving the estimate-before-batches consent gate |
 | Milestone 3O | Shared consolidation service slice: typed duplicate-group proposals and reviewed-group apply operations for UI/CLI parity without forcing a second LLM call after review |
+| Milestone 3P | Shared verification service slice: typed batch provenance/content reports, single-note verification, and explicit correction application for UI/CLI parity |
 | RS1 (recall research) | **Trigram cognate bridge** (no embeddings): 3-channel index → recall +25%, MRR +35%, cross-source +76%; CI floors. Rejected with data: graph propagation (−2 pt), RRF, seed displacement |
 | Language | Three-layer architecture (English prompts / user-language prose / English-canonical machine layer); validated e2e with real codex |
 | Book test | 500-page real PDF: 58 chunks, ~33 min, 267 notes, resumable job, consent gate. Found+fixed 4 real bugs: self-links, stale running jobs, domain induction collapse at scale (→ batched), verify hashing wrong artifact (243/243 false stale → 0) |
