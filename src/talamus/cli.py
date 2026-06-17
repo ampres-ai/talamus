@@ -70,6 +70,7 @@ from talamus.services.brains import (
     unregister_registered_brain,
 )
 from talamus.services.engines import choose_default_engine, list_engines
+from talamus.services.jobs import cancel_job, get_job, list_jobs, read_job_log
 from talamus.services.readiness import ReadinessReport, inspect_readiness
 from talamus.store import cache_is_current, reindex
 from talamus.temporal import note_timeline, parse_when
@@ -448,13 +449,16 @@ def _cmd_ontology_group(
 
 
 def _cmd_jobs_group(args: argparse.Namespace, root: Path) -> int:
-    store = JobStore(TalamusPaths(root))
     cmd = getattr(args, "jobs_cmd", None) or "list"
     json_out = bool(getattr(args, "json", False))
     if cmd == "list":
-        records = store.list()
+        list_result = list_jobs(root)
+        if not list_result.success or list_result.data is None:
+            print(f"error: {list_result.message}", file=sys.stderr)
+            return 1
+        records = list_result.data
         if json_out:
-            _print_json([r.to_dict() for r in records])
+            _print_json([record.to_dict() for record in records])
             return 0
         if not records:
             print("no jobs")
@@ -464,10 +468,11 @@ def _cmd_jobs_group(args: argparse.Namespace, root: Path) -> int:
             total = progress.get("total", "-")
             print(f"- {record.job_id}  {record.state}  {done}/{total}")
         return 0
-    job = store.load(args.job_id)
-    if job is None:
-        print(f"no job '{args.job_id}'", file=sys.stderr)
+    job_result = get_job(root, args.job_id)
+    if not job_result.success or job_result.data is None:
+        print(job_result.message, file=sys.stderr)
         return 1
+    job = job_result.data
     if cmd == "status":
         if json_out:
             _print_json(job.to_dict())
@@ -480,26 +485,35 @@ def _cmd_jobs_group(args: argparse.Namespace, root: Path) -> int:
             print(f"error: {job.error}")
         return 0
     if cmd == "logs":
-        log = store.read_log(args.job_id)
+        log_result = read_job_log(root, args.job_id)
+        if not log_result.success or log_result.data is None:
+            print(log_result.message, file=sys.stderr)
+            return 1
+        log = log_result.data.log
         print(log if log else "no log")
         return 0
     if cmd == "cancel":
-        if store.cancel(args.job_id):
+        cancel_result = cancel_job(root, args.job_id)
+        if cancel_result.success:
             print(f"cancelled {args.job_id}")
             return 0
-        print(f"cannot cancel '{args.job_id}' (missing or already terminal)", file=sys.stderr)
+        print(cancel_result.message, file=sys.stderr)
         return 1
     if cmd == "resume":
-        runner = JOB_RUNNERS.get(job.kind)
+        resume_record = JobStore(TalamusPaths(root)).load(args.job_id)
+        if resume_record is None:
+            print(f"no job '{args.job_id}'", file=sys.stderr)
+            return 1
+        runner = JOB_RUNNERS.get(resume_record.kind)
         if runner is None:
             print(
-                f"error: no runner available for job kind '{job.kind}'\n"
+                f"error: no runner available for job kind '{resume_record.kind}'\n"
                 f"cause: this kind is resumed by the feature that created it\n"
                 f"fix: re-run the original command",
                 file=sys.stderr,
             )
             return 1
-        return runner(root, job)
+        return runner(root, resume_record)
     raise ValueError(f"unknown jobs command {cmd}")
 
 

@@ -42,6 +42,7 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | UI readiness foundation | Readiness service, status JSON and home next-actions now preserve onboarding state; the full product UI/redesign remains pending |
 | Milestone 3A | Shared engine setup service slice: typed `ServiceResult`, canonical engine listing/default selection, engine settings load/update, Anthropic credential save without returning secrets, and CLI setup reuse |
 | Milestone 3B | Shared brain registry service slice: typed list/info/register/select/rename/delete/flag results for UI/CLI parity; federation index and note promotion remain separate slices |
+| Milestone 3C | Shared jobs service slice: typed list/status/log/cancel results for UI/CLI parity; resume remains in CLI runners because it depends on command-specific execution |
 | RS1 (recall research) | **Trigram cognate bridge** (no embeddings): 3-channel index → recall +25%, MRR +35%, cross-source +76%; CI floors. Rejected with data: graph propagation (−2 pt), RRF, seed displacement |
 | Language | Three-layer architecture (English prompts / user-language prose / English-canonical machine layer); validated e2e with real codex |
 | Book test | 500-page real PDF: 58 chunks, ~33 min, 267 notes, resumable job, consent gate. Found+fixed 4 real bugs: self-links, stale running jobs, domain induction collapse at scale (→ batched), verify hashing wrong artifact (243/243 false stale → 0) |
