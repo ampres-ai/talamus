@@ -51,6 +51,7 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | RS6 (answer quality) | **First end-to-end ASK answer-quality eval** (`benchmarks/ask_eval/`, book: 35q + 6 neg; generator gemini-flash-lite held constant; primary judge local `gemma4:e4b` `think=False`; claude cross-check). **talamus-smart leads**: context_hit **0.943**, correctness **0.914**, refusal 1.000; talamus-search 0.829/0.857/1.000; bm25 0.771/0.871/0.833; vectordb 0.657/0.757/0.833. Inter-judge agreement gemma↔claude **1.00/1.00** (n=12) → local €0 judge credible, not flattering. **Ontology ON/OFF ablation (real ask): ON lifts context_hit 0.857→1.000 and correctness 0.886→0.957** — the emergent ontology improves ANSWERS, not just navigation (the MEANING moat, measured). Found+fixed: `gemma4:e4b` is a reasoning model → `think=False` mandatory else empty verdicts silently score 0.000; generator speed measured (gemini-flash-lite fastest, codex-cli unavailable). Honest: faithfulness saturates ~1.0 (shared faithful generator, so it measures the generator not retrieval); refusal delta = 1 question on 6 negatives (noise); ablation faithfulness judged vs gold docs = artifact (fix queued). Report: dev/research/2026-06-rs6-answer-quality.md. Branch feat/rs6-benchmark-round (not merged) |
 | RS7 (competitive expansion) | **Honest steelman**: added a STRONG multilingual dense model (multilingual-e5). On the book it is competitive/better — e5 nDCG **0.837** / MRR **0.857** (LEADS, above talamus-smart 0.783/0.796), recall 0.871; talamus-smart keeps best hit 0.971 / recall 0.886; talamus-search trails e5. **Corrects RS5**: "vectordb LAST cross-language" was an artifact of the weak English-centric MiniLM — against a real multilingual embedder we do NOT win raw cross-language retrieval; the edge is zero embedding infra + moats + answer quality. MIRACL ABANDONED (no Italian; multilingual-MONOlingual, not cross-language; impractical HF script download) → loader/test/datasets dep removed; book stays the cross-language test. Added bench-only: e5 steelman, llm-wiki, agent-mem scaffold, CI negatives. Report: dev/research/2026-06-rs7-competitive-expansion.md |
 | RS8 (adaptive trigram) | **Closed the English ranking gap** (the RS5 residual). Detect a monolingual-ASCII corpus at index build, damp the trigram channel by MONO_TRIGRAM_SCALE=**0.3** at query. SciFact talamus-search recall 0.776→**0.797**, nDCG 0.607→**0.664**, MRR 0.562→**0.628**, hit 0.793→**0.813** — now BEATS BM25 (0.652/0.618) on all four. Two-corpora law: docs + book are NOT flagged (mixed/IT) → byte-identical, **zero regression**. CACHE_VERSION 5; env-tunable TALAMUS_MONO_TRIGRAM_SCALE; CI floor (mechanism in CI + SciFact heavy-gated nDCG≥0.63). Report: dev/research/2026-06-rs8-adaptive-trigram.md |
+| RS8 (local engine + refusal) | **Zero-subscription €0 pipeline works**: fully local (gemma4:e4b as generator AND judge) talamus-search correctness **0.800** (vs 0.857 cloud), grounded + cited. Caveat measured: **5/40 generations >90 s timeout** (gemma reasoning on CPU) → a hard per-call timeout belongs in the product engine adapter. **Smart INVERTS on a slow local engine**: talamus-smart 0.700 < talamus-search 0.800 (its extra LLM call doubles timeout exposure) → plain search wins locally. **Refusal-as-weapon measured = already a strength**: talamus refusal **1.000** across cloud+local (competitors ≤0.833) via empty-context retrieval — NO coverage-gate code shipped (fragile + unneeded); expand the 6-negative set to confirm. smart multi-pass union shipped (opt-in). Report: dev/research/2026-06-rs8-local-engine-and-refusal.md |
 
 ## Rejected with data — do NOT redo without new evidence
 
@@ -77,12 +78,16 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
    union (`--passes 2`, +0.028 hit, 2× ingest cost) — lower priority now that
    smart search covers the vague gap.
 3. Ask re-measure on the post-consolidation brain (routing cache invalidated).
-4. RS2.6: negative rejection as a SOFT coverage signal passed to ask.
+4. RS2.6 RESOLVED differently (RS8): refusal is already a Talamus strength
+   (1.000 vs competitors ≤0.833, via empty-context retrieval, cloud AND local);
+   a coverage-score gate was measured-out as fragile/unneeded. Real follow-up:
+   expand the negatives set (6 → 30+) so the refusal win is statistically solid.
 5. RS2.5: extraction granularity vs model (lite models compress specifics).
-6. RS-GEN: full e2e with ollama + small local model (the zero-subscription
-   promise) — `gemma4:e4b` now pulled and proven as a local €0 JUDGE (RS6,
-   ~1.4 s/call with `think=False`); full ASK GENERATION e2e on a small local
-   model still pending (Phase 2 of the RS6 mega-round).
+6. RESOLVED (RS8): full e2e with ollama works — talamus-search correctness 0.800
+   fully local (gemma4:e4b generator + judge, €0). Caveat: 5/40 generations
+   exceeded 90 s. NEW from this: lift a hard per-call timeout into the product
+   engine adapter for `talamus ask` (covers both slow local models and the
+   gemini-on-Windows hang).
 11. **RS6 ablation faithfulness is judged vs GOLD docs, not the ask's actual
     context** → artifact (ontology_on richer context scores "less grounded in
     gold"). Fix: judge against trace `items_read`, re-run the ablation.

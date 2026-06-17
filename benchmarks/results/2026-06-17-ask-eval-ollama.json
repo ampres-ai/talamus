@@ -1,0 +1,40 @@
+{
+  "provenance": {
+    "generated_at": "2026-06-17T17:20:10",
+    "git": "dbddccd",
+    "versions": {
+      "gen": "gemma4:e4b",
+      "judge": "gemma4:e4b"
+    }
+  },
+  "systems": {
+    "bm25": {
+      "n": 10,
+      "context_hit": 0.9,
+      "faithfulness": 0.7,
+      "answer_correctness": 0.7,
+      "honest_refusal": 1.0
+    },
+    "vectordb": {
+      "n": 10,
+      "context_hit": 0.5,
+      "faithfulness": 0.5,
+      "answer_correctness": 0.5,
+      "honest_refusal": 0.833
+    },
+    "talamus-search": {
+      "n": 10,
+      "context_hit": 0.8,
+      "faithfulness": 0.8,
+      "answer_correctness": 0.8,
+      "honest_refusal": 1.0
+    },
+    "talamus-smart": {
+      "n": 10,
+      "context_hit": 0.7,
+      "faithfulness": 0.7,
+      "answer_correctness": 0.7,
+      "honest_refusal": 1.0
+    }
+  }
+}
