@@ -48,6 +48,7 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | RS4 | **Hub-note suppression** (length penalty LP=0.5, self-targeting): docs hit 0.600 → 0.618, book neutral; CACHE_VERSION 4. **Symptoms from body** (not summary): neutral-to-better, lifts vague-en. **THE SEARCH CEILING** (research/2026-06-rs4): symptom generation is nondeterministic and symptom bloat self-pollutes (union x2 0.889 > x3 0.833) → lexical+trigram search plateaus ~0.86–0.89 on a curated brain |
 | RS3-lit | **Literature review** (doc2query, Query2doc, RM3, SDM/proximity, SPLADE): mapped every no-embedding lever to Talamus. Rejected with data: field separation (BM25F) doesn't transfer to small brains; proximity/coverage fails two-corpora (helps book, hurts docs). **THE WIN: Query2doc on search** — `talamus search --smart` expands the query with the user's LLM (cached) before searching: **book hit 0.861 → 0.972, docs 0.618 → 0.782**, vague 0.62 → 1.00. Wins on BOTH corpora; breaks the lexical ceiling; ≥0.92 bar met. The "LLM is the embedding model" thesis, literature-grounded and now on search, not just ask |
 | Benchmark suite Ph1 + RS5 | **Competitive shootout harness** shipped (`benchmarks/`, dev-only, deps never in product): RetrievalSystem protocol + adapters (talamus-search/-smart, bm25, vectordb=MiniLM+FAISS, mem0=ollama), metrics, BEIR lite loader + corpus_from_brain, Layer-2 profiler, capability matrix, scale curves, tiered `run.py`, CI fakes (heavy tests gated by TALAMUS_BENCH_HEAVY). **TWO-FACES RESULT, both measured**: SciFact 300q (English, dense's turf) talamus-search recall@10 **0.776**/hit 0.793 ≈ vectordb 0.783/0.793 — **lexical TIES dense with ZERO embedding infra**; BOOK 35q (cross-language/vague, our turf) talamus-smart **0.886**/hit **0.971**, talamus-search 0.829/0.914, bm25 0.771/0.829, **vectordb LAST 0.700/0.743**. Profiler (book): token recall −97.7% vs load-all, verifiability **100%**, €0 marginal. Capability matrix: competitors ✗ on time/meaning/verifiability. mem0: ~48-53s/doc local, no doc-identity → not an IR competitor (matrix only). Honest: talamus-search < BM25 on nDCG/MRR monolingual (adaptive-trigram front). Report: dev/research/2026-06-rs5-competitive-shootout.md. Merged to main via feat/benchmarks-final |
+| RS6 (answer quality) | **First end-to-end ASK answer-quality eval** (`benchmarks/ask_eval/`, book: 35q + 6 neg; generator gemini-flash-lite held constant; primary judge local `gemma4:e4b` `think=False`; claude cross-check). **talamus-smart leads**: context_hit **0.943**, correctness **0.914**, refusal 1.000; talamus-search 0.829/0.857/1.000; bm25 0.771/0.871/0.833; vectordb 0.657/0.757/0.833. Inter-judge agreement gemma↔claude **1.00/1.00** (n=12) → local €0 judge credible, not flattering. **Ontology ON/OFF ablation (real ask): ON lifts context_hit 0.857→1.000 and correctness 0.886→0.957** — the emergent ontology improves ANSWERS, not just navigation (the MEANING moat, measured). Found+fixed: `gemma4:e4b` is a reasoning model → `think=False` mandatory else empty verdicts silently score 0.000; generator speed measured (gemini-flash-lite fastest, codex-cli unavailable). Honest: faithfulness saturates ~1.0 (shared faithful generator, so it measures the generator not retrieval); refusal delta = 1 question on 6 negatives (noise); ablation faithfulness judged vs gold docs = artifact (fix queued). Report: dev/research/2026-06-rs6-answer-quality.md. Branch feat/rs6-benchmark-round (not merged) |
 
 ## Rejected with data — do NOT redo without new evidence
 
@@ -77,7 +78,16 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 4. RS2.6: negative rejection as a SOFT coverage signal passed to ask.
 5. RS2.5: extraction granularity vs model (lite models compress specifics).
 6. RS-GEN: full e2e with ollama + small local model (the zero-subscription
-   promise) — ollama installed on the dev machine, no model pulled yet.
+   promise) — `gemma4:e4b` now pulled and proven as a local €0 JUDGE (RS6,
+   ~1.4 s/call with `think=False`); full ASK GENERATION e2e on a small local
+   model still pending (Phase 2 of the RS6 mega-round).
+11. **RS6 ablation faithfulness is judged vs GOLD docs, not the ask's actual
+    context** → artifact (ontology_on richer context scores "less grounded in
+    gold"). Fix: judge against trace `items_read`, re-run the ablation.
+12. **Expand the negatives set** (currently 6) so honest-refusal is statistically
+    real — today Talamus 1.000 vs competitors 0.833 is a single-question delta.
+13. **Docs-corpus ASK answer-quality eval** pending (two-corpora law for any
+    answer-quality claim that ships) — needs a docs brain + eval-set.
 7. RS-GEN: third corpus, different domain, anti-overfitting (this would give
    the second LLM-enriched corpus the enrich findings still lack).
 8. 100k-note bench; UI visual verdict from the maintainer; clean-venv install

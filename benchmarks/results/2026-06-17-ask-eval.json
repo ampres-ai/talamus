@@ -1,0 +1,43 @@
+{
+  "provenance": {
+    "generated_at": "2026-06-17T12:59:45",
+    "git": "5807139",
+    "versions": {
+      "gen": "gemini-3.1-flash-lite",
+      "judge": "gemma4:e4b"
+    }
+  },
+  "systems": {
+    "bm25": {
+      "n": 35,
+      "context_hit": 0.771,
+      "faithfulness": 1.0,
+      "answer_correctness": 0.871,
+      "faithfulness_agreement": 1.0,
+      "correctness_agreement": 1.0,
+      "agreement_n": 12,
+      "honest_refusal": 0.833
+    },
+    "vectordb": {
+      "n": 35,
+      "context_hit": 0.657,
+      "faithfulness": 0.943,
+      "answer_correctness": 0.757,
+      "honest_refusal": 0.833
+    },
+    "talamus-search": {
+      "n": 35,
+      "context_hit": 0.829,
+      "faithfulness": 1.0,
+      "answer_correctness": 0.857,
+      "honest_refusal": 1.0
+    },
+    "talamus-smart": {
+      "n": 35,
+      "context_hit": 0.943,
+      "faithfulness": 1.0,
+      "answer_correctness": 0.914,
+      "honest_refusal": 1.0
+    }
+  }
+}
