@@ -24,7 +24,7 @@ bench = [
     "faiss-cpu>=1.8",
     "sentence-transformers>=3.0",
     "mem0ai>=0.1",
-    "datasets>=2.0",
+    "datasets>=2.16,<3.0",  # 3.x removed script datasets; MIRACL's HF repo uses one
 ]
 docs = ["mkdocs-material>=9"]
 ui = ["flet>=0.24"]

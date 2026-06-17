@@ -35,13 +35,21 @@ def miracl_rows_to_corpus(rows: list[dict]) -> JudgedCorpus:
     return JudgedCorpus(docs=list(docs.values()), queries=judged, qrels=qrels)
 
 
-def load_miracl(lang: str = "it", split: str = "dev", limit: int | None = None) -> JudgedCorpus:
+def load_miracl(lang: str = "es", split: str = "dev", limit: int | None = None) -> JudgedCorpus:
     """Download (once) and load a MIRACL language split as a pooled JudgedCorpus.
 
-    Needs `datasets` (in the [bench] extra) and may require `huggingface-cli
+    MIRACL is MULTILINGUAL but monolingual-per-language (query and docs share a
+    language) — it is NOT cross-language; the book corpus remains our cross-lingual
+    test. MIRACL's value here is non-English retrieval AT SCALE vs the multilingual
+    dense model. No Italian config exists; default is Spanish (Romance, close to
+    our Italian use case). Available: ar bn de en es fa fi fr hi id ja ko ru sw te
+    th yo zh.
+
+    Needs `datasets<3` (in the [bench] extra): the MIRACL HF repo ships a loading
+    SCRIPT, and datasets>=3 removed script support. May require `huggingface-cli
     login` if the dataset is gated."""
     from datasets import load_dataset
 
-    ds = load_dataset("miracl/miracl", lang, split=split)
+    ds = load_dataset("miracl/miracl", lang, split=split, trust_remote_code=True)
     rows = list(ds)[:limit] if limit else list(ds)
     return miracl_rows_to_corpus(rows)

@@ -33,10 +33,10 @@ class MiraclAdapterTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("TALAMUS_BENCH_HEAVY"), "network/download")
 class MiraclNetworkTests(unittest.TestCase):
-    def test_load_italian_dev(self):
+    def test_load_spanish_dev(self):
         from benchmarks.shootout.corpora.miracl import load_miracl
 
-        corpus = load_miracl("it", "dev", limit=20)
+        corpus = load_miracl("es", "dev", limit=20)
         self.assertGreater(corpus.n_docs, 0)
         self.assertGreater(len(corpus.queries), 0)
 

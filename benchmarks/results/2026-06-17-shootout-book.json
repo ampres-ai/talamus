@@ -1,0 +1,1331 @@
+{
+  "provenance": {
+    "generated_at": "2026-06-17T15:21:44",
+    "git": "e65a245",
+    "versions": {
+      "talamus": "dev",
+      "engine": "gemini-cli/gemini-3.1-flash-lite",
+      "dataset": "book"
+    }
+  },
+  "k": 10,
+  "n_docs": 212,
+  "n_queries": 35,
+  "systems": {
+    "talamus-search": {
+      "n_queries": 35,
+      "recall_at_k": 0.8285714285714286,
+      "mrr": 0.7272562358276643,
+      "hit_rate": 0.9142857142857143,
+      "ndcg_at_k": 0.7323167012992015,
+      "latency_ms_p50": 11.5415999898687,
+      "ingest": {
+        "seconds": 3.079957500041928,
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "index_bytes": 1242197,
+        "peak_ram_bytes": 0
+      },
+      "cases": [
+        {
+          "query_id": "direct-001",
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6309297535714575
+        },
+        {
+          "query_id": "direct-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-003",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-004",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-006",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-008",
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6309297535714575
+        },
+        {
+          "query_id": "direct-009",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-010",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-011",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-012",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-006",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-001",
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6309297535714575
+        },
+        {
+          "query_id": "vague-002",
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        },
+        {
+          "query_id": "vague-003",
+          "recall_at_k": 0.5,
+          "mrr": 0.1111111111111111,
+          "hit": 1.0,
+          "ndcg_at_k": 0.18457569677956817
+        },
+        {
+          "query_id": "vague-004",
+          "recall_at_k": 0.5,
+          "mrr": 0.14285714285714285,
+          "hit": 1.0,
+          "ndcg_at_k": 0.20438239758848611
+        },
+        {
+          "query_id": "vague-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.8065735963827293
+        },
+        {
+          "query_id": "vague-006",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-007",
+          "recall_at_k": 0.5,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.38685280723454163
+        },
+        {
+          "query_id": "vague-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-en-001",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6309297535714575
+        },
+        {
+          "query_id": "vague-en-003",
+          "recall_at_k": 0.5,
+          "mrr": 0.3333333333333333,
+          "hit": 1.0,
+          "ndcg_at_k": 0.3065735963827292
+        },
+        {
+          "query_id": "vague-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 0.2,
+          "hit": 1.0,
+          "ndcg_at_k": 0.38685280723454163
+        },
+        {
+          "query_id": "cross-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-002",
+          "recall_at_k": 0.5,
+          "mrr": 0.16666666666666666,
+          "hit": 1.0,
+          "ndcg_at_k": 0.21840743681816419
+        },
+        {
+          "query_id": "cross-003",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-004",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        }
+      ]
+    },
+    "talamus-smart": {
+      "n_queries": 35,
+      "recall_at_k": 0.8857142857142857,
+      "mrr": 0.7962585034013606,
+      "hit_rate": 0.9714285714285714,
+      "ndcg_at_k": 0.7828240645549573,
+      "latency_ms_p50": 14285.061399976257,
+      "ingest": {
+        "seconds": 3.5355653999722563,
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "index_bytes": 1242197,
+        "peak_ram_bytes": 0
+      },
+      "cases": [
+        {
+          "query_id": "direct-001",
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "hit": 1.0,
+          "ndcg_at_k": 0.43067655807339306
+        },
+        {
+          "query_id": "direct-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-003",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-004",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-006",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.8772153153380493
+        },
+        {
+          "query_id": "direct-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-008",
+          "recall_at_k": 1.0,
+          "mrr": 0.14285714285714285,
+          "hit": 1.0,
+          "ndcg_at_k": 0.3333333333333333
+        },
+        {
+          "query_id": "direct-009",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-010",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-011",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-012",
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6309297535714575
+        },
+        {
+          "query_id": "direct-en-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-006",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-002",
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6509209298071326
+        },
+        {
+          "query_id": "vague-003",
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        },
+        {
+          "query_id": "vague-004",
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        },
+        {
+          "query_id": "vague-005",
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6240505200038379
+        },
+        {
+          "query_id": "vague-006",
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        },
+        {
+          "query_id": "vague-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-en-001",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "hit": 1.0,
+          "ndcg_at_k": 0.5
+        },
+        {
+          "query_id": "vague-en-003",
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        },
+        {
+          "query_id": "vague-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "hit": 1.0,
+          "ndcg_at_k": 0.43067655807339306
+        },
+        {
+          "query_id": "cross-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-002",
+          "recall_at_k": 0.5,
+          "mrr": 0.25,
+          "hit": 1.0,
+          "ndcg_at_k": 0.2640681225725909
+        },
+        {
+          "query_id": "cross-003",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-004",
+          "recall_at_k": 0.5,
+          "mrr": 0.14285714285714285,
+          "hit": 1.0,
+          "ndcg_at_k": 0.20438239758848611
+        }
+      ]
+    },
+    "bm25": {
+      "n_queries": 35,
+      "recall_at_k": 0.7714285714285715,
+      "mrr": 0.6850340136054421,
+      "hit_rate": 0.8285714285714286,
+      "ndcg_at_k": 0.68765593930064,
+      "latency_ms_p50": 0.6175999878905714,
+      "ingest": {
+        "seconds": 0.0,
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "index_bytes": 70401,
+        "peak_ram_bytes": 0
+      },
+      "cases": [
+        {
+          "query_id": "direct-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-003",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-004",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-006",
+          "recall_at_k": 0.5,
+          "mrr": 0.14285714285714285,
+          "hit": 1.0,
+          "ndcg_at_k": 0.20438239758848611
+        },
+        {
+          "query_id": "direct-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-009",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-010",
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "hit": 1.0,
+          "ndcg_at_k": 0.5
+        },
+        {
+          "query_id": "direct-011",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-012",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 0.16666666666666666,
+          "hit": 1.0,
+          "ndcg_at_k": 0.3562071871080222
+        },
+        {
+          "query_id": "direct-en-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-006",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "direct-en-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.9197207891481876
+        },
+        {
+          "query_id": "vague-003",
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        },
+        {
+          "query_id": "vague-004",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.9197207891481876
+        },
+        {
+          "query_id": "vague-006",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-007",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-en-001",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "hit": 1.0,
+          "ndcg_at_k": 0.43067655807339306
+        },
+        {
+          "query_id": "vague-en-003",
+          "recall_at_k": 0.5,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.38685280723454163
+        },
+        {
+          "query_id": "vague-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "hit": 1.0,
+          "ndcg_at_k": 0.43067655807339306
+        },
+        {
+          "query_id": "cross-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-002",
+          "recall_at_k": 0.5,
+          "mrr": 0.3333333333333333,
+          "hit": 1.0,
+          "ndcg_at_k": 0.3065735963827292
+        },
+        {
+          "query_id": "cross-003",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-004",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        }
+      ]
+    },
+    "vectordb": {
+      "n_queries": 35,
+      "recall_at_k": 0.7,
+      "mrr": 0.534829931972789,
+      "hit_rate": 0.7428571428571429,
+      "ndcg_at_k": 0.5645767567656469,
+      "latency_ms_p50": 11.25430001411587,
+      "ingest": {
+        "seconds": 10.017421500000637,
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "index_bytes": 325632,
+        "peak_ram_bytes": 0
+      },
+      "cases": [
+        {
+          "query_id": "direct-001",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "direct-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.8065735963827293
+        },
+        {
+          "query_id": "direct-003",
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "hit": 1.0,
+          "ndcg_at_k": 0.5
+        },
+        {
+          "query_id": "direct-004",
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "hit": 1.0,
+          "ndcg_at_k": 0.43067655807339306
+        },
+        {
+          "query_id": "direct-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-006",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.8503449055347546
+        },
+        {
+          "query_id": "direct-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-008",
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "hit": 1.0,
+          "ndcg_at_k": 0.43067655807339306
+        },
+        {
+          "query_id": "direct-009",
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "hit": 1.0,
+          "ndcg_at_k": 0.5
+        },
+        {
+          "query_id": "direct-010",
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6309297535714575
+        },
+        {
+          "query_id": "direct-011",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-012",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-006",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-002",
+          "recall_at_k": 0.5,
+          "mrr": 0.14285714285714285,
+          "hit": 1.0,
+          "ndcg_at_k": 0.20438239758848611
+        },
+        {
+          "query_id": "vague-003",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-004",
+          "recall_at_k": 0.5,
+          "mrr": 0.14285714285714285,
+          "hit": 1.0,
+          "ndcg_at_k": 0.20438239758848611
+        },
+        {
+          "query_id": "vague-005",
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "hit": 1.0,
+          "ndcg_at_k": 0.5249810332008933
+        },
+        {
+          "query_id": "vague-006",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-007",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-008",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-en-001",
+          "recall_at_k": 0.5,
+          "mrr": 0.1,
+          "hit": 1.0,
+          "ndcg_at_k": 0.17723928678404774
+        },
+        {
+          "query_id": "vague-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-en-003",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "hit": 1.0,
+          "ndcg_at_k": 0.5
+        },
+        {
+          "query_id": "cross-001",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "cross-002",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "cross-003",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-004",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        }
+      ]
+    },
+    "dense-multilingual": {
+      "n_queries": 35,
+      "recall_at_k": 0.8714285714285714,
+      "mrr": 0.8571428571428571,
+      "hit_rate": 0.9142857142857143,
+      "ndcg_at_k": 0.8373427387484512,
+      "latency_ms_p50": 74.4317999924533,
+      "ingest": {
+        "seconds": 73.49338729999727,
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "index_bytes": 651264,
+        "peak_ram_bytes": 0
+      },
+      "cases": [
+        {
+          "query_id": "direct-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-003",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-004",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-006",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-009",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-010",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-011",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-012",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-006",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "direct-en-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-001",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.9197207891481876
+        },
+        {
+          "query_id": "vague-003",
+          "recall_at_k": 0.5,
+          "mrr": 0.25,
+          "hit": 1.0,
+          "ndcg_at_k": 0.2640681225725909
+        },
+        {
+          "query_id": "vague-004",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-005",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.8315546295836225
+        },
+        {
+          "query_id": "vague-006",
+          "recall_at_k": 0.5,
+          "mrr": 0.25,
+          "hit": 1.0,
+          "ndcg_at_k": 0.2640681225725909
+        },
+        {
+          "query_id": "vague-007",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.8503449055347546
+        },
+        {
+          "query_id": "vague-008",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-en-001",
+          "recall_at_k": 0.0,
+          "mrr": 0.0,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0
+        },
+        {
+          "query_id": "vague-en-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "vague-en-003",
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        },
+        {
+          "query_id": "vague-en-004",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-001",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-002",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-003",
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "hit": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "query_id": "cross-004",
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "hit": 1.0,
+          "ndcg_at_k": 0.5640920940185894
+        }
+      ]
+    }
+  }
+}
