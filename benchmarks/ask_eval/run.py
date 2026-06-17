@@ -61,12 +61,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--queries", type=int, default=12, help="cap (0 = all)")
     parser.add_argument("--gen-engine", default="gemini-cli")
     parser.add_argument("--gen-model", default="gemini-3.1-flash-lite")
-    # judge defaults to gemini-cli: the local 9.6GB model fails to load under
-    # memory pressure. Same-family-as-generator self-bias is noted in the report;
-    # pass --judge-engine codex-cli for an independent-family cross-check.
-    parser.add_argument("--judge-engine", default="gemini-cli")
-    parser.add_argument("--judge-model", default="gemini-3.1-flash-lite")
+    # Judge default: local gemma4:e4b. RS6 calibration measured ~1s/call with a
+    # one-word output cap (num_predict) -> local-primary is viable AND free, and
+    # it is a DIFFERENT family from the gemini generator (no self-flattery).
+    # Pass --cross-judge-engine codex-cli to also measure inter-judge agreement.
+    parser.add_argument("--judge-engine", default="ollama")
+    parser.add_argument("--judge-model", default="gemma4:e4b")
+    parser.add_argument("--cross-judge-engine", default="")
+    parser.add_argument("--cross-judge-model", default="")
     parser.add_argument("--k", type=int, default=5)
+    parser.add_argument("--max-negatives", type=int, default=0, help="cap negatives (0 = all)")
     parser.add_argument("--ablation", action="store_true", help="ontology ON/OFF on the real ask")
     args = parser.parse_args(argv)
 
@@ -75,11 +79,41 @@ def main(argv: list[str] | None = None) -> int:
     eval_path = args.eval or str(Path(args.brain) / "eval-cases-book.json")
     corpus = _subset(corpus_from_brain(args.brain, eval_path), args.queries or None)
     negatives = _negatives(eval_path)
+    if args.max_negatives:
+        negatives = negatives[: args.max_negatives]
+    from benchmarks.ask_eval.judges import CachingJudge
     from benchmarks.ask_eval.timeout_llm import TimeoutLLM
+
+    def _build_judge(engine: str, model: str):
+        # local ollama judge uses HTTP options: cap output (the verdict is ONE
+        # word) + temperature 0 for determinism + think=False (gemma4:e4b is a
+        # reasoning model; with thinking on the reply budget is spent on hidden
+        # tokens and the verdict never reaches `response`). Other engines as-is.
+        from talamus.adapters.llm import OllamaProvider
+
+        if engine == "ollama":
+            return OllamaProvider(
+                model, options={"num_predict": 16, "temperature": 0.0}, think=False
+            )
+        return build_provider(engine, model)
+
+    results_dir = _REPO_ROOT / "benchmarks" / "results"
+    results_dir.mkdir(parents=True, exist_ok=True)
 
     # hard 90s/call timeout: gemini-cli can hang past subprocess timeouts on Windows
     gen = TimeoutLLM(build_provider(args.gen_engine, args.gen_model))
-    judge = TimeoutLLM(build_provider(args.judge_engine, args.judge_model))
+    judge = CachingJudge(
+        TimeoutLLM(_build_judge(args.judge_engine, args.judge_model)),
+        results_dir / ".judge-cache.json",
+    )
+    cross_judge = None
+    if args.cross_judge_engine:
+        cross_judge = CachingJudge(
+            TimeoutLLM(
+                _build_judge(args.cross_judge_engine, args.cross_judge_model or args.gen_model)
+            ),
+            results_dir / ".cross-judge-cache.json",
+        )
 
     if args.ablation:
         from benchmarks.ask_eval.ontology_ablation import evaluate_ontology_ablation
@@ -122,12 +156,27 @@ def main(argv: list[str] | None = None) -> int:
         ("talamus-smart", TalamusSmart(build_provider(args.gen_engine, args.gen_model))),
     ]
     results: dict = {"systems": {}}
-    for name, system in systems:
-        m = evaluate_answers(system, corpus, gen, judge, k=args.k, negatives=negatives)
+    for i, (name, system) in enumerate(systems):
+        m = evaluate_answers(
+            system,
+            corpus,
+            gen,
+            judge,
+            k=args.k,
+            negatives=negatives,
+            cross_judge=cross_judge if i == 0 else None,
+        )
         results["systems"][name] = m
+        agree = ""
+        if "faithfulness_agreement" in m:
+            agree = (
+                f" [x-judge agree faith={m['faithfulness_agreement']:.2f} "
+                f"corr={m['correctness_agreement']:.2f} n={m['agreement_n']}]"
+            )
         print(
             f"{name:16} context_hit={m['context_hit']:.3f} faithfulness={m['faithfulness']:.3f} "
-            f"correctness={m['answer_correctness']:.3f} refusal={m.get('honest_refusal', 0):.3f}",
+            f"correctness={m['answer_correctness']:.3f} refusal={m.get('honest_refusal', 0):.3f}"
+            f"{agree}",
             flush=True,
         )
 

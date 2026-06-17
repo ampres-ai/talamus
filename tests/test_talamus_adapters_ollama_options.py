@@ -44,6 +44,20 @@ class OllamaOptionsTests(unittest.TestCase):
         )
         self.assertEqual(provider.complete("x"), "")
 
+    def test_think_flag_triggers_http_and_is_sent(self):
+        seen = {}
+
+        def fake_poster(url, headers, payload):
+            seen["payload"] = payload
+            return {"response": "CORRECT"}
+
+        # think alone (no options) must still use HTTP — the CLI cannot set it
+        provider = OllamaProvider("gemma4:e4b", think=False, poster=fake_poster)
+        out = provider.complete("grade this")
+        self.assertEqual(out, "CORRECT")
+        self.assertIs(seen["payload"]["think"], False)
+        self.assertNotIn("options", seen["payload"])
+
 
 if __name__ == "__main__":
     unittest.main()

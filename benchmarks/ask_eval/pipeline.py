@@ -6,7 +6,12 @@ from __future__ import annotations
 
 import sys
 
-from benchmarks.ask_eval.judges import correctness_verdict, faithfulness_verdict, is_refusal
+from benchmarks.ask_eval.judges import (
+    agreement,
+    correctness_verdict,
+    faithfulness_verdict,
+    is_refusal,
+)
 from benchmarks.shootout.corpora.judged import JudgedCorpus
 
 
@@ -47,15 +52,25 @@ def evaluate_answers(
     judge_llm,
     k: int = 5,
     negatives: list[dict] | None = None,
+    cross_judge=None,
+    agree_n: int = 12,
 ) -> dict:
     """Run the system → generate → judge over the judged corpus. Returns
-    faithfulness, correctness, context-hit and (on negatives) honest-refusal."""
+    faithfulness, correctness, context-hit and (on negatives) honest-refusal.
+
+    When `cross_judge` is given, the first `agree_n` answers are also judged by
+    it; inter-judge agreement (a confidence number) is reported. Pairs are kept
+    aligned by only comparing items both judges actually scored."""
     text_by_id = {doc_id: text for doc_id, _title, text in corpus.docs}
     system.ingest(corpus.as_docs())
     faithful = 0
     correct = 0.0
     context_hit = 0
     n = 0
+    faith_cmp_p: list[str] = []
+    faith_cmp_x: list[str] = []
+    corr_cmp_p: list[str] = []
+    corr_cmp_x: list[str] = []
     total = len(corpus.queries)
     for i_q, (qid, question) in enumerate(corpus.queries.items(), start=1):
         relevant = set(corpus.qrels.get(qid, {}))
@@ -65,17 +80,41 @@ def evaluate_answers(
         if any(i in relevant for i in ids):
             context_hit += 1
         reference = "\n".join(text_by_id[i] for i in relevant if i in text_by_id)
+        joined_ctx = "\n\n".join(contexts)
         if answer:
-            if _safe(
-                faithfulness_verdict, False, "faithful", answer, "\n\n".join(contexts), judge_llm
-            ):
-                faithful += 1
+            is_faithful = _safe(
+                faithfulness_verdict, False, "faithful", answer, joined_ctx, judge_llm
+            )
             grade = _safe(
                 correctness_verdict, "wrong", "correct", answer, question, reference, judge_llm
             )
         else:
+            is_faithful = False
             grade = "wrong"
+        if is_faithful:
+            faithful += 1
         correct += {"correct": 1.0, "partial": 0.5, "wrong": 0.0}[grade]
+        if cross_judge is not None and answer and i_q <= agree_n:
+            faith_cmp_p.append(str(is_faithful))
+            faith_cmp_x.append(
+                str(
+                    _safe(
+                        faithfulness_verdict, False, "x-faithful", answer, joined_ctx, cross_judge
+                    )
+                )
+            )
+            corr_cmp_p.append(grade)
+            corr_cmp_x.append(
+                _safe(
+                    correctness_verdict,
+                    "wrong",
+                    "x-correct",
+                    answer,
+                    question,
+                    reference,
+                    cross_judge,
+                )
+            )
         n += 1
         print(f"    {system.name} q{i_q}/{total} done", flush=True)
     out = {
@@ -84,6 +123,10 @@ def evaluate_answers(
         "faithfulness": round(faithful / n, 3) if n else 0.0,
         "answer_correctness": round(correct / n, 3) if n else 0.0,
     }
+    if faith_cmp_x:
+        out["faithfulness_agreement"] = agreement(faith_cmp_p, faith_cmp_x)
+        out["correctness_agreement"] = agreement(corr_cmp_p, corr_cmp_x)
+        out["agreement_n"] = len(faith_cmp_x)
     if negatives:
         refused = 0
         for case in negatives:
