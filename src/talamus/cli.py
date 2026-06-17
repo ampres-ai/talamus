@@ -66,6 +66,7 @@ from talamus.scope import (
     scoped_context_items,
     scoped_search,
 )
+from talamus.services.engines import choose_default_engine, list_engines
 from talamus.services.readiness import ReadinessReport, inspect_readiness
 from talamus.store import cache_is_current, reindex
 from talamus.temporal import note_timeline, parse_when
@@ -74,11 +75,7 @@ from talamus.timeline import note_as_of, note_history
 
 def _detect_engine() -> str:
     """Pick an LLM engine that is actually installed; fall back to claude-cli."""
-    for provider in ("claude-cli", "ollama"):
-        command = engine_command(provider)
-        if command and shutil.which(command):
-            return provider
-    return "claude-cli"
+    return choose_default_engine()
 
 
 def _global_home() -> Path:
@@ -232,12 +229,11 @@ JOB_RUNNERS: dict[str, Callable[[Path, JobRecord], int]] = {}
 def _cmd_setup(root: Path, engine: str | None) -> int:
     """One-command onboarding (Fase R4): the coding-agent subscription you
     already pay for becomes a personal + agentic memory, in minutes."""
-    from talamus.adapters.llm import detect_engines
-
     print("Talamus setup\n")
-    engines = detect_engines()
-    chosen = engine or next((e for e in engines if e != "anthropic-api"), "claude-cli")
-    print(f"1/4  Motori rilevati: {', '.join(engines)}")
+    engines = list_engines()
+    engine_ids = [item.provider for item in engines if item.available or item.needs_secret]
+    chosen = engine or choose_default_engine()
+    print(f"1/4  Motori rilevati: {', '.join(engine_ids)}")
     print(f"     Uso: {chosen} (cambialo con --engine o dalle Impostazioni)\n")
     code = _cmd_init(root, chosen, "project")
     if code != 0:

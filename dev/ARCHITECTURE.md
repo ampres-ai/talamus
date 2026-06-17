@@ -209,8 +209,19 @@ with `shutil.which` (Windows shims). All model JSON is parsed defensively
 (strict=False, balanced-object salvage, batch isolation) — enforced by the
 hostile-model CI battery.
 
+`services/engines.py` is the shared UI/CLI/SDK setup slice over this adapter
+metadata: it lists canonical engine ids and readiness statuses, chooses the
+default installed CLI engine with the `claude-cli` fallback, loads/updates only
+`llm_provider`, `llm_model` and `language` in `talamus.json`, and saves the
+Anthropic API key through the existing machine credential store without
+returning the secret. Mutating service calls return `ServiceResult` from
+`services/result.py` (`success`, `message`, optional `code`, optional `data`).
+
 ## Interfaces
 
+- **Shared services** (`services/`): UI/CLI/SDK-neutral contracts and probes.
+  `readiness.py` reports brain/engine/cache/job state for dashboards; the
+  engine setup slice handles settings parity without duplicating adapter logic.
 - **CLI** (`cli.py`): the full surface; bare `talamus` = dashboard; `--json`
   on read commands; `--root`/scope flags; consent gates.
 - **MCP** (`mcp_server.py`, optional extra): read tools (search, read_note,
