@@ -228,7 +228,8 @@ returning the secret. Mutating service calls return `ServiceResult` from
   stays with CLI runners; `review.py` exposes review queue list/show/apply/reject
   decisions, including correction application, behind the same service contract;
   `query.py` exposes read-side search/read/recall without introducing new LLM
-  calls.
+  calls; `graph.py` exposes typed graph-cache snapshots and ontology neighbors
+  for CLI/UI graph navigation while keeping rendering and physics inside the UI.
 - **CLI** (`cli.py`): the full surface; bare `talamus` = dashboard; `--json`
   on read commands; `--root`/scope flags; consent gates.
 - **MCP** (`mcp_server.py`, optional extra): read tools (search, read_note,

@@ -45,6 +45,7 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | Milestone 3C | Shared jobs service slice: typed list/status/log/cancel results for UI/CLI parity; resume remains in CLI runners because it depends on command-specific execution |
 | Milestone 3D | Shared review queue service slice: typed list/show/apply/reject results for UI/CLI parity, including proposed-correction application without hiding failures |
 | Milestone 3E | Shared query read-side service slice: typed search/read/recall results for UI/CLI parity without adding new LLM calls; ask/smart expansion remain separate |
+| Milestone 3F | Shared graph service slice: typed graph-cache snapshot and ontology-neighbor results for UI/CLI parity; Obsidian-grade rendering remains a later UI milestone |
 | RS1 (recall research) | **Trigram cognate bridge** (no embeddings): 3-channel index → recall +25%, MRR +35%, cross-source +76%; CI floors. Rejected with data: graph propagation (−2 pt), RRF, seed displacement |
 | Language | Three-layer architecture (English prompts / user-language prose / English-canonical machine layer); validated e2e with real codex |
 | Book test | 500-page real PDF: 58 chunks, ~33 min, 267 notes, resumable job, consent gate. Found+fixed 4 real bugs: self-links, stale running jobs, domain induction collapse at scale (→ batched), verify hashing wrong artifact (243/243 false stale → 0) |

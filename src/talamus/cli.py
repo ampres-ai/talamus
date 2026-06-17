@@ -36,7 +36,7 @@ from talamus.ontology_lab import (
     stability,
 )
 from talamus.paths import TalamusPaths
-from talamus.recall import concept_neighbors, search_notes
+from talamus.recall import search_notes
 from talamus.registry import (
     central_brain,
     load_registry,
@@ -69,6 +69,7 @@ from talamus.services.brains import (
     unregister_registered_brain,
 )
 from talamus.services.engines import choose_default_engine, list_engines
+from talamus.services.graph import list_graph_neighbors
 from talamus.services.jobs import cancel_job, get_job, list_jobs, read_job_log
 from talamus.services.query import read_note, recall_brain, search_brain
 from talamus.services.readiness import ReadinessReport, inspect_readiness
@@ -1371,7 +1372,11 @@ def _cmd_recall(
 
 
 def _cmd_neighbors(root: Path, concept: str, json_out: bool) -> int:
-    items = concept_neighbors(TalamusPaths(root), concept)
+    result = list_graph_neighbors(root, concept)
+    if not result.success or result.data is None:
+        print(result.message, file=sys.stderr)
+        return 1
+    items = [item.to_dict() for item in result.data]
     if json_out:
         _print_json(items)
         return 0
