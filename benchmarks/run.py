@@ -65,9 +65,11 @@ def _build_systems(engine: str, model: str, smart: bool = True) -> list:
         import faiss  # noqa: F401
         import sentence_transformers  # noqa: F401
 
+        from benchmarks.shootout.systems.dense_multilingual import MultilingualDenseSystem
         from benchmarks.shootout.systems.vectordb_system import VectorDBSystem
 
         systems.append(VectorDBSystem())
+        systems.append(MultilingualDenseSystem())  # the multilingual steelman
     except ImportError:
         print("  (vectordb skipped: install faiss-cpu + sentence-transformers)", flush=True)
     return systems

@@ -1,0 +1,20 @@
+{
+  "ontology_on": {
+    "n": 35,
+    "context_hit": 1.0,
+    "faithfulness": 0.543,
+    "answer_correctness": 0.957,
+    "routes": {
+      "overview": 35
+    }
+  },
+  "ontology_off": {
+    "n": 35,
+    "context_hit": 0.857,
+    "faithfulness": 0.686,
+    "answer_correctness": 0.886,
+    "routes": {
+      "index": 35
+    }
+  }
+}

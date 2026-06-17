@@ -17,7 +17,7 @@ from talamus.storage.obsidian import render_obsidian_note
 # v3: Fase RS three-channel index (bilingual stems + trigram fields). Migration from
 # any prior version = `talamus reindex` (doctor reports the stale cache; everything
 # under .talamus/cache is derived/rebuildable).
-CACHE_VERSION = 4  # RS4: meta carries hay_len for hub-suppression length penalty
+CACHE_VERSION = 5  # RS8: index stores the monolingual flag for the adaptive trigram blend
 
 
 def _write_cache_manifest(paths: TalamusPaths) -> None:

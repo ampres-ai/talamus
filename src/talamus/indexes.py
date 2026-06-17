@@ -28,12 +28,21 @@ from pathlib import Path
 
 from talamus.models import CanonicalNote
 from talamus.paths import TalamusPaths
-from talamus.textutil import tokens
+from talamus.textutil import is_monolingual_ascii, tokens
 
 _K1 = 1.5
 _B = 0.75
 W_TRI_TITLE = 0.7
 W_TRI_SUMMARY = 0.3
+# Adaptive trigram blend (RS8): on a monolingual-ASCII corpus the cross-language
+# cognate bridge only adds noise (it costs nDCG/MRR vs BM25 on English SciFact and
+# vs a multilingual dense model on the book). The trigram weights are scaled by
+# MONO_TRIGRAM_SCALE when the indexed corpus is detected monolingual-ASCII.
+# 0.3 won the ablation: SciFact recall 0.776->0.797, nDCG 0.607->0.664, MRR
+# 0.562->0.628, hit 0.793->0.813 (now beating BM25 on all four), while the two law
+# corpora (docs, book) are NOT flagged monolingual and stay byte-identical (zero
+# regression). Overridable via env for future sweeps.
+MONO_TRIGRAM_SCALE = float(os.environ.get("TALAMUS_MONO_TRIGRAM_SCALE", "0.3"))
 _MAX_QUERY_TRIGRAMS = 64  # bound the OR-query cost
 # Hub suppression (RS4): long "hub" notes accumulate blended score across many
 # weak matches and crowd out short, precisely-titled notes. A mild length
@@ -101,16 +110,17 @@ def _fts5_available() -> bool:
 def build_search_index(paths: TalamusPaths, notes: list[CanonicalNote]) -> str:
     """(Re)build the persistent index from canonical notes. Returns the backend name."""
     paths.cache.mkdir(parents=True, exist_ok=True)
+    monolingual = _corpus_monolingual(notes)
     if _fts5_available():
-        _build_sqlite(paths, notes)
+        _build_sqlite(paths, notes, monolingual)
         postings_path(paths).unlink(missing_ok=True)
         return "sqlite-fts5"
-    _build_postings(paths, notes)
+    _build_postings(paths, notes, monolingual)
     sqlite_path(paths).unlink(missing_ok=True)
     return "json-postings"
 
 
-def _build_sqlite(paths: TalamusPaths, notes: list[CanonicalNote]) -> None:
+def _build_sqlite(paths: TalamusPaths, notes: list[CanonicalNote], monolingual: bool) -> None:
     target = sqlite_path(paths)
     tmp = target.with_suffix(".sqlite.tmp")
     tmp.unlink(missing_ok=True)
@@ -119,6 +129,10 @@ def _build_sqlite(paths: TalamusPaths, notes: list[CanonicalNote]) -> None:
         conn.execute(
             "CREATE TABLE meta "
             "(note_id TEXT PRIMARY KEY, title TEXT, summary TEXT, aliases TEXT, hay_len INTEGER)"
+        )
+        conn.execute("CREATE TABLE config (key TEXT PRIMARY KEY, value TEXT)")
+        conn.execute(
+            "INSERT INTO config VALUES (?, ?)", ("monolingual", "1" if monolingual else "0")
         )
         conn.execute(
             "CREATE VIRTUAL TABLE search USING "
@@ -146,9 +160,15 @@ def _build_sqlite(paths: TalamusPaths, notes: list[CanonicalNote]) -> None:
     os.replace(tmp, target)
 
 
-def _build_postings(paths: TalamusPaths, notes: list[CanonicalNote]) -> None:
+def _build_postings(paths: TalamusPaths, notes: list[CanonicalNote], monolingual: bool) -> None:
     fields = {"haystack": _haystack, "tri_title": _tri_title, "tri_summary": _tri_summary}
-    payload: dict = {"version": 2, "doc_count": len(notes), "meta": {}, "fields": {}}
+    payload: dict = {
+        "version": 2,
+        "doc_count": len(notes),
+        "monolingual": monolingual,
+        "meta": {},
+        "fields": {},
+    }
     for field_name, extractor in fields.items():
         postings: dict[str, list[list]] = {}
         lengths: dict[str, int] = {}
@@ -182,6 +202,18 @@ def backend_info(paths: TalamusPaths) -> dict:
     if paths.index_file.is_file():
         return {"backend": "legacy-bm25", "bytes": paths.index_file.stat().st_size}
     return {"backend": "none", "bytes": 0}
+
+
+def _corpus_monolingual(notes: list[CanonicalNote]) -> bool:
+    """Detect a monolingual-ASCII corpus from RAW note text (not the tokenized
+    haystack — the tokenizer strips accents)."""
+    return is_monolingual_ascii([f"{n.title} {n.summary} {n.retrieval_text}" for n in notes])
+
+
+def _trigram_scale(monolingual: bool, scale: float = MONO_TRIGRAM_SCALE) -> float:
+    """Weight multiplier for the trigram channels: `scale` on a monolingual-ASCII
+    corpus (the cognate bridge is noise there), 1.0 otherwise."""
+    return scale if monolingual else 1.0
 
 
 def _blend(channels: list[tuple[dict[str, float], float]]) -> dict[str, float]:
@@ -256,11 +288,16 @@ def _search_sqlite(paths: TalamusPaths, query: str, limit: int) -> list[dict]:
         return {str(note_id): -float(rank) for note_id, rank in rows}
 
     try:
+        try:
+            row = conn.execute("SELECT value FROM config WHERE key='monolingual'").fetchone()
+            scale = _trigram_scale(bool(row and row[0] == "1"))
+        except sqlite3.OperationalError:
+            scale = 1.0  # index built before the config table existed
         blended = _blend(
             [
                 (channel("haystack", terms, "0, 1.0, 0, 0"), 1.0),
-                (channel("tri_title", grams, "0, 0, 1.0, 0"), W_TRI_TITLE),
-                (channel("tri_summary", grams, "0, 0, 0, 1.0"), W_TRI_SUMMARY),
+                (channel("tri_title", grams, "0, 0, 1.0, 0"), W_TRI_TITLE * scale),
+                (channel("tri_summary", grams, "0, 0, 0, 1.0"), W_TRI_SUMMARY * scale),
             ]
         )
         if not blended:
@@ -321,11 +358,12 @@ def _search_postings(paths: TalamusPaths, query: str, limit: int) -> list[dict]:
     meta = data.get("meta", {})
     terms = list(dict.fromkeys(tokens(query)))
     grams = _query_trigrams(query)
+    scale = _trigram_scale(bool(data.get("monolingual", False)))
     blended = _blend(
         [
             (_field_bm25(fields.get("haystack", {}), terms), 1.0),
-            (_field_bm25(fields.get("tri_title", {}), grams), W_TRI_TITLE),
-            (_field_bm25(fields.get("tri_summary", {}), grams), W_TRI_SUMMARY),
+            (_field_bm25(fields.get("tri_title", {}), grams), W_TRI_TITLE * scale),
+            (_field_bm25(fields.get("tri_summary", {}), grams), W_TRI_SUMMARY * scale),
         ]
     )
     hay_lengths = fields.get("haystack", {}).get("lengths", {})

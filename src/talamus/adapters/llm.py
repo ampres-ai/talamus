@@ -99,16 +99,42 @@ class GeminiCliProvider:
 
 
 class OllamaProvider:
-    """Local model via the Ollama CLI — fully local, no subscription."""
+    """Local model via Ollama — fully local, no subscription.
+
+    Default path uses the CLI (`ollama run`). When `options` (e.g. num_predict
+    to cap output, temperature=0 for determinism) or `think` is given, the HTTP
+    /api/generate endpoint is used because the CLI does not expose them.
+    `think=False` is essential for reasoning models (e.g. gemma3n/gemma4:e4b)
+    used as a one-word judge: otherwise the reply budget is spent on hidden
+    thinking tokens and `response` comes back empty."""
 
     def __init__(
-        self, model: str = "llama3", runner: Callable[[list[str], str], str] = _default_runner
+        self,
+        model: str = "llama3",
+        runner: Callable[[list[str], str], str] = _default_runner,
+        options: dict | None = None,
+        poster: Callable[[str, dict[str, str], dict], dict] = _default_poster,
+        think: bool | None = None,
     ) -> None:
         self._model = model
         self._runner = runner
+        self._options = options
+        self._poster = poster
+        self._think = think
 
     def complete(self, prompt: str) -> str:
-        return self._runner(["ollama", "run", self._model], prompt)
+        if not self._options and self._think is None:
+            return self._runner(["ollama", "run", self._model], prompt)
+        host = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+        if not host.startswith("http"):
+            host = f"http://{host}"
+        payload: dict = {"model": self._model, "prompt": prompt, "stream": False}
+        if self._options:
+            payload["options"] = dict(self._options)
+        if self._think is not None:
+            payload["think"] = self._think
+        data = self._poster(f"{host}/api/generate", {"content-type": "application/json"}, payload)
+        return str(data.get("response", "")).strip()
 
 
 class AnthropicApiProvider:

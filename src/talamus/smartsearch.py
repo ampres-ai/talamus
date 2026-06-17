@@ -64,3 +64,29 @@ def expand_query(paths: TalamusPaths, question: str, llm: LLMProvider) -> str:
         cache[key] = expanded
         _save_cache(paths, cache)
     return f"{question} {expanded}".strip() if expanded else question
+
+
+def expand_query_multi(
+    paths: TalamusPaths, question: str, llm: LLMProvider, passes: int = 1
+) -> str:
+    """N-pass expansion union to smooth the nondeterministic LLM expansion
+    (RS4 measured run-to-run swings of ~0.06 hit). ``passes <= 1`` is the cached
+    single-pass path. Extra passes are uncached (each is a fresh sample) and their
+    unique terms are unioned onto the question; any engine failure is skipped so
+    the result is never worse than the question itself. For a deterministic engine
+    (e.g. ollama at temperature 0) one pass already reproduces — multi-pass is for
+    sampling engines where a small union reduces variance."""
+    if passes <= 1:
+        return expand_query(paths, question, llm)
+    terms = question.split()
+    seen = {t.lower() for t in terms}
+    for _ in range(passes):
+        try:
+            expansion = llm.complete(_EXPAND_PROMPT.format(question=question)).strip()
+        except (EngineFailed, EngineNotFound):
+            continue
+        for token in expansion.split():
+            if token.lower() not in seen:
+                seen.add(token.lower())
+                terms.append(token)
+    return " ".join(terms)

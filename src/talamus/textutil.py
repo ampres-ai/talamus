@@ -89,3 +89,24 @@ def _stem_en(word: str) -> str:
 def tokens(text: str) -> list[str]:
     """Lowercase word tokens, lightly stemmed (Italian + English)."""
     return [_stem(_stem_en(_stem(match))) for match in _TOKEN.findall(text.lower())]
+
+
+_NON_ASCII_LETTER = re.compile(r"[à-ÿ]")
+
+
+def non_ascii_ratio(texts: list[str]) -> float:
+    """Fraction of RAW texts containing a non-ASCII (accented) letter — a cheap,
+    deterministic proxy for a non-English / multi-script corpus. Must run on raw
+    text, not on `tokens()` output (the tokenizer strips accented characters)."""
+    if not texts:
+        return 0.0
+    hits = sum(1 for t in texts if _NON_ASCII_LETTER.search(t or ""))
+    return round(hits / len(texts), 4)
+
+
+def is_monolingual_ascii(texts: list[str], threshold: float = 0.05) -> bool:
+    """True when the corpus is effectively single-script ASCII (English-like),
+    where the trigram cognate bridge adds noise and can be down-weighted. The
+    threshold is intentionally low: a handful of accented words must NOT flip a
+    genuinely English corpus."""
+    return non_ascii_ratio(texts) < threshold
