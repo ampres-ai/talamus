@@ -236,7 +236,9 @@ returning the secret. Mutating service calls return `ServiceResult` from
   library, inspector, and provenance-oriented UI surfaces; `integrations.py`
   exposes MCP config status/install and capture-hook snippets for UI settings
   and CLI reuse; `backup.py` exposes export/import archive operations with
-  explicit path-traversal rejection for UI/CLI portability flows.
+  explicit path-traversal rejection for UI/CLI portability flows; `ontology.py`
+  exposes typed status/candidate review/apply/reject/deprecate/history/export
+  operations while LLM-backed induction and eval remain separate contracts.
 - **CLI** (`cli.py`): the full surface; bare `talamus` = dashboard; `--json`
   on read commands; `--root`/scope flags; consent gates.
 - **MCP** (`mcp_server.py`, optional extra): read tools (search, read_note,

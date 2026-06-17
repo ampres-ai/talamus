@@ -24,13 +24,8 @@ from talamus.ingest import ingest_path, remember_session
 from talamus.jobs import JobRecord, JobStore
 from talamus.log import configure
 from talamus.ontology_lab import (
-    deprecate_type,
     induce_candidates,
-    load_schema,
     ontology_eval,
-    promote_candidate,
-    read_history,
-    reject_candidate,
     schema_status,
     stability,
 )
@@ -73,6 +68,15 @@ from talamus.services.engines import choose_default_engine, list_engines
 from talamus.services.graph import list_graph_neighbors
 from talamus.services.integrations import build_hook_snippet, install_mcp_config
 from talamus.services.jobs import cancel_job, get_job, list_jobs, read_job_log
+from talamus.services.ontology import (
+    apply_ontology_candidate,
+    deprecate_ontology_type,
+    export_ontology_schema,
+    get_ontology_history,
+    get_ontology_status,
+    list_ontology_candidates,
+    reject_ontology_candidate,
+)
 from talamus.services.query import read_note, recall_brain, search_brain
 from talamus.services.readiness import ReadinessReport, inspect_readiness
 from talamus.services.review import (
@@ -365,7 +369,11 @@ def _cmd_ontology_group(
     cmd = getattr(args, "ontology_cmd", None) or "status"
     json_out = bool(getattr(args, "json", False))
     if cmd == "status":
-        status = schema_status(paths)
+        status_result = get_ontology_status(root)
+        if not status_result.success or status_result.data is None:
+            print(status_result.message, file=sys.stderr)
+            return 1
+        status = status_result.data.to_dict()
         if json_out:
             _print_json(status)
             return 0
@@ -392,10 +400,13 @@ def _cmd_ontology_group(
         print("rivedi con `talamus ontology review`, promuovi con `talamus ontology apply ID`")
         return 0
     if cmd == "review":
-        schema = load_schema(paths)
-        pending = [t for t in schema.relation_types if t.status == "candidate"]
+        pending_result = list_ontology_candidates(root)
+        if not pending_result.success or pending_result.data is None:
+            print(pending_result.message, file=sys.stderr)
+            return 1
+        pending = pending_result.data
         if json_out:
-            _print_json([t.to_dict() for t in pending])
+            _print_json([rel_type.to_dict() for rel_type in pending])
             return 0
         if not pending:
             print("nessun candidato in attesa")
@@ -407,17 +418,34 @@ def _cmd_ontology_group(
                 print(f"    es. {example}")
         return 0
     if cmd == "apply":
-        ok, message = promote_candidate(paths, args.type_id, force=args.force)
-        print(message if ok else f"error: {message}", file=None if ok else sys.stderr)
-        return 0 if ok else 1
+        decision_result = apply_ontology_candidate(root, args.type_id, force=args.force)
+        if decision_result.success:
+            print(decision_result.message)
+            return 0
+        print(f"error: {decision_result.message}", file=sys.stderr)
+        return 1
     if cmd == "reject":
-        ok, message = reject_candidate(paths, args.type_id, getattr(args, "reason", "") or "")
-        print(message if ok else f"error: {message}", file=None if ok else sys.stderr)
-        return 0 if ok else 1
+        decision_result = reject_ontology_candidate(
+            root,
+            args.type_id,
+            reason=getattr(args, "reason", "") or "",
+        )
+        if decision_result.success:
+            print(decision_result.message)
+            return 0
+        print(f"error: {decision_result.message}", file=sys.stderr)
+        return 1
     if cmd == "deprecate":
-        ok, message = deprecate_type(paths, args.type_id, getattr(args, "reason", "") or "")
-        print(message if ok else f"error: {message}", file=None if ok else sys.stderr)
-        return 0 if ok else 1
+        decision_result = deprecate_ontology_type(
+            root,
+            args.type_id,
+            reason=getattr(args, "reason", "") or "",
+        )
+        if decision_result.success:
+            print(decision_result.message)
+            return 0
+        print(f"error: {decision_result.message}", file=sys.stderr)
+        return 1
     if cmd == "eval":
         report = ontology_eval(paths, Path(args.cases), k=args.k)
         if json_out:
@@ -436,13 +464,17 @@ def _cmd_ontology_group(
         print(f"coverage : {cov['non_related_share']:.0%} archi tipizzati")
         return 0
     if cmd == "stability":
-        result = stability(paths, runs=args.runs)
-        _print_json(result) if json_out else print(
-            f"stability (Jaccard, {result['runs']} run): {result['jaccard']}"
+        stability_result = stability(paths, runs=args.runs)
+        _print_json(stability_result) if json_out else print(
+            f"stability (Jaccard, {stability_result['runs']} run): {stability_result['jaccard']}"
         )
         return 0
     if cmd == "history":
-        events = read_history(paths)
+        history_result = get_ontology_history(root)
+        if not history_result.success or history_result.data is None:
+            print(history_result.message, file=sys.stderr)
+            return 1
+        events = history_result.data.events
         if json_out:
             _print_json(events)
             return 0
@@ -452,7 +484,11 @@ def _cmd_ontology_group(
             print(f"- {event.get('at', '?')}  {event.get('event', '?')}  {event.get('type', '')}")
         return 0
     if cmd == "export":
-        _print_json(load_schema(paths).to_dict())
+        export_result = export_ontology_schema(root)
+        if not export_result.success or export_result.data is None:
+            print(export_result.message, file=sys.stderr)
+            return 1
+        _print_json(export_result.data.schema)
         return 0
     raise ValueError(f"unknown ontology command {cmd}")
 
