@@ -227,7 +227,8 @@ returning the secret. Mutating service calls return `ServiceResult` from
   for large local files; `scan.py` exposes typed repository scan preview,
   confirmation, secret-blocking, background queueing, and execution over the
   existing dry-run/JobStore/execute_plan flow without constructing an LLM
-  provider before approval;
+  provider before approval; `enrich.py` exposes typed symptom-vocabulary
+  preview/confirmation/run operations over the existing batched enrichment path;
   `brains.py` wraps registry list/register/select/rename/delete/flag operations
   in typed `ServiceResult` contracts for CLI/UI parity; `jobs.py` exposes
   read/cancel/log controls over persisted job records while execution resume

@@ -65,6 +65,7 @@ from talamus.services.brains import (
 )
 from talamus.services.diagnostics import inspect_diagnostics
 from talamus.services.engines import choose_default_engine, list_engines
+from talamus.services.enrich import EnrichPreview, EnrichRunResult, run_enrich
 from talamus.services.graph import list_graph_neighbors
 from talamus.services.ingestion import IngestPreview, IngestRunResult, run_ingest
 from talamus.services.integrations import build_hook_snippet, install_mcp_config
@@ -1029,24 +1030,25 @@ def _cmd_consolidate(root: Path, do_apply: bool, llm: LLMProvider, json_out: boo
 
 def _cmd_enrich(root: Path, yes: bool, llm: LLMProvider, json_out: bool) -> int:
     """Arricchimento sintomi (RS2.4-bis): stima prima, lotti solo con --yes."""
-    from talamus.config import load_or_default, resolve_language
-    from talamus.enrich import enrich_estimate, enrich_notes
-
-    paths = TalamusPaths(root)
-    estimate = enrich_estimate(paths)
-    if estimate["notes"] == 0:
+    service_result = run_enrich(root, llm, confirmed=yes)
+    if service_result.code == "enrich_nothing_to_do":
         print("tutte le note hanno già il vocabolario dei sintomi")
         return 0
-    if not yes:
+    if service_result.code == "enrich_confirmation_required" and isinstance(
+        service_result.data, EnrichPreview
+    ):
+        estimate = service_result.data
         if json_out:
-            _print_json(estimate)
+            _print_json(estimate.estimate_dict())
         else:
-            print(f"Da arricchire: {estimate['notes']} note in {estimate['batches']} lotti")
-            print(f"  = {estimate['est_llm_calls']} chiamate LLM")
+            print(f"Da arricchire: {estimate.notes} note in {estimate.batches} lotti")
+            print(f"  = {estimate.est_llm_calls} chiamate LLM")
             print("  Conferma con:  talamus enrich --yes")
         return 0
-    language = resolve_language(load_or_default(paths.config_path))
-    report = enrich_notes(paths, llm, language=language)
+    if not service_result.success or not isinstance(service_result.data, EnrichRunResult):
+        print(service_result.message, file=sys.stderr)
+        return 1
+    report = service_result.data.raw
     if json_out:
         _print_json(report)
     else:
