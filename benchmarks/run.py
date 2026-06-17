@@ -65,9 +65,11 @@ def _build_systems(engine: str, model: str, smart: bool = True) -> list:
         import faiss  # noqa: F401
         import sentence_transformers  # noqa: F401
 
+        from benchmarks.shootout.systems.dense_multilingual import MultilingualDenseSystem
         from benchmarks.shootout.systems.vectordb_system import VectorDBSystem
 
         systems.append(VectorDBSystem())
+        systems.append(MultilingualDenseSystem())  # the multilingual steelman
     except ImportError:
         print("  (vectordb skipped: install faiss-cpu + sentence-transformers)", flush=True)
     return systems
@@ -96,6 +98,11 @@ def _run_shootout(
         eval_path = os.environ.get("TALAMUS_BENCH_EVAL", str(Path(brain) / "eval-cases-book.json"))
         print(f"Loading brain corpus from {brain}...", flush=True)
         corpus = _subset_queries(corpus_from_brain(brain, eval_path), n_queries)
+    elif dataset == "miracl":
+        from benchmarks.shootout.corpora.miracl import load_miracl
+
+        print("Loading MIRACL it/dev (multilingual judged)...", flush=True)
+        corpus = _subset_queries(load_miracl("it", "dev"), n_queries)
     else:
         print(f"Loading BEIR {dataset}...", flush=True)
         corpus = _subset_queries(load_beir(dataset), n_queries)

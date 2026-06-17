@@ -24,6 +24,7 @@ bench = [
     "faiss-cpu>=1.8",
     "sentence-transformers>=3.0",
     "mem0ai>=0.1",
+    "datasets>=2.0",
 ]
 docs = ["mkdocs-material>=9"]
 ui = ["flet>=0.24"]
