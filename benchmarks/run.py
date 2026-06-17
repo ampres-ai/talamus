@@ -101,8 +101,9 @@ def _run_shootout(
     elif dataset == "miracl":
         from benchmarks.shootout.corpora.miracl import load_miracl
 
-        print("Loading MIRACL it/dev (multilingual judged)...", flush=True)
-        corpus = _subset_queries(load_miracl("it", "dev"), n_queries)
+        cap = n_queries or 300  # rows = queries; their passages form the pool (tractable)
+        print(f"Loading MIRACL it/dev (multilingual judged, cap {cap})...", flush=True)
+        corpus = load_miracl("it", "dev", limit=cap)
     else:
         print(f"Loading BEIR {dataset}...", flush=True)
         corpus = _subset_queries(load_beir(dataset), n_queries)
