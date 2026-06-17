@@ -3,8 +3,9 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
-from talamus.adapters.llm import save_credential
+from talamus.adapters.llm import ENGINE_COMMANDS, save_credential
 from talamus.config import TalamusConfig, load_config, load_or_default, save_config
+from talamus.errors import ConfigError
 from talamus.paths import TalamusPaths
 from talamus.services.readiness import EngineReadiness, inspect_engines
 from talamus.services.result import ServiceResult
@@ -37,7 +38,10 @@ def choose_default_engine() -> str:
 
 
 def load_engine_settings(root: str | Path) -> ServiceResult[dict[str, str]]:
-    config = load_or_default(TalamusPaths(Path(root)).config_path)
+    try:
+        config = load_or_default(TalamusPaths(Path(root)).config_path)
+    except (ConfigError, OSError, TypeError, ValueError) as exc:
+        return _invalid_config_result(exc)
     return ServiceResult(
         success=True,
         message="Engine settings loaded",
@@ -54,12 +58,23 @@ def update_engine_settings(
     language: str | None = None,
 ) -> ServiceResult[dict[str, str]]:
     paths = TalamusPaths(Path(root))
-    current = (
-        load_config(paths.config_path) if paths.config_path.is_file() else TalamusConfig.default()
-    )
+    try:
+        current = (
+            load_config(paths.config_path)
+            if paths.config_path.is_file()
+            else TalamusConfig.default()
+        )
+    except (ConfigError, OSError, TypeError, ValueError) as exc:
+        return _invalid_config_result(exc)
     selected_provider = canonical_provider(current.llm_provider)
     if provider is not None and provider.strip():
         selected_provider = canonical_provider(provider)
+    if selected_provider not in ENGINE_COMMANDS:
+        return ServiceResult(
+            success=False,
+            message=f"Unsupported LLM provider: {selected_provider}",
+            code="unsupported_provider",
+        )
     updated = replace(
         current,
         llm_provider=selected_provider,
@@ -99,3 +114,11 @@ def _engine_settings(config: TalamusConfig) -> dict[str, str]:
         "llm_model": config.llm_model,
         "language": config.language,
     }
+
+
+def _invalid_config_result(exc: Exception) -> ServiceResult[dict[str, str]]:
+    return ServiceResult(
+        success=False,
+        message=f"Invalid engine settings config: {exc}",
+        code="engine_settings_invalid_config",
+    )

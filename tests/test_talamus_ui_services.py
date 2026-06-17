@@ -158,6 +158,51 @@ class EngineSetupServiceTests(unittest.TestCase):
         self.assertEqual("ollama", config.llm_provider)
         self.assertEqual("llama3", config.llm_model)
 
+    def test_malformed_config_returns_failed_engine_settings_results(self) -> None:
+        from talamus.services.engines import load_engine_settings, update_engine_settings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = TalamusPaths(root)
+            original = "{not-json"
+            paths.config_path.write_text(original, encoding="utf-8")
+
+            loaded = load_engine_settings(root)
+            updated = update_engine_settings(root, provider="ollama")
+            after = paths.config_path.read_text(encoding="utf-8")
+
+        self.assertFalse(loaded.success)
+        self.assertEqual("engine_settings_invalid_config", loaded.code)
+        self.assertFalse(updated.success)
+        self.assertEqual("engine_settings_invalid_config", updated.code)
+        self.assertEqual(original, after)
+
+    def test_unsupported_provider_returns_failure_and_leaves_config_unchanged(self) -> None:
+        from talamus.services.engines import update_engine_settings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = TalamusPaths(root)
+            original = replace(
+                TalamusConfig.default(),
+                llm_provider="codex-cli",
+                llm_model="gpt-fast",
+                language="Italian",
+            )
+            save_config(paths.config_path, original)
+            before = paths.config_path.read_text(encoding="utf-8")
+
+            result = update_engine_settings(root, provider="unsupported-engine", model="new-model")
+            after = paths.config_path.read_text(encoding="utf-8")
+            config = load_config(paths.config_path)
+
+        self.assertFalse(result.success)
+        self.assertEqual("unsupported_provider", result.code)
+        self.assertEqual(before, after)
+        self.assertEqual("codex-cli", config.llm_provider)
+        self.assertEqual("gpt-fast", config.llm_model)
+        self.assertEqual("Italian", config.language)
+
     def test_save_anthropic_api_key_never_returns_secret(self) -> None:
         from talamus.adapters.llm import stored_credential_present
         from talamus.services.engines import save_anthropic_api_key
