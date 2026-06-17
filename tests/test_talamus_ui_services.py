@@ -177,6 +177,32 @@ class EngineSetupServiceTests(unittest.TestCase):
         self.assertEqual("engine_settings_invalid_config", updated.code)
         self.assertEqual(original, after)
 
+    def test_wrong_typed_engine_config_fields_return_failure_and_leave_config_unchanged(
+        self,
+    ) -> None:
+        from talamus.services.engines import load_engine_settings, update_engine_settings
+
+        for field in ("llm_provider", "llm_model", "language"):
+            with self.subTest(field=field):
+                with tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    paths = TalamusPaths(root)
+                    save_config(paths.config_path, TalamusConfig.default())
+                    data = json.loads(paths.config_path.read_text(encoding="utf-8"))
+                    data[field] = []
+                    paths.config_path.write_text(json.dumps(data), encoding="utf-8")
+                    before = paths.config_path.read_text(encoding="utf-8")
+
+                    loaded = load_engine_settings(root)
+                    updated = update_engine_settings(root, provider="ollama")
+                    after = paths.config_path.read_text(encoding="utf-8")
+
+                self.assertFalse(loaded.success)
+                self.assertEqual("engine_settings_invalid_config", loaded.code)
+                self.assertFalse(updated.success)
+                self.assertEqual("engine_settings_invalid_config", updated.code)
+                self.assertEqual(before, after)
+
     def test_unsupported_provider_returns_failure_and_leaves_config_unchanged(self) -> None:
         from talamus.services.engines import update_engine_settings
 

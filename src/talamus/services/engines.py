@@ -15,6 +15,7 @@ _ALIASES: dict[str, str] = {
     "gemini": "gemini-cli",
     "api": "anthropic-api",
 }
+_ENGINE_SETTING_FIELDS = ("llm_provider", "llm_model", "language")
 
 
 def canonical_provider(provider: str) -> str:
@@ -42,6 +43,9 @@ def load_engine_settings(root: str | Path) -> ServiceResult[dict[str, str]]:
         config = load_or_default(TalamusPaths(Path(root)).config_path)
     except (ConfigError, OSError, TypeError, ValueError) as exc:
         return _invalid_config_result(exc)
+    invalid = _validate_engine_config(config)
+    if invalid is not None:
+        return invalid
     return ServiceResult(
         success=True,
         message="Engine settings loaded",
@@ -66,6 +70,9 @@ def update_engine_settings(
         )
     except (ConfigError, OSError, TypeError, ValueError) as exc:
         return _invalid_config_result(exc)
+    invalid = _validate_engine_config(current)
+    if invalid is not None:
+        return invalid
     selected_provider = canonical_provider(current.llm_provider)
     if provider is not None and provider.strip():
         selected_provider = canonical_provider(provider)
@@ -114,6 +121,13 @@ def _engine_settings(config: TalamusConfig) -> dict[str, str]:
         "llm_model": config.llm_model,
         "language": config.language,
     }
+
+
+def _validate_engine_config(config: TalamusConfig) -> ServiceResult[dict[str, str]] | None:
+    for name in _ENGINE_SETTING_FIELDS:
+        if not isinstance(getattr(config, name), str):
+            return _invalid_config_result(TypeError(f"{name} must be a string"))
+    return None
 
 
 def _invalid_config_result(exc: Exception) -> ServiceResult[dict[str, str]]:
