@@ -11,7 +11,7 @@ except ImportError:
     HAS_MCP = False
 
 
-@unittest.skipUnless(HAS_MCP, "mcp non installato (extra opzionale talamus[mcp])")
+@unittest.skipUnless(HAS_MCP, "mcp not installed (optional extra talamus[mcp])")
 class McpServerTests(unittest.TestCase):
     def test_module_builds_a_fastmcp_server(self) -> None:
         from mcp.server.fastmcp import FastMCP
@@ -59,7 +59,7 @@ class McpServerTests(unittest.TestCase):
         self.assertEqual("x", args.root)
 
 
-@unittest.skipUnless(HAS_MCP, "mcp non installato (extra opzionale talamus[mcp])")
+@unittest.skipUnless(HAS_MCP, "mcp not installed (optional extra talamus[mcp])")
 class McpToolBehaviorTests(unittest.TestCase):
     def _brain(self, tmp: str):
         from talamus.demo import create_demo_brain
