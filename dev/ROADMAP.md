@@ -71,15 +71,25 @@ core**. Talamus charges nothing; it *supports* users who bring their own power.
    PC**; heavy converters (docling/OCR/embeddings) are always **opt-in, never
    mandatory**. A phase that needs a powerful PC is a design bug. *(~60% of the
    target audience does not have strong hardware.)*
-3. **Two-corpora law** — no retrieval/quality change ships unless it wins measured
-   ablations on both real corpora; negatives recorded; CI floors lock wins.
+3. **Two-corpora law (to be extended + tiered)** — no retrieval/quality change ships
+   unless it wins measured ablations on the real corpora; negatives recorded; CI
+   floors lock wins. The current corpora (docs 120-case, book 35-query) are
+   **too small/generic**: they are being **extended, and a third domain-diverse
+   corpus added (P1.5)**, so ablations carry signal, not noise. Crucially,
+   benchmarks are **tiered for speed** (see the operating constraint below): the
+   dev loop must stay fast.
 4. **€0 / local** — no cloud, no per-call API requirement in the free path.
 5. **Adoption = north star** — optimize for DX, virality and contributors;
    adoption beats purity when they conflict.
 
-Plus two operating constraints: **solo + AI-agents sprint** (one maintainer + coding
-agents, ruthless focus, launch ASAP) and **green gate + STATE always current** (so
-any agent can resume cold — the antidote to bus-factor = 1 and burnout).
+Plus three operating constraints: **solo + AI-agents sprint** (one maintainer +
+coding agents, ruthless focus, launch ASAP); **green gate + STATE always current**
+(so any agent can resume cold — the antidote to bus-factor = 1 and burnout); and
+**tiered benchmarks for speed** — a **FAST tier** (small stratified subsets + the
+recall floors) runs in **seconds**, in CI and locally, on **every change**; a
+**HEAVY tier** (full corpora, LLM judges, scale) is gated (`TALAMUS_BENCH_HEAVY`) and
+run **on-demand only**. Local runs and the dev loop must stay fast — benchmarks may
+never steal infinite time on this PC.
 
 ### 0.6 The two primary users (precise targeting)
 
@@ -173,6 +183,36 @@ capabilities that do not exist.
 **Exit criteria:** every CLI/UI/MCP action goes through a service; no interface
 imports a core module directly for business logic; `doctor`/`config` claim only what
 exists; gate green; UI ingest now has the same cost-estimate/consent/jobs as the CLI.
+
+### P1.5 — Benchmark corpora & speed (the foundation under the two-corpora law)
+
+**Goal:** make the ablations that gate the retrieval/quality work (P2, P3, P5)
+**trustworthy**, while keeping every local and CI run **fast**.
+
+**Why:** the two-corpora law only protects quality if the corpora carry signal — and
+today they are small/generic (docs 120-case, book 35-query; one enriched corpus, so
+enrich/ontology are validated only on the book). A solo sprint also dies if tests are
+slow, so speed is a first-class requirement, not an afterthought.
+
+**Work items:**
+- **Extend the existing corpora:** more and less-generic judged queries on the docs
+  and book corpora; **expand the negatives set** (so honest-refusal becomes
+  statistically meaningful, not a 1-question delta).
+- **Add a third corpus** 🧠: domain-diverse, to fight overfitting. Decide its nature
+  (brainstorm): a **public judged retrieval set** (fast, reproducible, breadth) vs a
+  **third local enriched brain** (full workflow + anti-overfit, but needs ingestion +
+  hand judging) — possibly one in each tier.
+- **Lock the tiering:** a **FAST tier** (stratified subsets + the recall floors) that
+  runs in **seconds** in CI and locally on every change; a **HEAVY tier** (full sets,
+  LLM judges, scale) gated by `TALAMUS_BENCH_HEAVY`, run on-demand. Audit current
+  bench runtimes; cut anything in the fast tier that is not fast.
+
+**Modules touched:** `benchmarks/`, `tests/test_talamus_recall_floor.py`, `corpus.py`,
+`eval.py`, the eval-set files (local book eval stays local/copyright-safe).
+
+**Exit criteria:** the fast tier runs in **seconds** (measured) on this PC and in CI;
+a third corpus exists; ablations on the extended corpora show **stable** signal across
+runs; heavy runs are gated and documented as on-demand; gate green.
 
 ### P2 — Engines = real subscriptions (the heart of the wedge)
 
@@ -438,9 +478,11 @@ modest PC; demo + messaging ready; PRODUCT.md launch bars met; **launch**.
   their language end-to-end (notes are already in their tongue).
 - **Open to contributors:** open well-bounded, high-value areas first — engine
   adapters, competitor importers, file formats — where coordination overhead is low.
-- **Bigger benchmarks:** a large multi-domain judged set; expanded negatives (refusal
-  becomes statistically solid); a third enriched corpus (anti-overfitting for
-  enrich/ontology); a real **head-to-head vs llm_wiki** on the same corpus (wiki+ask).
+- **Bigger benchmarks (heavy tier):** building on the corpora extended in P1.5, grow
+  toward a large multi-domain judged set and run the slowest, most thorough
+  measurements on-demand — a real **head-to-head vs llm_wiki** on the same corpus
+  (wiki+ask), full-scale 100k runs, and the multilingual steelman on the ASK path.
+  These stay in the gated heavy tier; the fast tier (P1.5) keeps the dev loop quick.
 
 ---
 
@@ -449,6 +491,7 @@ modest PC; demo + messaging ready; PRODUCT.md launch bars met; **launch**.
 Each is described in full in its phase; this is the at-a-glance checklist of
 conversations we owe each other before building:
 
+- **P1.5** — the third corpus (public judged set vs a third enriched local brain).
 - **P2** — direct-subscription connection (CLI vs openclaw/hermes-style; ToS).
 - **P2** — model + effort tiering policy (defaults + per-task overrides).
 - **P3** — chunking (overlap vs semantic) + prune-raw-vs-verify trade-off.
