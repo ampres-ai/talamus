@@ -393,6 +393,20 @@ as-of/verify/propose; the agent never blows its context window using Talamus.
 **Why:** the human half of the co-launch; the biggest gap vs the competition is UX,
 and the moats are invisible today.
 
+**Anchor design:** build on **codex's UI-completion design**
+(`.superpowers/specs/2026-06-15-talamus-ui-completion-design.md`) — a strong,
+services-first, task-first plan (Home/Ask/Library/Import/Graph/Review/Ontology/
+Brains/System, a universal right-side inspector, an Obsidian-grade graph,
+accessibility, desktop packaging) that already designs the moats as visible. Note
+that `services/library.py` is its already-built **Library** backend (not dead code).
+**Three amendments before adopting it** (it predates the 2026-06-18 inquisition and
+is human-UI-first): (1) add the **lightness/footprint** gate — the app + the Flet
+bundle must run on a modest PC (principle #2; the design is silent on it); (2)
+reconcile with the post-inquisition spine — co-launch **agent-native** framing, the
+wedge, **token-cost shown as a promise**, model/effort tiering; (3) **standalone
+desktop distribution is a PRODUCT-scope decision** → maintainer approval (PRODUCT.md),
+as the design itself flags.
+
 **Work items:**
 - Complete the services migration (from P1); polish the eleven views.
 - **Surface the moats:** the timeline/**as-of** ("see your brain at a past date"), a
