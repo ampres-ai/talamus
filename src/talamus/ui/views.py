@@ -9,18 +9,37 @@ verified at runtime via ``talamus ui`` (desktop) or ``talamus ui --web``.
 
 from __future__ import annotations
 
+import os
 import re
 from collections.abc import Callable
 
 import flet as ft
 
 from talamus.domains import load_overview
-from talamus.ontology import load_ontology, neighbors
-from talamus.ontology_lab import load_schema, schema_status
 from talamus.paths import TalamusPaths
-from talamus.review import ReviewQueue
+from talamus.services.brains import list_brains, set_registered_brain_flags
+from talamus.services.diagnostics import inspect_diagnostics
+from talamus.services.engines import (
+    list_engines,
+    load_engine_settings,
+    save_anthropic_api_key,
+    update_engine_settings,
+)
+from talamus.services.graph import GraphNeighbor, list_graph_neighbors
+from talamus.services.integrations import (
+    build_hook_snippet,
+    inspect_integrations,
+    install_mcp_config,
+)
+from talamus.services.library import get_library_note, list_library_notes
+from talamus.services.ontology import (
+    apply_ontology_candidate,
+    get_ontology_status,
+    list_ontology_candidates,
+    reject_ontology_candidate,
+)
 from talamus.services.readiness import EngineReadiness, NextAction, inspect_readiness
-from talamus.store import load_notes
+from talamus.services.review import apply_review_item, list_review_items, reject_review_item
 from talamus.temporal import note_timeline
 
 _WIKILINK = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
@@ -72,6 +91,7 @@ def build_home(paths: TalamusPaths, on_action: Callable[[str], None] | None = No
         heading("Talamus"),
         theme.muted(report.root),
         tiles,
+        _moat_status_panel(report),
     ]
     if not report.config_exists:
         rows.append(
@@ -103,6 +123,42 @@ def build_home(paths: TalamusPaths, on_action: Callable[[str], None] | None = No
             )
         )
     return ft.Column(rows, spacing=14)
+
+
+def _moat_status_panel(report: object) -> ft.Control:
+    from talamus.ui import theme
+
+    notes = int(getattr(report, "notes", 0) or 0)
+    sources = int(getattr(report, "sources", 0) or 0)
+    reviews = int(getattr(report, "reviews_pending", 0) or 0)
+    domains = int(getattr(report, "overview_domains", 0) or 0)
+    candidates = int(getattr(report, "ontology_candidates", 0) or 0)
+    budget = os.environ.get("TALAMUS_CONTEXT_BUDGET", "6000")
+    items = [
+        ("Time", "as-of ready" if notes else "waiting for notes"),
+        ("Meaning", f"{domains} domains, {candidates} candidates"),
+        ("Verifiability", f"{sources} sources, {reviews} reviews"),
+        ("Cost", f"{budget} token budget"),
+    ]
+    return theme.card(
+        ft.Row(
+            [
+                ft.Column(
+                    [
+                        ft.Text(label, size=11, weight=ft.FontWeight.BOLD, color=theme.MUTED),
+                        ft.Text(value, size=13, color=theme.TEXT),
+                    ],
+                    spacing=2,
+                    tight=True,
+                )
+                for label, value in items
+            ],
+            wrap=True,
+            spacing=theme.GAP * 1.5,
+            run_spacing=theme.GAP,
+        ),
+        padding=12,
+    )
 
 
 def _engine_card(engine: EngineReadiness) -> ft.Control:
@@ -153,22 +209,27 @@ def _next_action_card(
 
 def build_sources_panel(paths: TalamusPaths, title: str) -> ft.Control:
     """Provenance of one note, for the right inspector (PRD 14.2)."""
-    for note in load_notes(paths):
-        if note.title.lower() == title.strip().lower():
-            if not note.sources:
-                return subtle("no registered sources")
-            return ft.Column(
-                [subtle(f"{s.normalized_path}\n({s.locator})") for s in note.sources],
-                spacing=6,
-            )
-    return subtle("note not found")
+    result = get_library_note(paths.project_root, title)
+    if not result.success or result.data is None or not result.data.found:
+        return subtle(result.message or "note not found")
+    if not result.data.sources:
+        return subtle("no registered sources")
+    rows = []
+    for source in result.data.sources:
+        normalized = str(source.get("normalized_path", ""))
+        locator = str(source.get("locator", ""))
+        rows.append(subtle(f"{normalized}\n({locator})"))
+    return ft.Column(rows, spacing=6)
 
 
 # ------------------------------------------------------------------- notes
 
 
 def build_notes(paths: TalamusPaths, open_note: OpenNote) -> ft.Control:
-    notes = sorted(load_notes(paths), key=lambda n: n.title.lower())
+    result = list_library_notes(paths.project_root)
+    if not result.success or result.data is None:
+        return ft.Column([heading("Notes"), ft.Text(result.message)])
+    notes = result.data.notes
     if not notes:
         return ft.Column([heading("Notes"), ft.Text("No notes yet.")])
     tiles: list[ft.Control] = [
@@ -187,26 +248,29 @@ def build_notes(paths: TalamusPaths, open_note: OpenNote) -> ft.Control:
 
 def build_graph(paths: TalamusPaths, title: str, open_note: OpenNote) -> ft.Control:
     """Functional graph view: the typed neighborhood of a note, navigable."""
-    ontology = load_ontology(paths)
     rows: list[ft.Control] = [heading(f"Graph - {title}" if title else "Graph")]
     if not title:
         rows.append(ft.Text("Open a note from Notes or Search to explore its connections."))
         return ft.Column(rows, spacing=8)
-    connected = neighbors(ontology, title)
+    result = list_graph_neighbors(paths.project_root, title)
+    if not result.success or result.data is None:
+        rows.append(ft.Text(result.message))
+        return ft.Column(rows, spacing=8)
+    connected = result.data
     if not connected:
         rows.append(ft.Text("No typed connections for this note."))
         return ft.Column(rows, spacing=8)
-    by_relation: dict[str, list[dict]] = {}
+    by_relation: dict[str, list[GraphNeighbor]] = {}
     for item in connected:
-        by_relation.setdefault(str(item["relation"]), []).append(item)
+        by_relation.setdefault(str(item.relation), []).append(item)
     for relation, items in sorted(by_relation.items()):
         rows.append(ft.Text(relation, weight=ft.FontWeight.BOLD))
         for item in items:
-            arrow = "->" if item["direction"] == "out" else "<-"
+            arrow = "->" if item.direction == "out" else "<-"
             rows.append(
                 ft.TextButton(
-                    f"{arrow} {item['title']}",
-                    on_click=lambda e, t=str(item["title"]): open_note(t),
+                    f"{arrow} {item.title}",
+                    on_click=lambda e, t=str(item.title): open_note(t),
                 )
             )
     return ft.Column(rows, spacing=4)
@@ -259,24 +323,21 @@ def build_domains(paths: TalamusPaths, open_note: OpenNote) -> ft.Control:
 
 
 def build_review(paths: TalamusPaths, refresh: Callable[[], None]) -> ft.Control:
-    queue = ReviewQueue(paths)
-    pending = queue.list(status="pending")
+    result = list_review_items(paths.project_root, status="pending")
+    if not result.success or result.data is None:
+        return ft.Column([heading("Review"), ft.Text(result.message)], spacing=8)
+    pending = result.data
     rows: list[ft.Control] = [heading(f"Review ({len(pending)} pending)")]
     if not pending:
         rows.append(ft.Text("Queue is empty: no decisions pending."))
         return ft.Column(rows, spacing=8)
 
     def _apply(item_id: str) -> None:
-        entry = queue.get(item_id)
-        if entry is not None and entry.kind == "correction":
-            from talamus.correct import apply_proposed_correction
-
-            apply_proposed_correction(paths, entry.detail)
-        queue.apply(item_id)
+        apply_review_item(paths.project_root, item_id)
         refresh()
 
     def _reject(item_id: str) -> None:
-        queue.reject(item_id)
+        reject_review_item(paths.project_root, item_id)
         refresh()
 
     for item in pending:
@@ -303,12 +364,14 @@ def build_review(paths: TalamusPaths, refresh: Callable[[], None]) -> ft.Control
 
 
 def build_ontology_lab(paths: TalamusPaths, refresh: Callable[[], None]) -> ft.Control:
-    schema = load_schema(paths)
-    status = schema_status(paths)
-    cov = status["coverage"]
+    status_result = get_ontology_status(paths.project_root)
+    if not status_result.success or status_result.data is None:
+        return ft.Column([heading("Ontology Lab"), ft.Text(status_result.message)], spacing=8)
+    status = status_result.data
+    cov = status.coverage
     rows: list[ft.Control] = [
         heading("Ontology Lab"),
-        ft.Text(f"Schema {status['schema_id']} (v{status['version']})"),
+        ft.Text(f"Schema {status.schema_id} (v{status.version})"),
         ft.Text(
             f"Coverage: {cov['non_related']}/{cov['edges']} typed edges"
             f" ({cov['non_related_share']:.0%})"
@@ -318,19 +381,19 @@ def build_ontology_lab(paths: TalamusPaths, refresh: Callable[[], None]) -> ft.C
     ]
 
     def _promote(type_id: str) -> None:
-        from talamus.ontology_lab import promote_candidate
-
-        promote_candidate(paths, type_id, force=True)
+        apply_ontology_candidate(paths.project_root, type_id, force=True)
         refresh()
 
     def _reject(type_id: str) -> None:
-        from talamus.ontology_lab import reject_candidate
-
-        reject_candidate(paths, type_id)
+        reject_ontology_candidate(paths.project_root, type_id)
         refresh()
 
     for state in ("active", "candidate", "deprecated"):
-        types = [t for t in schema.relation_types if t.status == state]
+        types_result = list_ontology_candidates(paths.project_root, status=state)
+        if not types_result.success or types_result.data is None:
+            rows.append(ft.Text(types_result.message))
+            continue
+        types = types_result.data
         if not types:
             continue
         rows.append(ft.Text(state.capitalize(), size=16, weight=ft.FontWeight.BOLD))
@@ -362,55 +425,48 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
     """Everything configurable in-app (Phase R3): engine, model, API key, MCP,
     brain registry flags. Saves go to talamus.json / TALAMUS_HOME - the same
     files the CLI uses (no duplicated logic, just thin wiring)."""
-    import dataclasses
-    import os
-
-    from talamus.adapters.llm import detect_engines, save_credential
-    from talamus.config import load_or_default, save_config
-    from talamus.indexes import backend_info
-    from talamus.registry import load_registry, set_brain_flag
     from talamus.ui import theme
 
     def _notify(message: str) -> None:
         if notify is not None:
             notify(message)
 
-    config = load_or_default(paths.config_path)
-    info = backend_info(paths)
+    settings_result = load_engine_settings(paths.project_root)
+    settings = settings_result.data or {
+        "llm_provider": "claude-cli",
+        "llm_model": "",
+        "language": "",
+    }
+    engines = list_engines(settings["llm_provider"], settings["llm_model"])
 
-    engines = detect_engines()
-    if config.llm_provider not in engines:
-        engines.insert(0, config.llm_provider)
     engine_dd = ft.Dropdown(
         label="LLM engine",
-        value=config.llm_provider,
-        options=[ft.DropdownOption(key=name, text=name) for name in engines],
+        value=settings["llm_provider"],
+        options=[ft.DropdownOption(key=engine.provider, text=engine.label) for engine in engines],
         width=320,
     )
     model_tf = ft.TextField(
         label="Model (optional, e.g. llama3)",
-        value=config.llm_model,
+        value=settings["llm_model"],
         width=320,
     )
     language_tf = ft.TextField(
         label="Note language (empty = system auto-detect)",
-        value=config.language,
+        value=settings["language"],
         hint_text="e.g. Italian, English, German",
         width=320,
     )
 
     def save_engine(_e: object) -> None:
-        current = load_or_default(paths.config_path)
-        updated = dataclasses.replace(
-            current,
-            llm_provider=engine_dd.value or current.llm_provider,
-            llm_model=model_tf.value or "",
+        result = update_engine_settings(
+            paths.project_root,
+            provider=engine_dd.value or settings["llm_provider"],
+            model=model_tf.value or "",
             language=language_tf.value or "",
         )
-        save_config(paths.config_path, updated)
-        _notify(f"Engine saved: {updated.llm_provider}")
+        _notify(result.message)
 
-    key_set = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    key_set = any(engine.provider == "anthropic-api" and engine.available for engine in engines)
     key_tf = ft.TextField(
         label="Anthropic API key (anthropic-api engine)",
         password=True,
@@ -421,35 +477,34 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
 
     def save_key(_e: object) -> None:
         if key_tf.value:
-            save_credential("anthropic_api_key", key_tf.value)
+            result = save_anthropic_api_key(key_tf.value)
             key_tf.value = ""
-            _notify("Key saved in TALAMUS_HOME/credentials.json (the env var always wins)")
+            _notify(result.message)
 
     def install_mcp(_e: object) -> None:
-        import json as _json
+        result = install_mcp_config(paths.project_root)
+        _notify(result.message)
 
-        config_file = paths.project_root / ".mcp.json"
-        data: dict = {}
-        if config_file.exists():
-            try:
-                data = _json.loads(config_file.read_text(encoding="utf-8"))
-            except _json.JSONDecodeError:
-                data = {}
-        data.setdefault("mcpServers", {})["talamus"] = {
-            "command": "talamus-mcp",
-            "args": ["--root", str(paths.project_root)],
-        }
-        config_file.write_text(_json.dumps(data, indent=2), encoding="utf-8")
-        _notify(f"MCP configured: {config_file} (restart your agent)")
-
-    registry = load_registry()
+    integrations_result = inspect_integrations(paths.project_root)
+    hook_result = build_hook_snippet(paths.project_root)
+    brains_result = list_brains()
     brain_rows: list[ft.Control] = []
-    for brain in registry.brains:
+    if brains_result.success and brains_result.data is not None:
+        brains = brains_result.data.brains
+    else:
+        brains = []
+        brain_rows.append(theme.muted(brains_result.message))
+
+    for brain in brains:
 
         def _toggle(name: str, flag: str) -> Callable[[ft.Event[ft.Switch]], None]:
             def handler(e: ft.Event[ft.Switch]) -> None:
-                set_brain_flag(name, flag, bool(e.control.value))
-                _notify(f"{name}: {flag} = {e.control.value}")
+                value = bool(e.control.value)
+                if flag == "federated":
+                    result = set_registered_brain_flags(name, federated=value)
+                else:
+                    result = set_registered_brain_flags(name, sensitive=value)
+                _notify(result.message)
 
             return handler
 
@@ -482,10 +537,23 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
     if not brain_rows:
         brain_rows.append(theme.muted("no brains in the registry (`talamus init` registers one)"))
 
+    diagnostics_result = inspect_diagnostics(paths.project_root)
+    diagnostics = diagnostics_result.data
+    index_backend = diagnostics.index_backend if diagnostics is not None else "none"
+    index_bytes = diagnostics.index_bytes if diagnostics is not None else 0
+    mcp_status = "installed"
+    hook_command = "talamus hook"
+    if integrations_result.data is not None:
+        mcp_status = "installed" if integrations_result.data.mcp_installed else "not installed"
+        hook_command = integrations_result.data.hook_command
+    elif hook_result.data is not None:
+        hook_command = hook_result.data.command
+
     budget = os.environ.get("TALAMUS_CONTEXT_BUDGET", "6000 (default)")
     return ft.Column(
         [
             heading("Settings"),
+            *([] if settings_result.success else [theme.muted(settings_result.message)]),
             theme.section("Engine"),
             theme.card(
                 ft.Column(
@@ -507,10 +575,8 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
                 ft.Column(
                     [
                         ft.FilledButton("Install MCP in this project", on_click=install_mcp),
-                        theme.muted(
-                            "Capture hook: `talamus hook` prints the snippet for "
-                            ".claude/settings.json"
-                        ),
+                        theme.muted(f"MCP: {mcp_status}"),
+                        theme.muted(f"Capture hook: {hook_command}"),
                     ],
                     spacing=10,
                 )
@@ -521,7 +587,7 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
             theme.card(
                 ft.Column(
                     [
-                        theme.muted(f"Index: {info['backend']} ({info['bytes']:,} bytes)"),
+                        theme.muted(f"Index: {index_backend} ({index_bytes:,} bytes)"),
                         theme.muted(f"Context budget: {budget} tokens (TALAMUS_CONTEXT_BUDGET)"),
                     ],
                     spacing=4,

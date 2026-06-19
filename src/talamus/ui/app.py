@@ -10,6 +10,7 @@ F9.1). No API layer: every action calls the same SDK functions as the CLI.
 from __future__ import annotations
 
 import threading
+from pathlib import Path
 
 import flet as ft
 
@@ -18,6 +19,15 @@ from talamus.ask import answer_question
 from talamus.config import load_or_default
 from talamus.paths import TalamusPaths
 from talamus.recall import read_note_text, search_notes
+from talamus.services.ingestion import (
+    IngestPreview,
+    IngestRunResult,
+    preview_ingest,
+)
+from talamus.services.ingestion import (
+    run_ingest as run_ingest_service,
+)
+from talamus.services.scan import ScanActionResult, ScanPreview, preview_scan, run_scan
 from talamus.ui import views
 
 _HOME_ACTION_ALIASES = {
@@ -37,6 +47,58 @@ def _view_name_for_home_action(name: str) -> str:
 def _provider(paths: TalamusPaths):
     config = load_or_default(paths.config_path)
     return build_provider(config.llm_provider, config.llm_model)
+
+
+def _format_ingest_preview(preview: IngestPreview) -> str:
+    lines = [
+        f"Target: {preview.target}",
+        f"Type: {preview.target_type}",
+        f"Estimated LLM calls: {preview.est_llm_calls}",
+        f"Estimated input tokens: {preview.est_input_tokens}",
+    ]
+    if preview.requires_confirmation:
+        lines.append("Confirmation required before running.")
+    return "\n".join(lines)
+
+
+def _format_ingest_result(result: IngestRunResult) -> str:
+    parts = [
+        "Ingest completed.",
+        f"Notes written: {result.notes_written}",
+    ]
+    if result.job_id:
+        parts.append(f"Job: {result.job_id} ({result.state})")
+    if result.failed:
+        parts.append(f"Failed items: {len(result.failed)}")
+    return "\n".join(parts)
+
+
+def _format_scan_preview(preview: ScanPreview) -> str:
+    lines = [
+        f"Repository: {preview.target_root}",
+        f"Files: {preview.files}",
+        f"Skipped: {preview.skipped}",
+        f"Estimated LLM calls: {preview.est_llm_calls}",
+        f"Estimated tokens: {preview.est_tokens}",
+    ]
+    if preview.secret_files:
+        lines.append(f"Secret warnings: {len(preview.secret_files)} files")
+    lines.append("Confirmation required before running.")
+    return "\n".join(lines)
+
+
+def _format_scan_result(result: ScanActionResult) -> str:
+    parts = [
+        "Scan completed.",
+        f"State: {result.state}",
+        f"Files: {result.files}",
+        f"Notes written: {result.notes_written}",
+    ]
+    if result.job_id:
+        parts.append(f"Job: {result.job_id}")
+    if result.failed:
+        parts.append(f"Failed items: {len(result.failed)}")
+    return "\n".join(parts)
 
 
 def _build(page: ft.Page, paths: TalamusPaths) -> None:
@@ -197,19 +259,41 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
     def ingest_view() -> ft.Control:
         target = ft.TextField(label="File, folder, or URL (or . for this repo)")
         output = ft.Text("", selectable=True)
+        confirmed = {"target": "", "kind": ""}
+
+        def _target_value() -> str:
+            return (target.value or ".").strip() or "."
+
+        def _local_or_url(value: str) -> str:
+            if "://" in value:
+                return value
+            path = Path(value)
+            return str(path if path.is_absolute() else paths.project_root / path)
 
         def dry_run() -> None:
-            from talamus.scan import build_plan, format_plan
-
+            value = _target_value()
             try:
-                plan = build_plan(paths.project_root / (target.value or "."))
-                output.value = format_plan(plan)
+                if value == ".":
+                    scan_preview = preview_scan(paths.project_root, paths.project_root)
+                    if scan_preview.success and scan_preview.data is not None:
+                        confirmed.update({"target": value, "kind": "scan"})
+                        output.value = _format_scan_preview(scan_preview.data)
+                    else:
+                        output.value = scan_preview.message
+                else:
+                    service_target = _local_or_url(value)
+                    ingest_preview = preview_ingest(paths.project_root, service_target)
+                    if ingest_preview.success and ingest_preview.data is not None:
+                        confirmed.update({"target": value, "kind": "ingest"})
+                        output.value = _format_ingest_preview(ingest_preview.data)
+                    else:
+                        output.value = ingest_preview.message
             except Exception as exc:
                 output.value = f"Error: {exc}"
             page.update()
 
         def run_ingest() -> None:
-            value = (target.value or "").strip()
+            value = _target_value()
             if not value:
                 return
             output.value = "Ingesting..."
@@ -217,10 +301,41 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
 
             def work() -> None:
                 try:
-                    from talamus.ingest import ingest_path
-
-                    result = ingest_path(paths, value, _provider(paths))
-                    output.value = f"Done: {result}"
+                    if value == ".":
+                        scan_result = run_scan(
+                            paths.project_root,
+                            paths.project_root,
+                            lambda: _provider(paths),
+                            confirmed=confirmed == {"target": value, "kind": "scan"},
+                        )
+                        if scan_result.data is not None and isinstance(
+                            scan_result.data, ScanPreview
+                        ):
+                            output.value = _format_scan_preview(scan_result.data)
+                        elif scan_result.data is not None and isinstance(
+                            scan_result.data, ScanActionResult
+                        ):
+                            output.value = _format_scan_result(scan_result.data)
+                        else:
+                            output.value = scan_result.message
+                    else:
+                        service_target = _local_or_url(value)
+                        ingest_result = run_ingest_service(
+                            paths.project_root,
+                            service_target,
+                            _provider(paths),
+                            confirmed=confirmed == {"target": value, "kind": "ingest"},
+                        )
+                        if ingest_result.data is not None and isinstance(
+                            ingest_result.data, IngestPreview
+                        ):
+                            output.value = _format_ingest_preview(ingest_result.data)
+                        elif ingest_result.data is not None and isinstance(
+                            ingest_result.data, IngestRunResult
+                        ):
+                            output.value = _format_ingest_result(ingest_result.data)
+                        else:
+                            output.value = ingest_result.message
                 except Exception as exc:
                     output.value = f"Error: {exc}"
                 page.update()
@@ -229,8 +344,8 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
 
         buttons = ft.Row(
             [
-                ft.TextButton("Scan plan (free dry run)", on_click=lambda e: dry_run()),
-                ft.ElevatedButton("Ingest", on_click=lambda e: run_ingest()),
+                ft.TextButton("Preview cost", on_click=lambda e: dry_run()),
+                ft.ElevatedButton("Run with consent", on_click=lambda e: run_ingest()),
             ]
         )
         return ft.Column([views.heading("Ingest"), target, buttons, output], spacing=10)

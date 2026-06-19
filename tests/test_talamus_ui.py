@@ -1,4 +1,5 @@
 import importlib.util
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -59,6 +60,10 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
             content = getattr(item, "content", None)
             if content is not None:
                 yield from walk(content)
+            for attr in ("title", "subtitle", "leading", "trailing"):
+                child = getattr(item, attr, None)
+                if child is not None:
+                    yield from walk(child)
             for child in getattr(item, "controls", []) or []:
                 yield from walk(child)
 
@@ -171,6 +176,43 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         self.assertIn("Ready", rendered)
         self.assertIn("This brain is ready for questions.", rendered)
 
+    def test_home_surfaces_moat_statuses(self) -> None:
+        from talamus.paths import TalamusPaths
+        from talamus.ui import views
+
+        report = SimpleNamespace(
+            root="C:/example/project",
+            config_exists=True,
+            notes=7,
+            sources=5,
+            reviews_pending=2,
+            jobs_active=0,
+            index_backend="sqlite",
+            overview_domains=3,
+            ontology_candidates=1,
+            cache_current=True,
+            engines=[],
+            next_actions=[],
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            with (
+                patch.object(views, "inspect_readiness", return_value=report),
+                patch.dict(os.environ, {"TALAMUS_CONTEXT_BUDGET": "4096"}),
+            ):
+                control = views.build_home(paths)
+
+        rendered = self._rendered_text(control)
+        self.assertIn("Time", rendered)
+        self.assertIn("as-of ready", rendered)
+        self.assertIn("Meaning", rendered)
+        self.assertIn("3 domains", rendered)
+        self.assertIn("Verifiability", rendered)
+        self.assertIn("5 sources", rendered)
+        self.assertIn("Cost", rendered)
+        self.assertIn("4096 token budget", rendered)
+
     def test_home_next_action_button_calls_callback_with_target(self) -> None:
         import flet as ft
 
@@ -211,6 +253,213 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         buttons[0].on_click(None)
 
         self.assertEqual(clicked, ["ask"])
+
+    def test_notes_builder_reads_from_library_service(self) -> None:
+        from talamus.paths import TalamusPaths
+        from talamus.services.result import ServiceResult
+        from talamus.ui import views
+
+        report = SimpleNamespace(
+            notes=[
+                SimpleNamespace(
+                    title="Alpha",
+                    summary="First note",
+                    aliases=[],
+                    tags=[],
+                    confidence=1.0,
+                    updated_at="",
+                    source_count=0,
+                    relation_count=0,
+                    proposed_link_count=0,
+                    markdown_path="",
+                )
+            ]
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            with patch.object(
+                views,
+                "list_library_notes",
+                return_value=ServiceResult(True, "loaded", data=report),
+            ) as listed:
+                control = views.build_notes(paths, lambda title: None)
+
+        listed.assert_called_once_with(paths.project_root)
+        self.assertIn("Alpha", self._rendered_text(control))
+
+    def test_review_actions_use_review_service(self) -> None:
+        import flet as ft
+
+        from talamus.paths import TalamusPaths
+        from talamus.services.result import ServiceResult
+        from talamus.ui import views
+
+        item = SimpleNamespace(
+            item_id="review-1",
+            kind="correction",
+            title="Fix this",
+            detail={"title": "Fix this"},
+        )
+        refreshed: list[bool] = []
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            with (
+                patch.object(
+                    views,
+                    "list_review_items",
+                    return_value=ServiceResult(True, "loaded", data=[item]),
+                ) as listed,
+                patch.object(
+                    views,
+                    "apply_review_item",
+                    return_value=ServiceResult(True, "applied", data=item),
+                ) as applied,
+            ):
+                control = views.build_review(paths, lambda: refreshed.append(True))
+                buttons = [
+                    child
+                    for child in self._walk_controls(control)
+                    if isinstance(child, ft.TextButton)
+                    and getattr(child, "content", None) == "Apply"
+                ]
+                self.assertEqual(len(buttons), 1)
+                buttons[0].on_click(None)
+
+        listed.assert_called_once_with(paths.project_root, status="pending")
+        applied.assert_called_once_with(paths.project_root, "review-1")
+        self.assertEqual(refreshed, [True])
+
+    def test_ontology_builder_uses_ontology_service(self) -> None:
+        from talamus.paths import TalamusPaths
+        from talamus.services.result import ServiceResult
+        from talamus.ui import views
+
+        status = SimpleNamespace(
+            schema_id="schema-test",
+            version=2,
+            coverage={"non_related": 4, "edges": 5, "non_related_share": 0.8},
+        )
+        candidate = SimpleNamespace(
+            id="rel:test",
+            name="test",
+            definition="Test relation",
+            examples=["A -> B"],
+            support=3,
+            status="candidate",
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            with (
+                patch.object(
+                    views,
+                    "get_ontology_status",
+                    return_value=ServiceResult(True, "status", data=status),
+                ) as loaded_status,
+                patch.object(
+                    views,
+                    "list_ontology_candidates",
+                    side_effect=[
+                        ServiceResult(True, "active", data=[]),
+                        ServiceResult(True, "candidate", data=[candidate]),
+                        ServiceResult(True, "deprecated", data=[]),
+                    ],
+                ) as listed,
+            ):
+                control = views.build_ontology_lab(paths, lambda: None)
+
+        loaded_status.assert_called_once_with(paths.project_root)
+        self.assertEqual(
+            [call.kwargs["status"] for call in listed.call_args_list],
+            ["active", "candidate", "deprecated"],
+        )
+        rendered = self._rendered_text(control)
+        self.assertIn("schema-test", rendered)
+        self.assertIn("Test relation", rendered)
+
+    def test_settings_save_engine_uses_engine_service(self) -> None:
+        import flet as ft
+
+        from talamus.paths import TalamusPaths
+        from talamus.services.result import ServiceResult
+        from talamus.ui import views
+
+        settings = {"llm_provider": "claude-cli", "llm_model": "", "language": ""}
+        engine = SimpleNamespace(
+            provider="claude-cli",
+            label="Claude CLI",
+            available=True,
+            configured=True,
+        )
+        messages: list[str] = []
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            with (
+                patch.object(
+                    views,
+                    "load_engine_settings",
+                    return_value=ServiceResult(True, "loaded", data=settings),
+                ),
+                patch.object(views, "list_engines", return_value=[engine]),
+                patch.object(
+                    views,
+                    "list_brains",
+                    return_value=ServiceResult(
+                        True,
+                        "brains",
+                        data=SimpleNamespace(
+                            brains=[], selected="", registry_path="", unregistered=[]
+                        ),
+                    ),
+                ),
+                patch.object(
+                    views,
+                    "inspect_integrations",
+                    return_value=ServiceResult(
+                        True,
+                        "integrations",
+                        data=SimpleNamespace(
+                            hook_command="talamus hook-run --root x",
+                            mcp_installed=False,
+                            mcp_config_path=".mcp.json",
+                        ),
+                    ),
+                ),
+                patch.object(
+                    views,
+                    "inspect_diagnostics",
+                    return_value=ServiceResult(
+                        True,
+                        "diagnostics",
+                        data=SimpleNamespace(index_backend="sqlite", index_bytes=12),
+                    ),
+                ),
+                patch.object(
+                    views,
+                    "update_engine_settings",
+                    return_value=ServiceResult(True, "saved", data=settings),
+                ) as saved,
+            ):
+                control = views.build_settings(paths, messages.append)
+                buttons = [
+                    child
+                    for child in self._walk_controls(control)
+                    if isinstance(child, ft.FilledButton)
+                    and getattr(child, "content", None) == "Save engine"
+                ]
+                self.assertEqual(len(buttons), 1)
+                buttons[0].on_click(None)
+
+        saved.assert_called_once_with(
+            paths.project_root,
+            provider="claude-cli",
+            model="",
+            language="",
+        )
+        self.assertEqual(messages, ["saved"])
 
     def test_home_action_route_aliases_match_existing_views(self) -> None:
         from talamus.ui.app import _view_name_for_home_action
@@ -292,6 +541,17 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         parameters = inspect.signature(run_app).parameters
         self.assertIn("web", parameters)
         self.assertIn("port", parameters)
+
+    def test_app_ingest_flow_uses_services(self) -> None:
+        import inspect
+
+        import talamus.ui.app as app
+
+        source = inspect.getsource(app)
+        self.assertNotIn("from talamus.scan import", source)
+        self.assertNotIn("from talamus.ingest import", source)
+        self.assertIn("from talamus.services.scan import", source)
+        self.assertIn("from talamus.services.ingestion import", source)
 
 
 if __name__ == "__main__":
