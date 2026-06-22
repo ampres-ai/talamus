@@ -603,6 +603,34 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
                 for child in item.controls:
                     self.assertIsNone(getattr(child, "expand", None))
 
+    def test_app_formats_ask_token_promise(self) -> None:
+        from talamus.ui.app import _format_ask_token_promise
+
+        text = _format_ask_token_promise("How does retrieval work?", "")
+
+        self.assertIn("No LLM call until Ask", text)
+        self.assertIn("context cap", text)
+        self.assertIn("question text", text)
+
+    def test_app_formats_answer_trace(self) -> None:
+        from talamus.ui.app import _format_answer_trace
+
+        trace = {
+            "route": "overview",
+            "domains_chosen": ["dom-retrieval"],
+            "routing_fallback": False,
+            "items_read": ["notes/Reranking.md", "notes/Embedding.md"],
+            "context_tokens": 412,
+            "extra_items": 1,
+        }
+
+        text = _format_answer_trace(trace)
+
+        self.assertIn("Route: overview", text)
+        self.assertIn("Context: 412 tokens", text)
+        self.assertIn("Notes read: 2", text)
+        self.assertIn("dom-retrieval", text)
+
     def test_app_main_pane_uses_explicit_dark_background(self) -> None:
         import flet as ft
 
@@ -619,6 +647,13 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         self.assertIsInstance(inner, ft.Column)
         self.assertIs(inner.controls[0], top_bar)
         self.assertIs(inner.controls[1], content)
+
+    def test_inspector_collapses_on_narrow_shell_widths(self) -> None:
+        from talamus.ui.app import _show_inspector_for_width
+
+        self.assertFalse(_show_inspector_for_width(720))
+        self.assertTrue(_show_inspector_for_width(1200))
+        self.assertTrue(_show_inspector_for_width(None))
 
     def test_home_wrap_rows_do_not_use_expanded_children(self) -> None:
         import flet as ft

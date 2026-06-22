@@ -119,6 +119,21 @@ def _build_main_pane(top_bar: ft.Control, content: ft.Control) -> ft.Container:
     )
 
 
+INSPECTOR_COLLAPSE_WIDTH = 1040
+
+
+def _show_inspector_for_width(width: int | float | str | None) -> bool:
+    if width is None:
+        return True
+    if not isinstance(width, (int, float, str)):
+        return True
+    try:
+        width_value = float(width)
+    except ValueError:
+        return True
+    return width_value >= INSPECTOR_COLLAPSE_WIDTH
+
+
 def _provider(paths: TalamusPaths):
     config = load_or_default(paths.config_path)
     return build_provider(config.llm_provider, config.llm_model)
@@ -176,6 +191,40 @@ def _format_scan_result(result: ScanActionResult) -> str:
     return "\n".join(parts)
 
 
+def _format_ask_token_promise(question: str, as_of: str) -> str:
+    from talamus.budget import context_budget, estimate_tokens
+
+    text = "\n".join(part for part in (question.strip(), as_of.strip()) if part)
+    prompt_tokens = estimate_tokens(text) if text else 0
+    return (
+        "No LLM call until Ask. "
+        f"Current question text: ~{prompt_tokens} tokens; "
+        f"answer context cap: {context_budget()} tokens."
+    )
+
+
+def _format_answer_trace(trace: dict) -> str:
+    if not trace:
+        return "Trace appears after an answer."
+    lines = [f"Route: {trace.get('route', 'unknown')}"]
+    if trace.get("as_of"):
+        lines.append(f"As-of: {trace['as_of']}")
+    if "context_tokens" in trace:
+        lines.append(f"Context: {trace['context_tokens']} tokens")
+    items = trace.get("items_read") or []
+    lines.append(f"Notes read: {len(items)}")
+    domains = trace.get("domains_chosen") or []
+    if domains:
+        lines.append(f"Domains: {', '.join(str(domain) for domain in domains)}")
+    if trace.get("areas_chosen"):
+        lines.append(f"Areas: {', '.join(str(area) for area in trace['areas_chosen'])}")
+    if trace.get("routing_fallback"):
+        lines.append("Routing fallback: yes")
+    if trace.get("extra_items"):
+        lines.append(f"Extra context items: {trace['extra_items']}")
+    return "\n".join(lines)
+
+
 def _build(page: ft.Page, paths: TalamusPaths) -> None:
     from talamus.ui import theme
 
@@ -204,7 +253,17 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
         "view": "home",
     }
 
+    def _sync_shell_width() -> None:
+        inspector_panel.visible = _show_inspector_for_width(page.width)
+
+    def _on_resize(e) -> None:
+        _sync_shell_width()
+        page.update()
+
+    page.on_resize = _on_resize
+
     def show(control: ft.Control) -> None:
+        _sync_shell_width()
         content.content = control
         page.update()
 
@@ -342,25 +401,44 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
         answer = ft.Markdown("", selectable=True, extension_set=views.MD)
         box = ft.TextField(label="Ask your memory")
         as_of = ft.TextField(label="as-of (optional: 2026, 2026-01, ...)", width=260)
+        cost_line = ft.Text(
+            _format_ask_token_promise("", ""),
+            size=12,
+            color=theme.MUTED,
+        )
+        trace_text = ft.Text(
+            _format_answer_trace({}),
+            size=12,
+            color=theme.TEXT,
+            selectable=True,
+        )
+        run_button = ft.ElevatedButton("Ask", icon=ft.Icons.PSYCHOLOGY)
+
+        def refresh_cost() -> None:
+            cost_line.value = _format_ask_token_promise(box.value or "", as_of.value or "")
 
         def ask() -> None:
             question = (box.value or "").strip()
             if not question:
                 return
+            refresh_cost()
             answer.value = "..."
+            trace_text.value = "Building route and context..."
             page.update()
 
             def work() -> None:
+                trace: dict = {}
                 try:
                     if (as_of.value or "").strip():
                         from talamus.ask import answer_from_items
                         from talamus.temporal import parse_when
                         from talamus.timeline import note_as_of
 
-                        parse_when(as_of.value.strip())  # validate early
+                        as_of_value = as_of.value.strip()
+                        parse_when(as_of_value)  # validate early
                         items = []
                         for hit in search_notes(paths, question, limit=5):
-                            version = note_as_of(paths, hit["title"], as_of.value.strip())
+                            version = note_as_of(paths, hit["title"], as_of_value)
                             if version is None:
                                 continue
                             joiner = chr(10)
@@ -370,25 +448,65 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
                             items.append(
                                 {
                                     "route": "as-of",
-                                    "path": f"[as-of {as_of.value}] {hit['title']}",
+                                    "path": f"[as-of {as_of_value}] {hit['title']}",
                                     "content": f"{version.get('summary', '')}{joiner}{body}",
                                 }
                             )
+                        trace["route"] = "as-of"
+                        trace["as_of"] = as_of_value
                         if items:
-                            answer.value = answer_from_items(question, items, _provider(paths))
+                            answer.value = answer_from_items(
+                                question, items, _provider(paths), trace=trace
+                            )
                         else:
-                            answer.value = f"No knowledge in the brain as of {as_of.value}."
+                            trace["items_read"] = []
+                            trace["context_tokens"] = 0
+                            answer.value = f"No knowledge in the brain as of {as_of_value}."
                     else:
-                        answer.value = answer_question(paths, question, _provider(paths))
+                        answer.value = answer_question(
+                            paths, question, _provider(paths), trace=trace
+                        )
+                    trace_text.value = _format_answer_trace(trace)
                 except Exception as exc:  # surface engine errors instead of hanging
                     answer.value = f"**Engine error:** {exc}"
+                    trace_text.value = f"Trace unavailable: {exc}"
                 page.update()
 
             threading.Thread(target=work, daemon=True).start()
 
+        def refresh_cost_and_update(e) -> None:
+            refresh_cost()
+            page.update()
+
         box.on_submit = lambda e: ask()
+        box.on_change = refresh_cost_and_update
+        as_of.on_change = refresh_cost_and_update
+        run_button.on_click = lambda e: ask()
         return ft.Column(
-            [views.heading("Memory chat"), box, as_of, ft.Divider(), answer], spacing=10
+            [
+                views.heading("Memory chat"),
+                theme.panel(
+                    ft.Column(
+                        [
+                            theme.section("Token promise"),
+                            cost_line,
+                            theme.muted(
+                                "The answer may call your selected engine only after this action."
+                            ),
+                        ],
+                        spacing=6,
+                    ),
+                    padding=12,
+                ),
+                ft.Row([box, as_of, run_button], wrap=True, spacing=10, run_spacing=10),
+                theme.panel(
+                    ft.Column([theme.section("Readable trace"), trace_text], spacing=6),
+                    padding=12,
+                ),
+                ft.Divider(),
+                answer,
+            ],
+            spacing=10,
         )
 
     # ---------------------------------------------------------------- search
@@ -558,6 +676,7 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
     )
     _refresh_sidebar()
     _refresh_inspector()
+    _sync_shell_width()
     main_pane = _build_main_pane(top_bar, content)
     page.add(
         ft.Container(
