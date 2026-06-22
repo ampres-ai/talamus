@@ -407,6 +407,8 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         self.assertEqual(refreshed, ["refresh", "refresh"])
 
     def test_ontology_builder_uses_ontology_service(self) -> None:
+        import flet as ft
+
         from talamus.paths import TalamusPaths
         from talamus.services.result import ServiceResult
         from talamus.ui import views
@@ -424,6 +426,7 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
             support=3,
             status="candidate",
         )
+        refreshed: list[str] = []
 
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
@@ -442,17 +445,45 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
                         ServiceResult(True, "deprecated", data=[]),
                     ],
                 ) as listed,
+                patch.object(
+                    views,
+                    "apply_ontology_candidate",
+                    return_value=ServiceResult(True, "promoted", data=candidate),
+                ) as promoted,
+                patch.object(
+                    views,
+                    "reject_ontology_candidate",
+                    return_value=ServiceResult(True, "rejected", data=candidate),
+                ) as rejected,
             ):
-                control = views.build_ontology_lab(paths, lambda: None)
+                control = views.build_ontology_lab(paths, lambda: refreshed.append("refresh"))
+                buttons = [
+                    item for item in self._walk_controls(control) if isinstance(item, ft.TextButton)
+                ]
+                promote_buttons = [button for button in buttons if button.content == "Promote"]
+                reject_buttons = [button for button in buttons if button.content == "Reject"]
+                self.assertEqual(len(promote_buttons), 1)
+                self.assertEqual(len(reject_buttons), 1)
+                promote_buttons[0].on_click(None)
+                reject_buttons[0].on_click(None)
 
         loaded_status.assert_called_once_with(paths.project_root)
         self.assertEqual(
             [call.kwargs["status"] for call in listed.call_args_list],
             ["active", "candidate", "deprecated"],
         )
+        promoted.assert_called_once_with(paths.project_root, "rel:test", force=True)
+        rejected.assert_called_once_with(paths.project_root, "rel:test")
+        self.assertEqual(refreshed, ["refresh", "refresh"])
         rendered = self._rendered_text(control)
+        self.assertIn("Ontology insights", rendered)
+        self.assertIn("Typed coverage", rendered)
+        self.assertIn("Promotion is a schema decision", rendered)
+        self.assertIn("Candidate evidence", rendered)
         self.assertIn("schema-test", rendered)
         self.assertIn("Test relation", rendered)
+        self.assertIn("support 3", rendered)
+        self.assertIn("A -> B", rendered)
 
     def test_settings_save_engine_uses_engine_service(self) -> None:
         import flet as ft

@@ -628,19 +628,41 @@ def _review_detail_controls(detail: object) -> list[ft.Control]:
 
 
 def build_ontology_lab(paths: TalamusPaths, refresh: Callable[[], None]) -> ft.Control:
+    from talamus.ui import theme
+
     status_result = get_ontology_status(paths.project_root)
     if not status_result.success or status_result.data is None:
         return ft.Column([heading("Ontology Lab"), ft.Text(status_result.message)], spacing=8)
     status = status_result.data
     cov = status.coverage
+    coverage = (
+        f"{cov['non_related']}/{cov['edges']} typed edges ({cov['non_related_share']:.0%})"
+        if cov["edges"]
+        else "no edges yet"
+    )
     rows: list[ft.Control] = [
         heading("Ontology Lab"),
-        ft.Text(f"Schema {status.schema_id} (v{status.version})"),
-        ft.Text(
-            f"Coverage: {cov['non_related']}/{cov['edges']} typed edges"
-            f" ({cov['non_related_share']:.0%})"
-            if cov["edges"]
-            else "Coverage: no edges yet"
+        theme.panel(
+            ft.Column(
+                [
+                    theme.section("Ontology insights"),
+                    ft.Text(f"Schema {status.schema_id} (v{status.version})"),
+                    ft.Row(
+                        [
+                            theme.status_pill("Typed coverage", "accent"),
+                            theme.muted(coverage),
+                        ],
+                        spacing=8,
+                        wrap=True,
+                    ),
+                    theme.muted(
+                        "Promotion is a schema decision: candidates stay reviewable until "
+                        "you promote or reject them."
+                    ),
+                ],
+                spacing=6,
+            ),
+            padding=12,
         ),
     ]
 
@@ -660,26 +682,56 @@ def build_ontology_lab(paths: TalamusPaths, refresh: Callable[[], None]) -> ft.C
         types = types_result.data
         if not types:
             continue
-        rows.append(ft.Text(state.capitalize(), size=16, weight=ft.FontWeight.BOLD))
+        rows.append(theme.section(state.capitalize()))
         for rel_type in types:
-            detail = [
-                ft.Text(f"{rel_type.name}  (support {rel_type.support})"),
-                subtle(rel_type.definition or "(no definition)"),
-            ]
-            for example in rel_type.examples[:2]:
-                detail.append(subtle(f"e.g. {example}"))
-            if state == "candidate":
-                detail.append(
-                    ft.Row(
-                        [
-                            ft.TextButton("Promote", on_click=lambda e, i=rel_type.id: _promote(i)),
-                            ft.TextButton("Reject", on_click=lambda e, i=rel_type.id: _reject(i)),
-                        ]
-                    )
-                )
-            detail.append(ft.Divider())
-            rows.append(ft.Column(detail, spacing=2))
-    return ft.Column(rows, spacing=4)
+            rows.append(_ontology_type_card(rel_type, state, _promote, _reject))
+    return ft.Column(rows, spacing=8)
+
+
+def _ontology_type_card(
+    rel_type: object,
+    state: str,
+    promote: Callable[[str], None],
+    reject: Callable[[str], None],
+) -> ft.Control:
+    from talamus.ui import theme
+
+    type_id = str(getattr(rel_type, "id", ""))
+    examples = list(getattr(rel_type, "examples", []) or [])
+    rows: list[ft.Control] = [
+        ft.Row(
+            [
+                ft.Column(
+                    [
+                        ft.Text(str(getattr(rel_type, "name", "?")), weight=ft.FontWeight.BOLD),
+                        theme.muted(str(getattr(rel_type, "definition", "") or "(no definition)")),
+                    ],
+                    spacing=3,
+                    expand=True,
+                ),
+                theme.status_pill(
+                    f"support {getattr(rel_type, 'support', 0)}",
+                    "ready" if state == "active" else "warn",
+                ),
+            ],
+            spacing=8,
+            wrap=True,
+        )
+    ]
+    if examples:
+        rows.append(theme.section("Candidate evidence" if state == "candidate" else "Evidence"))
+        rows.extend(subtle(f"e.g. {example}") for example in examples[:2])
+    if state == "candidate":
+        rows.append(
+            ft.Row(
+                [
+                    ft.TextButton("Promote", on_click=lambda e, i=type_id: promote(i)),
+                    ft.TextButton("Reject", on_click=lambda e, i=type_id: reject(i)),
+                ],
+                spacing=8,
+            )
+        )
+    return theme.panel(ft.Column(rows, spacing=8), padding=12)
 
 
 # ------------------------------------------------------------------- settings
