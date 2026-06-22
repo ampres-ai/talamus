@@ -82,6 +82,44 @@ def _shapes(layout: physics.Layout, colors: dict[str, str], focus: str) -> list[
     return shapes
 
 
+def _count_label(count: int, singular: str, plural: str | None = None) -> str:
+    suffix = singular if count == 1 else plural or f"{singular}s"
+    return f"{count} {suffix}"
+
+
+def _accessible_node_list(
+    layout: physics.Layout,
+    open_note: Callable[[str], None],
+) -> ft.Control:
+    from talamus.ui import theme
+
+    rows: list[ft.Control] = [
+        theme.section("Accessible graph list"),
+        theme.muted(
+            f"{_count_label(len(layout.nodes), 'node')}; "
+            f"{_count_label(len(layout.edges), 'relation')} in the visible graph."
+        ),
+    ]
+    for node_id in sorted(layout.nodes):
+        node = layout.nodes[node_id]
+        degree = sum(1 for src, dst, _ in layout.edges if node_id in (src, dst))
+        domain = node.domain or "No domain"
+        rows.append(
+            ft.Row(
+                [
+                    ft.TextButton(
+                        f"Open {node_id}",
+                        on_click=lambda e, title=node_id: open_note(title),
+                    ),
+                    theme.muted(f"{domain}; {_count_label(degree, 'edge')}"),
+                ],
+                spacing=8,
+                wrap=True,
+            )
+        )
+    return theme.panel(ft.Column(rows, spacing=8), padding=12)
+
+
 def build_graph_canvas(
     paths: TalamusPaths,
     focus: str,
@@ -166,4 +204,11 @@ def build_graph_canvas(
     ]
     if legend_items:
         header.append(ft.Row(legend_items, wrap=True, spacing=12))
-    return ft.Column([*header, ft.Container(surface, border_radius=8)], spacing=8)
+    return ft.Column(
+        [
+            *header,
+            ft.Container(surface, border_radius=8),
+            _accessible_node_list(layout, open_note),
+        ],
+        spacing=8,
+    )

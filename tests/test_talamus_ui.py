@@ -715,6 +715,33 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
                 control = build_graph_canvas(paths, focus, lambda t: None, animate=False)
                 self.assertIsInstance(control, ft.Control, focus or "global")
 
+    def test_graph_canvas_exposes_accessible_node_list(self) -> None:
+        import flet as ft
+
+        from talamus.demo import create_demo_brain
+        from talamus.paths import TalamusPaths
+        from talamus.ui.graph import build_graph_canvas
+
+        opened: list[str] = []
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            create_demo_brain(paths)
+            control = build_graph_canvas(paths, "Reranking", opened.append, animate=False)
+
+        rendered = self._rendered_text(control)
+        self.assertIn("Accessible graph list", rendered)
+        self.assertIn("Reranking", rendered)
+
+        buttons = [
+            item
+            for item in self._walk_controls(control)
+            if isinstance(item, ft.TextButton) and "Reranking" in str(getattr(item, "content", ""))
+        ]
+        self.assertTrue(buttons)
+        buttons[0].on_click(None)
+        self.assertEqual(opened, ["Reranking"])
+
     def test_graph_canvas_on_empty_brain_shows_empty_state(self) -> None:
         import flet as ft
 
