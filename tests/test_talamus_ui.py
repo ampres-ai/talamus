@@ -567,6 +567,84 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         )
         self.assertEqual(messages, ["saved"])
 
+    def test_settings_surfaces_agent_and_brain_scope(self) -> None:
+        from talamus.paths import TalamusPaths
+        from talamus.services.result import ServiceResult
+        from talamus.ui import views
+
+        settings = {"llm_provider": "claude-cli", "llm_model": "", "language": ""}
+        engine = SimpleNamespace(
+            provider="claude-cli",
+            label="Claude CLI",
+            available=True,
+            configured=True,
+        )
+        brain = SimpleNamespace(
+            name="project-memory",
+            type="project",
+            path="C:/brains/project-memory",
+            federated=True,
+            sensitive=False,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            with (
+                patch.object(
+                    views,
+                    "load_engine_settings",
+                    return_value=ServiceResult(True, "loaded", data=settings),
+                ),
+                patch.object(views, "list_engines", return_value=[engine]),
+                patch.object(
+                    views,
+                    "list_brains",
+                    return_value=ServiceResult(
+                        True,
+                        "brains",
+                        data=SimpleNamespace(
+                            brains=[brain],
+                            selected="project-memory",
+                            registry_path="C:/brains/registry.json",
+                            unregistered=[],
+                        ),
+                    ),
+                ),
+                patch.object(
+                    views,
+                    "inspect_integrations",
+                    return_value=ServiceResult(
+                        True,
+                        "integrations",
+                        data=SimpleNamespace(
+                            hook_command="talamus hook-run --root x",
+                            mcp_installed=True,
+                            mcp_config_path=".mcp.json",
+                        ),
+                    ),
+                ),
+                patch.object(
+                    views,
+                    "inspect_diagnostics",
+                    return_value=ServiceResult(
+                        True,
+                        "diagnostics",
+                        data=SimpleNamespace(index_backend="sqlite", index_bytes=12),
+                    ),
+                ),
+            ):
+                control = views.build_settings(paths)
+
+        rendered = self._rendered_text(control)
+        self.assertIn("Agent-native co-launch", rendered)
+        self.assertIn("the memory your agent already has", rendered)
+        self.assertIn("Scope guardrails", rendered)
+        self.assertIn("Registry: C:/brains/registry.json", rendered)
+        self.assertIn("project-memory", rendered)
+        self.assertIn("selected", rendered)
+        self.assertIn("shared retrieval", rendered)
+        self.assertIn("not sensitive", rendered)
+
     def test_home_action_route_aliases_match_existing_views(self) -> None:
         from talamus.ui.app import _view_name_for_home_action
 

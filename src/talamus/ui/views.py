@@ -807,8 +807,12 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
     brain_rows: list[ft.Control] = []
     if brains_result.success and brains_result.data is not None:
         brains = brains_result.data.brains
+        selected_brain = brains_result.data.selected
+        registry_path = brains_result.data.registry_path
     else:
         brains = []
+        selected_brain = ""
+        registry_path = ""
         brain_rows.append(theme.muted(brains_result.message))
 
     for brain in brains:
@@ -824,12 +828,28 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
 
             return handler
 
+        scope_pills: list[ft.Control] = []
+        if brain.name == selected_brain:
+            scope_pills.append(theme.status_pill("selected", "ready"))
+        scope_pills.append(
+            theme.status_pill(
+                "shared retrieval" if brain.federated else "project-only",
+                "accent" if brain.federated else "muted",
+            )
+        )
+        scope_pills.append(
+            theme.status_pill(
+                "sensitive" if brain.sensitive else "not sensitive",
+                "warn" if brain.sensitive else "ready",
+            )
+        )
         brain_rows.append(
             theme.card(
                 ft.Column(
                     [
                         ft.Text(f"{brain.name}  ({brain.type})", weight=ft.FontWeight.BOLD),
                         theme.muted(brain.path),
+                        ft.Row(scope_pills, wrap=True, spacing=8, run_spacing=6),
                         ft.Row(
                             [
                                 ft.Switch(
@@ -890,6 +910,12 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
             theme.card(
                 ft.Column(
                     [
+                        theme.section("Agent-native co-launch"),
+                        ft.Text("the memory your agent already has", weight=ft.FontWeight.BOLD),
+                        theme.muted(
+                            "MCP and the capture hook let agents read and remember through "
+                            "the same local brain."
+                        ),
                         ft.FilledButton("Install MCP in this project", on_click=install_mcp),
                         theme.muted(f"MCP: {mcp_status}"),
                         theme.muted(f"Capture hook: {hook_command}"),
@@ -898,6 +924,20 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
                 )
             ),
             theme.section("Registered brains"),
+            theme.card(
+                ft.Column(
+                    [
+                        theme.section("Scope guardrails"),
+                        theme.muted(f"Registry: {registry_path or 'not configured'}"),
+                        theme.muted(
+                            "Federated brains can answer shared queries; sensitive brains stay "
+                            "out of broad retrieval."
+                        ),
+                    ],
+                    spacing=4,
+                ),
+                padding=12,
+            ),
             *brain_rows,
             theme.section("System"),
             theme.card(
