@@ -52,11 +52,11 @@ def _dedup_relations(relations: list[Relation]) -> list[Relation]:
 
 
 def _balanced_objects(raw: str) -> list[dict]:
-    """Estrae gli oggetti {...} di primo livello uno a uno, saltando quelli rotti.
+    """Extract the top-level {...} objects one by one, skipping broken ones.
 
-    Le risposte lunghe dei modelli arrivano troncate a metà JSON: il parse
-    all-or-nothing buttava TUTTI i gruppi in silenzio (misurato sul libro:
-    'no duplicate concepts found' con 20+ gruppi veri nella risposta cruda)."""
+    The models' long answers arrive truncated mid-JSON: the all-or-nothing parse
+    silently dropped ALL groups (measured on the book: 'no duplicate concepts found'
+    with 20+ real groups in the raw answer)."""
     objects: list[dict] = []
     depth = 0
     start = -1

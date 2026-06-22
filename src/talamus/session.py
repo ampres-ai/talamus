@@ -26,7 +26,7 @@ def _content_to_text(content: object) -> str:
                         )[:60]
                     parts.append(f"[tool {name}: {hint}]".strip())
                 elif btype == "tool_result":
-                    parts.append("[risultato tool]")
+                    parts.append("[tool result]")
             elif isinstance(block, str):
                 parts.append(block.strip())
         return " ".join(part for part in parts if part).strip()
@@ -60,8 +60,8 @@ def _compress_jsonl(lines: list[str]) -> str | None:
 
 
 def compress_transcript(text: str) -> str:
-    """Comprime un transcript: se JSONL, estrae i turni e compatta i blocchi tool;
-    altrimenti passthrough."""
+    """Compress a transcript: if JSONL, extract the turns and compact the tool blocks;
+    otherwise passthrough."""
     compressed = _compress_jsonl(text.splitlines())
     if compressed is not None:
         return compressed
@@ -69,7 +69,7 @@ def compress_transcript(text: str) -> str:
 
 
 def session_worth_remembering(transcript: str, diff: str = "", min_chars: int = 400) -> bool:
-    """Gate euristico (niente LLM): vale se c'è un diff non vuoto o un transcript sostanzioso."""
+    """Heuristic gate (no LLM): true if there is a non-empty diff or a substantial transcript."""
     if diff.strip():
         return True
     return len(transcript.strip()) >= min_chars
@@ -79,7 +79,7 @@ def normalize_session(raw_path: str, transcript: str, diff: str = "") -> Normali
     convo = compress_transcript(transcript)
     payload = convo + ("\n\n" + diff if diff.strip() else "")
     source_hash = "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
-    sections = [NormalizedSection("001", "Conversazione", convo)]
+    sections = [NormalizedSection("001", "Conversation", convo)]
     if diff.strip():
-        sections.append(NormalizedSection("002", "Modifiche", diff.strip()))
+        sections.append(NormalizedSection("002", "Changes", diff.strip()))
     return NormalizedPackage(raw_path, source_hash, sections)

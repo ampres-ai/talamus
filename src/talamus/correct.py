@@ -141,10 +141,10 @@ def provenance_status(paths: TalamusPaths, note: CanonicalNote) -> dict:
     detail = ""
     source, resolved = _resolve_source(paths, note)
     if not note.sources:
-        status, detail = "source_missing", "la scheda non ha fonti registrate"
+        status, detail = "source_missing", "the note has no recorded sources"
     elif resolved is None:
         status = "source_missing"
-        detail = f"fonte non trovata: {note.sources[0].normalized_path}"
+        detail = f"source not found: {note.sources[0].normalized_path}"
     else:
         stored = source.source_hash.removeprefix("sha256:")
         is_raw = resolved == paths.project_root / source.raw_path
@@ -153,15 +153,15 @@ def provenance_status(paths: TalamusPaths, note: CanonicalNote) -> dict:
                 current = _extracted_hash(resolved)
             except Exception:
                 status = "source_missing"
-                detail = f"fonte illeggibile: {resolved.name}"
+                detail = f"unreadable source: {resolved.name}"
             else:
                 if not current.startswith(stored[: len(current)]) and not stored.startswith(
                     current[: len(stored)]
                 ):
                     status = "source_changed"
-                    detail = f"la fonte {resolved.name} è cambiata dopo l'estrazione"
+                    detail = f"the source {resolved.name} changed after extraction"
     if status == "ok" and note.confidence < LOW_CONFIDENCE:
-        status, detail = "low_confidence", f"confidence di estrazione {note.confidence}"
+        status, detail = "low_confidence", f"extraction confidence {note.confidence}"
     return {"note_id": note.note_id, "title": note.title, "status": status, "detail": detail}
 
 
@@ -208,7 +208,7 @@ def verify_batch(
         report["corrections_proposed"] += 1
         queue.add(
             "correction",
-            f"{note.title}: la scheda non combacia con la fonte",
+            f"{note.title}: the note does not match the source",
             {
                 "title": note.title,
                 "summary": str(result.get("summary", "")),

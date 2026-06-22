@@ -46,8 +46,8 @@ class SessionTests(unittest.TestCase):
         )
 
         titles = [section.title for section in package.sections]
-        self.assertIn("Conversazione", titles)
-        self.assertIn("Modifiche", titles)
+        self.assertIn("Conversation", titles)
+        self.assertIn("Changes", titles)
         self.assertTrue(package.source_hash.startswith("sha256:"))
 
     def test_normalize_session_without_diff_has_one_section(self) -> None:
