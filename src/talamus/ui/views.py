@@ -534,11 +534,29 @@ def build_domains(paths: TalamusPaths, open_note: OpenNote) -> ft.Control:
 
 
 def build_review(paths: TalamusPaths, refresh: Callable[[], None]) -> ft.Control:
+    from talamus.ui import theme
+
     result = list_review_items(paths.project_root, status="pending")
     if not result.success or result.data is None:
         return ft.Column([heading("Review"), ft.Text(result.message)], spacing=8)
     pending = result.data
-    rows: list[ft.Control] = [heading(f"Review ({len(pending)} pending)")]
+    rows: list[ft.Control] = [
+        heading(f"Review ({len(pending)} pending)"),
+        theme.panel(
+            ft.Column(
+                [
+                    theme.section("Review guardrail"),
+                    ft.Text(
+                        "Proposed changes are never auto-applied.",
+                        weight=ft.FontWeight.BOLD,
+                    ),
+                    theme.muted("Apply writes a reviewed correction; Reject records the decision."),
+                ],
+                spacing=5,
+            ),
+            padding=12,
+        ),
+    ]
     if not pending:
         rows.append(ft.Text("Queue is empty: no decisions pending."))
         return ft.Column(rows, spacing=8)
@@ -553,22 +571,57 @@ def build_review(paths: TalamusPaths, refresh: Callable[[], None]) -> ft.Control
 
     for item in pending:
         rows.append(
-            ft.Column(
-                [
-                    ft.Text(f"[{item.kind}] {item.title}", weight=ft.FontWeight.BOLD),
-                    subtle(str(item.detail)),
-                    ft.Row(
-                        [
-                            ft.TextButton("Apply", on_click=lambda e, i=item.item_id: _apply(i)),
-                            ft.TextButton("Reject", on_click=lambda e, i=item.item_id: _reject(i)),
-                        ]
-                    ),
-                    ft.Divider(),
-                ],
-                spacing=2,
+            theme.panel(
+                ft.Column(
+                    [
+                        ft.Row(
+                            [
+                                ft.Column(
+                                    [
+                                        ft.Text(item.title, weight=ft.FontWeight.BOLD),
+                                        theme.muted(f"{item.kind} - {item.item_id}"),
+                                    ],
+                                    spacing=3,
+                                    expand=True,
+                                ),
+                                theme.status_pill(getattr(item, "status", "pending"), "warn"),
+                            ],
+                            spacing=8,
+                            wrap=True,
+                        ),
+                        theme.section("Evidence"),
+                        ft.Column(_review_detail_controls(item.detail), spacing=3),
+                        theme.muted(f"Created {getattr(item, 'created_at', '')}".strip()),
+                        ft.Row(
+                            [
+                                ft.TextButton(
+                                    "Apply", on_click=lambda e, i=item.item_id: _apply(i)
+                                ),
+                                ft.TextButton(
+                                    "Reject", on_click=lambda e, i=item.item_id: _reject(i)
+                                ),
+                            ],
+                            spacing=8,
+                        ),
+                    ],
+                    spacing=8,
+                ),
+                padding=12,
             )
         )
-    return ft.Column(rows, spacing=4)
+    return ft.Column(rows, spacing=8)
+
+
+def _review_detail_controls(detail: object) -> list[ft.Control]:
+    if not isinstance(detail, dict) or not detail:
+        return [subtle("No evidence detail recorded.")]
+    controls: list[ft.Control] = []
+    for key in sorted(detail):
+        value = detail[key]
+        if value in ("", None, [], {}):
+            continue
+        controls.append(subtle(f"{key}: {value}"))
+    return controls or [subtle("No evidence detail recorded.")]
 
 
 # ------------------------------------------------------------------- ontology

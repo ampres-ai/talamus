@@ -351,9 +351,16 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
             item_id="review-1",
             kind="correction",
             title="Fix this",
-            detail={"title": "Fix this"},
+            status="pending",
+            created_at="2026-06-22T09:00:00+00:00",
+            detail={
+                "title": "Fix this",
+                "why": "source changed",
+                "source": "notes/source.md",
+                "confidence": 0.42,
+            },
         )
-        refreshed: list[bool] = []
+        refreshed: list[str] = []
 
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
@@ -368,20 +375,36 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
                     "apply_review_item",
                     return_value=ServiceResult(True, "applied", data=item),
                 ) as applied,
+                patch.object(
+                    views,
+                    "reject_review_item",
+                    return_value=ServiceResult(True, "rejected", data=item),
+                ) as rejected,
             ):
-                control = views.build_review(paths, lambda: refreshed.append(True))
+                control = views.build_review(paths, lambda: refreshed.append("refresh"))
+                rendered = self._rendered_text(control)
+                self.assertIn("Review guardrail", rendered)
+                self.assertIn("Proposed changes are never auto-applied.", rendered)
+                self.assertIn("Evidence", rendered)
+                self.assertIn("source changed", rendered)
+                self.assertIn("notes/source.md", rendered)
+                self.assertIn("confidence: 0.42", rendered)
                 buttons = [
                     child
                     for child in self._walk_controls(control)
                     if isinstance(child, ft.TextButton)
-                    and getattr(child, "content", None) == "Apply"
                 ]
-                self.assertEqual(len(buttons), 1)
-                buttons[0].on_click(None)
+                apply_buttons = [button for button in buttons if button.content == "Apply"]
+                reject_buttons = [button for button in buttons if button.content == "Reject"]
+                self.assertEqual(len(apply_buttons), 1)
+                self.assertEqual(len(reject_buttons), 1)
+                apply_buttons[0].on_click(None)
+                reject_buttons[0].on_click(None)
 
         listed.assert_called_once_with(paths.project_root, status="pending")
         applied.assert_called_once_with(paths.project_root, "review-1")
-        self.assertEqual(refreshed, [True])
+        rejected.assert_called_once_with(paths.project_root, "review-1")
+        self.assertEqual(refreshed, ["refresh", "refresh"])
 
     def test_ontology_builder_uses_ontology_service(self) -> None:
         from talamus.paths import TalamusPaths
