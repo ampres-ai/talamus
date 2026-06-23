@@ -241,6 +241,8 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         rendered = self._rendered_text(control)
         self.assertIn("As-of moat", rendered)
         self.assertIn("Ask can replay this note as it looked at a past date.", rendered)
+        self.assertIn("Ask as-of examples", rendered)
+        self.assertIn("2026-01-01T00:00:00+00:00", rendered)
         self.assertIn("Transaction history", rendered)
         self.assertIn("2 versions", rendered)
         self.assertIn("Fact validity", rendered)

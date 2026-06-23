@@ -595,21 +595,29 @@ def build_timeline(paths: TalamusPaths, title: str) -> ft.Control:
     claims = data["valid"]
     transaction_count = len(transactions)
     claim_count = len(claims)
+    example_dates: list[str] = []
+    for event in [*transactions[:1], *transactions[-1:]]:
+        value = str(event.get("at", "")).strip()
+        if value and value not in example_dates:
+            example_dates.append(value)
+    moat_rows: list[ft.Control] = [
+        theme.section("As-of moat"),
+        ft.Text(
+            "Ask can replay this note as it looked at a past date.",
+            weight=ft.FontWeight.BOLD,
+        ),
+        theme.muted(
+            f"History: {transaction_count} "
+            f"{'version' if transaction_count == 1 else 'versions'}; "
+            f"validity: {claim_count} {'claim' if claim_count == 1 else 'claims'}."
+        ),
+    ]
+    if example_dates:
+        moat_rows.append(theme.muted(f"Ask as-of examples: {', '.join(example_dates)}"))
     rows.append(
         theme.panel(
             ft.Column(
-                [
-                    theme.section("As-of moat"),
-                    ft.Text(
-                        "Ask can replay this note as it looked at a past date.",
-                        weight=ft.FontWeight.BOLD,
-                    ),
-                    theme.muted(
-                        f"History: {transaction_count} "
-                        f"{'version' if transaction_count == 1 else 'versions'}; "
-                        f"validity: {claim_count} {'claim' if claim_count == 1 else 'claims'}."
-                    ),
-                ],
+                moat_rows,
                 spacing=5,
                 tight=True,
             ),
