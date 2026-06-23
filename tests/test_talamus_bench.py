@@ -71,7 +71,14 @@ class ReportTests(unittest.TestCase):
             "llm_call_ledger": LLM_CALL_LEDGER,
         }
         report = format_report(result)
-        for marker in ("Baseline M0", "eval-set reale", "Latenza", "routing", "Ledger", "oneste"):
+        for marker in (
+            "Baseline M0",
+            "real eval-set",
+            "Retrieval latency",
+            "routing",
+            "ledger",
+            "Honest notes",
+        ):
             self.assertIn(marker, report)
 
 

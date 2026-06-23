@@ -25,10 +25,10 @@ from talamus.models import CanonicalNote, Relation, SourceRef
 from talamus.paths import TalamusPaths
 from talamus.store import load_notes, rebuild_indexes, render_note_markdown, write_note_json
 
-# Corpus CONGELATO come fixture (2026-06-12): l'eval-set da 120 casi referenzia
-# i titoli di sezione di QUESTE versioni dei documenti. Mai modificare i file in
-# tests/fixtures/docs-corpus/ — l'immutabilita' e' cio' che rende i numeri
-# confrontabili nel tempo. Le docs vive evolvono liberamente altrove.
+# Corpus FROZEN as a fixture (2026-06-12): the 120-case eval-set references the
+# section titles of THESE versions of the documents. Never edit the files under
+# tests/fixtures/docs-corpus/ — that immutability is what keeps the numbers
+# comparable over time. The live docs evolve freely elsewhere.
 DOC_FILES = [
     "tests/fixtures/docs-corpus/readme.md",
     "tests/fixtures/docs-corpus/index.md",
@@ -107,7 +107,7 @@ def _note(
         tags=tags,
         summary=_first_line(body),
         retrieval_text=body,
-        body_sections={"contenuto": body},
+        body_sections={"content": body},
         proposed_links=[],
         relations=relations,
         sources=[
@@ -171,19 +171,21 @@ def build_docs_corpus(paths: TalamusPaths, repo_root: Path) -> list[str]:
     return sorted(titles)
 
 
+# Shared topic vocabulary for the synthetic notes; bench `_synthetic_queries`
+# draws from these same words so the latency queries actually hit.
 _TOPICS = [
-    "memoria",
-    "grafo",
-    "indice",
-    "recupero",
-    "ontologia",
-    "nota",
-    "fonte",
-    "tempo",
-    "agente",
-    "dominio",
-    "contesto",
-    "ricerca",
+    "memory",
+    "graph",
+    "index",
+    "retrieval",
+    "ontology",
+    "note",
+    "source",
+    "time",
+    "agent",
+    "domain",
+    "context",
+    "search",
 ]
 
 
@@ -197,13 +199,13 @@ def build_synthetic_corpus(paths: TalamusPaths, n: int, seed: int = 42, render: 
     rng = random.Random(seed)
     notes: list[CanonicalNote] = []
     for i in range(n):
-        title = f"Nota sintetica {i:05d}"
-        words = [f"concetto{i:05d}", *rng.choices(_TOPICS, k=8)]
-        words += [f"termine{rng.randrange(max(n * 3, 10)):05d}" for _ in range(12)]
+        title = f"Synthetic note {i:05d}"
+        words = [f"concept{i:05d}", *rng.choices(_TOPICS, k=8)]
+        words += [f"term{rng.randrange(max(n * 3, 10)):05d}" for _ in range(12)]
         body = " ".join(words)
         relations = []
         if i > 0:
-            target = f"Nota sintetica {rng.randrange(i):05d}"
+            target = f"Synthetic note {rng.randrange(i):05d}"
             relations = [Relation(source=title, relation="related", target=target, confidence=0.8)]
         notes.append(_note(title, body, "synthetic", f"item {i}", relations, ["synthetic"]))
     for note in notes:

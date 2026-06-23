@@ -28,19 +28,19 @@ from talamus.search import BM25Index
 
 # Static ledger: LLM calls per workflow in the current architecture.
 LLM_CALL_LEDGER: dict[str, dict] = {
-    "search/recall/read/history/neighbors": {"calls": 0, "note": "solo indici locali"},
-    "ask (percorso normale)": {"calls": 2, "note": "routing overview + risposta"},
-    "ask (fallback espansione)": {"calls": 3, "note": "routing + espansione + risposta"},
-    "ingest (per file)": {"calls": 1, "note": "1 estrazione per file"},
-    "overview --rebuild": {"calls": 1, "note": "naming/assegnazione domini"},
-    "verify (per nota)": {"calls": 1, "note": "confronto nota-fonte"},
-    "consolidate (rilevazione)": {"calls": 1, "note": "rilevazione duplicati"},
-    "remember (per sessione)": {"calls": 1, "note": "estrazione dalla sessione"},
+    "search/recall/read/history/neighbors": {"calls": 0, "note": "local indexes only"},
+    "ask (normal path)": {"calls": 2, "note": "overview routing + answer"},
+    "ask (expansion fallback)": {"calls": 3, "note": "routing + expansion + answer"},
+    "ingest (per file)": {"calls": 1, "note": "1 extraction per file"},
+    "overview --rebuild": {"calls": 1, "note": "naming / domain assignment"},
+    "verify (per note)": {"calls": 1, "note": "note-vs-source comparison"},
+    "consolidate (detection)": {"calls": 1, "note": "duplicate detection"},
+    "remember (per session)": {"calls": 1, "note": "extraction from the session"},
 }
 
 _ROUTE_PROMPT_OVERHEAD = (
-    "Data la MAPPA dei domini (nome: descrizione) e una DOMANDA, restituisci "
-    "SOLO i nomi dei domini pertinenti, separati da virgola. Nessun'altra parola."
+    "Given the MAP of domains (name: description) and a QUESTION, return ONLY the "
+    "names of the relevant domains, comma-separated. No other words."
 )
 
 
@@ -55,8 +55,8 @@ def percentiles(samples_ms: list[float]) -> dict:
 
 def _synthetic_queries(n: int, how_many: int = 5) -> list[str]:
     step = max(1, n // how_many)
-    targeted = [f"concetto{i:05d} memoria grafo" for i in range(0, n, step)][:how_many]
-    return [*targeted, "recupero indice ontologia dominio"]
+    targeted = [f"concept{i:05d} memory graph" for i in range(0, n, step)][:how_many]
+    return [*targeted, "retrieval index ontology domain"]
 
 
 def measure_latency(paths: TalamusPaths, n: int) -> dict:
@@ -97,10 +97,10 @@ def routing_prompt_tokens(n_notes: int, notes_per_domain: int = 10) -> dict:
     """Estimated token size of the single-level overview routing prompt at N notes."""
     n_domains = max(1, n_notes // notes_per_domain)
     domain_map = "\n".join(
-        f"- Dominio di esempio {i:04d}: descrizione di una riga del contenuto del dominio"
+        f"- Example domain {i:04d}: one-line description of the domain's content"
         for i in range(n_domains)
     )
-    prompt = f"{_ROUTE_PROMPT_OVERHEAD}\n\nMAPPA:\n{domain_map}\n\nDOMANDA: domanda di esempio"
+    prompt = f"{_ROUTE_PROMPT_OVERHEAD}\n\nMAP:\n{domain_map}\n\nQUESTION: example question"
     return {"n_notes": n_notes, "n_domains": n_domains, "prompt_tokens": estimate_tokens(prompt)}
 
 
@@ -113,14 +113,14 @@ def routing_prompt_tokens_tree(
     domains — the sum stays bounded as the brain grows."""
     n_domains = max(1, n_notes // notes_per_domain)
     n_areas = max(1, n_domains // domains_per_area)
-    line = "- area-{i:04d} | Area di esempio: descrizione di una riga"
+    line = "- area-{i:04d} | Example area: one-line description"
     areas_map = "\n".join(line.format(i=i) for i in range(n_areas))
-    level_one = f"{_ROUTE_PROMPT_OVERHEAD}\n\nMAPPA:\n{areas_map}\n\nDOMANDA: esempio"
+    level_one = f"{_ROUTE_PROMPT_OVERHEAD}\n\nMAP:\n{areas_map}\n\nQUESTION: example"
     domains_map = "\n".join(
-        f"- dom-{i:04d} | Dominio di esempio: descrizione di una riga"
+        f"- dom-{i:04d} | Example domain: one-line description"
         for i in range(min(domains_per_area, n_domains))
     )
-    level_two = f"{_ROUTE_PROMPT_OVERHEAD}\n\nMAPPA:\n{domains_map}\n\nDOMANDA: esempio"
+    level_two = f"{_ROUTE_PROMPT_OVERHEAD}\n\nMAP:\n{domains_map}\n\nQUESTION: example"
     return {
         "n_notes": n_notes,
         "n_areas": n_areas,
@@ -167,16 +167,16 @@ def run_baseline(
 
 def _eval_section(eval_data: dict) -> list[str]:
     lines = [
-        "## Recupero — eval-set reale",
+        "## Retrieval — real eval-set",
         "",
-        f"- casi: **{eval_data['n_cases']}** (di cui {eval_data['n_negative']} negativi)",
+        f"- cases: **{eval_data['n_cases']}** ({eval_data['n_negative']} negatives)",
         f"- recall@{eval_data['k']}: **{eval_data['recall_at_k']}**",
         f"- precision@{eval_data['k']}: **{eval_data['precision_at_k']}**",
         f"- MRR: **{eval_data['mrr']}**",
         f"- hit-rate: **{eval_data['hit_rate']}**",
-        f"- rifiuto dei negativi (retrieval-level): **{eval_data['negative_rejection']}**",
+        f"- negative rejection (retrieval-level): **{eval_data['negative_rejection']}**",
         "",
-        "| categoria | n | recall@k | MRR | hit-rate |",
+        "| category | n | recall@k | MRR | hit-rate |",
         "| --- | --- | --- | --- | --- |",
     ]
     for name, stats in sorted(eval_data["categories"].items()):
@@ -189,19 +189,19 @@ def _eval_section(eval_data: dict) -> list[str]:
 
 def format_report(result: dict) -> str:
     lines = [
-        "# Baseline M0 — misure del recupero (pre-architettura finale)",
+        "# Baseline M0 — retrieval measurements (pre-final-architecture)",
         "",
-        f"Generato: {result['generated_at']} · commit `{result['git']}` · corpus reale: "
-        f"{result['docs_corpus_notes']} note dai doc del repo (deterministico, no LLM)",
+        f"Generated: {result['generated_at']} · commit `{result['git']}` · real corpus: "
+        f"{result['docs_corpus_notes']} notes from the repo docs (deterministic, no LLM)",
         "",
         *_eval_section(result["eval"]),
         "",
-        "## Latenza del recupero (sintetico)",
+        "## Retrieval latency (synthetic)",
         "",
-        "search = `search_notes` di produzione (indice persistito, M4) · legacy = la",
-        "vecchia scansione completa in memoria (BM25+grafo), tenuta come confronto.",
+        "search = production `search_notes` (persistent index, M4) · legacy = the old",
+        "full in-memory scan (BM25+graph), kept as a comparison.",
         "",
-        "| note | search p50 (ms) | search p95 (ms) | legacy p50 (ms) | legacy p95 (ms) |",
+        "| notes | search p50 (ms) | search p95 (ms) | legacy p50 (ms) | legacy p95 (ms) |",
         "| --- | --- | --- | --- | --- |",
     ]
     for row in result["latency"]:
@@ -211,34 +211,34 @@ def format_report(result: dict) -> str:
         )
     lines += [
         "",
-        "## Curva token del routing overview (single-level, ~1 dominio/10 note)",
+        "## Overview routing token curve (single-level, ~1 domain/10 notes)",
         "",
-        "| note | domini | token prompt routing |",
+        "| notes | domains | routing prompt tokens |",
         "| --- | --- | --- |",
     ]
     for row in result["routing_tokens"]:
         lines.append(f"| {row['n_notes']} | {row['n_domains']} | {row['prompt_tokens']} |")
     lines += [
         "",
-        "## Ledger chiamate LLM per workflow (architettura attuale)",
+        "## LLM call ledger per workflow (current architecture)",
         "",
-        "| workflow | chiamate | nota |",
+        "| workflow | calls | note |",
         "| --- | --- | --- |",
     ]
     for name, info in result["llm_call_ledger"].items():
         lines.append(f"| {name} | {info['calls']} | {info['note']} |")
     lines += [
         "",
-        "## Note oneste",
+        "## Honest notes",
         "",
-        "- I casi *temporal* interrogano contenuto storico presente nei doc: la semantica",
-        "  as-of vera arriva con M6; qui misurano solo il recupero lessicale/grafo.",
-        "- Il rifiuto dei negativi a livello retrieval è atteso debole: senza soglie di",
-        "  punteggio la ricerca restituisce sempre qualcosa se un termine combacia (M4).",
-        "- La latenza *cold* domina perché `search_notes` ricarica note e indici a ogni",
-        "  chiamata: è il collo di bottiglia O(N) che M4 (indici persistiti) elimina.",
-        "- La UI è type-checked contro Flet ma non verificata a runtime in questa sessione",
-        "  (richiede display); la verifica runtime resta in sospeso (M9 aggiunge web test mode).",
+        "- The *temporal* cases query historical content present in the docs: true as-of",
+        "  semantics arrive with M6; here they only measure lexical/graph retrieval.",
+        "- Negative rejection at the retrieval level is expected to be weak: without score",
+        "  thresholds the search always returns something if a term matches (M4).",
+        "- *Cold* latency dominates because `search_notes` reloads notes and indexes on",
+        "  every call: it is the O(N) bottleneck that M4 (persistent indexes) removes.",
+        "- The UI is type-checked against Flet but not verified at runtime in this session",
+        "  (needs a display); runtime verification stays pending (M9 adds a web test mode).",
     ]
     return "\n".join(lines) + "\n"
 
@@ -254,8 +254,8 @@ def main(out_dir: str = "docs/benchmarks", sizes: list[int] | None = None) -> di
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     (out / f"{stamp}-m0-baseline.md").write_text(format_report(result), encoding="utf-8")
-    print(f"baseline scritta in {out}/{stamp}-m0-baseline.md")
+    print(f"baseline written to {out}/{stamp}-m0-baseline.md")
     print(f"  eval: recall@5={result['eval']['recall_at_k']} mrr={result['eval']['mrr']}")
     for row in result["latency"]:
-        print(f"  latenza {row['n_notes']} note: search p95 {row['search']['p95_ms']}ms")
+        print(f"  latency {row['n_notes']} notes: search p95 {row['search']['p95_ms']}ms")
     return result

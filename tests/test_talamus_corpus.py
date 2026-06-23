@@ -41,8 +41,8 @@ class SyntheticCorpusTests(unittest.TestCase):
             count = build_synthetic_corpus(paths, 25, seed=7)
             self.assertEqual(count, 25)
             self.assertEqual(len(list(paths.notes.glob("*.md"))), 25)
-            results = search_notes(paths, "concetto00003")
-            self.assertTrue(any(r["title"] == "Nota sintetica 00003" for r in results))
+            results = search_notes(paths, "concept00003")
+            self.assertTrue(any(r["title"] == "Synthetic note 00003" for r in results))
 
     def test_same_seed_same_corpus(self) -> None:
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
