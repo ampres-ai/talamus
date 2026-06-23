@@ -1,0 +1,343 @@
+from __future__ import annotations
+
+import argparse
+import sys
+from collections.abc import Callable
+from pathlib import Path
+
+from talamus.adapters.llm import LLMProvider
+from talamus.cli._common import (
+    JOB_RUNNERS,
+    _print_json,
+    _provider_for,
+)
+from talamus.domains import build_overview, load_overview
+from talamus.jobs import JobRecord
+from talamus.paths import TalamusPaths
+from talamus.registry import (
+    load_registry,
+)
+from talamus.scan import (
+    execute_plan,
+    format_plan,
+    plan_from_record,
+)
+from talamus.services.consolidation import apply_consolidation_groups, list_consolidation_groups
+from talamus.services.enrich import EnrichPreview, EnrichRunResult, run_enrich
+from talamus.services.ingestion import IngestPreview, IngestRunResult, run_ingest
+from talamus.services.scan import ScanActionResult, ScanPreview, preview_scan, run_scan
+from talamus.services.verification import (
+    VerificationBatchResult,
+    VerificationNoteResult,
+    apply_note_correction,
+    run_verification_batch,
+    verify_single_note,
+)
+
+
+def _cmd_scan(
+    root: Path,
+    target: str,
+    llm_factory: Callable[[], LLMProvider],
+    args: argparse.Namespace,
+) -> int:
+    json_out = bool(getattr(args, "json", False))
+    if args.dry_run or not (args.yes or args.background):
+        preview_result = preview_scan(
+            root,
+            target,
+            profile=args.profile,
+            include=args.include or None,
+            exclude=args.exclude or None,
+            max_files=args.max_files,
+        )
+        if not preview_result.success or not isinstance(preview_result.data, ScanPreview):
+            print(preview_result.message, file=sys.stderr)
+            return 1
+        plan = preview_result.data.plan
+        if json_out:
+            _print_json(plan.to_dict())
+        else:
+            print(format_plan(plan))
+            if not args.dry_run:
+                print("\n(dry-run shown; pass --yes to execute or --background to queue a job)")
+        return 0
+    service_result = run_scan(
+        root,
+        target,
+        llm_factory,
+        profile=args.profile,
+        include=args.include or None,
+        exclude=args.exclude or None,
+        max_files=args.max_files,
+        confirmed=args.yes,
+        background=args.background,
+        allow_secrets=args.allow_secrets,
+    )
+    if service_result.code == "scan_secrets_blocked" and isinstance(
+        service_result.data, ScanPreview
+    ):
+        flagged = service_result.data.secret_files
+        print(
+            "error: likely secrets detected; scan stopped before any LLM call\n"
+            f"cause: {len(flagged)} file(s) flagged: {', '.join(flagged[:5])}\n"
+            "fix: review the files, then re-run with --allow-secrets "
+            "(content is redacted) or use a local provider",
+            file=sys.stderr,
+        )
+        return 1
+    if service_result.code == "scan_nothing_to_scan":
+        print("nothing to scan (no supported files in plan)")
+        return 0
+    if service_result.code == "scan_queued" and isinstance(service_result.data, ScanActionResult):
+        result = service_result.data
+        print(f"queued scan job {result.job_id} ({result.files} files)")
+        print(f"run it with:  talamus jobs resume {result.job_id}")
+        return 0
+    if not service_result.success or not isinstance(service_result.data, ScanActionResult):
+        print(service_result.message, file=sys.stderr)
+        return 1
+    report = service_result.data.raw
+    if json_out:
+        _print_json(report)
+        return 0
+    print(
+        f"scan {report['state']}: {report['notes_written']} notes from "
+        f"{report['files']} files (job {report['job_id']})"
+    )
+    for failure in report["failed"]:
+        print(f"  ! {failure['path']}: {failure['error']}")
+    return 0
+
+
+def _run_scan_job(root: Path, record: JobRecord) -> int:
+    """Resume runner registered in JOB_RUNNERS for `talamus jobs resume`."""
+    paths = TalamusPaths(root)
+    plan = plan_from_record(record)
+    report = execute_plan(paths, plan, _provider_for(root), job_record=record)
+    print(
+        f"scan {report['state']}: {report['notes_written']} notes from "
+        f"{report['files']} files (job {report['job_id']})"
+    )
+    return 0
+
+
+JOB_RUNNERS["scan"] = _run_scan_job
+
+
+def _run_ingest_job(root: Path, record: JobRecord) -> int:
+    """Resume a chunked big-document ingest (talamus jobs resume)."""
+    from talamus.ingest import ingest_large
+
+    file_path = Path(str(record.payload.get("file", "")))
+    if not file_path.is_file():
+        print(f"error: source file missing: {file_path}", file=sys.stderr)
+        return 1
+    report = ingest_large(TalamusPaths(root), file_path, _provider_for(root), job_record=record)
+    print(
+        f"ingest {report['state']}: {report['notes_written']} notes from "
+        f"{report['chunks']} chunks (job {report['job_id']})"
+    )
+    return 0
+
+
+JOB_RUNNERS["ingest"] = _run_ingest_job
+
+
+def _cmd_ingest(
+    root: Path, target: str, llm: LLMProvider, json_out: bool, yes: bool = False
+) -> int:
+    service_result = run_ingest(root, target, llm, confirmed=yes)
+    if service_result.code == "ingest_confirmation_required" and isinstance(
+        service_result.data, IngestPreview
+    ):
+        estimate = service_result.data
+        print(f"Large document: {estimate.source}")
+        print(
+            f"  {estimate.chars:,} characters -> {estimate.chunks} chunks = "
+            f"{estimate.est_llm_calls} LLM calls "
+            f"(~{estimate.est_input_tokens:,} input tokens)"
+        )
+        print("  The work runs as a resumable job (talamus jobs).")
+        print(f'  Confirm with:  talamus ingest "{target}" --yes')
+        return 0
+    if not service_result.success or not isinstance(service_result.data, IngestRunResult):
+        print(service_result.message, file=sys.stderr)
+        return 1
+    result = service_result.data.raw
+    if json_out:
+        _print_json(result)
+    elif "files" in result:
+        print(
+            f"ingested {result['notes_written']} notes from {result['files']} files "
+            f"({result['skipped']} unchanged skipped)"
+        )
+        for failure in result.get("failed", []):
+            print(f"  ! skipped {failure['file']}: {failure['error']}")
+    else:
+        suffix = ""
+        if "chunks" in result:
+            suffix = f" ({result['chunks']} chunks, job {result.get('job_id', '?')})"
+        print(f"ingested {result['notes_written']} notes from {result['source']}{suffix}")
+        for failure in result.get("failed", []):
+            print(f"  ! chunk {failure['chunk']}: {failure['error']}")
+    return 0
+
+
+def _cmd_consolidate(root: Path, do_apply: bool, llm: LLMProvider, json_out: bool) -> int:
+    if do_apply:
+        apply_result = apply_consolidation_groups(root, llm)
+        if not apply_result.success or apply_result.data is None:
+            print(apply_result.message, file=sys.stderr)
+            return 1
+        merged = apply_result.data.merged
+        if json_out:
+            _print_json({"merged": merged})
+        else:
+            print(f"consolidate: merged {merged} note(s)")
+        return 0
+    list_result = list_consolidation_groups(root, llm)
+    if not list_result.success or list_result.data is None:
+        print(list_result.message, file=sys.stderr)
+        return 1
+    groups = [group.to_dict() for group in list_result.data.groups]
+    if json_out:
+        _print_json(groups)
+        return 0
+    if not groups:
+        print("no duplicate concepts found")
+        return 0
+    for group in groups:
+        others = [m for m in group["members"] if m != group["canonical"]]
+        print(f"- keep '{group['canonical']}'  <=  {', '.join(others)}")
+    print("\nrun `talamus consolidate --apply` to merge")
+    return 0
+
+
+def _cmd_enrich(root: Path, yes: bool, llm: LLMProvider, json_out: bool) -> int:
+    """Symptom enrichment (RS2.4-bis): estimate first, batches only with --yes."""
+    service_result = run_enrich(root, llm, confirmed=yes)
+    if service_result.code == "enrich_nothing_to_do":
+        print("all notes already have the symptom vocabulary")
+        return 0
+    if service_result.code == "enrich_confirmation_required" and isinstance(
+        service_result.data, EnrichPreview
+    ):
+        estimate = service_result.data
+        if json_out:
+            _print_json(estimate.estimate_dict())
+        else:
+            print(f"To enrich: {estimate.notes} notes in {estimate.batches} batches")
+            print(f"  = {estimate.est_llm_calls} LLM calls")
+            print("  Confirm with:  talamus enrich --yes")
+        return 0
+    if not service_result.success or not isinstance(service_result.data, EnrichRunResult):
+        print(service_result.message, file=sys.stderr)
+        return 1
+    report = service_result.data.raw
+    if json_out:
+        _print_json(report)
+    else:
+        print(
+            f"enriched {report['enriched']} notes "
+            f"({report['failed_batches']} batches failed, {report['skipped']} skipped)"
+        )
+    return 0
+
+
+def _cmd_verify_batch(
+    root: Path, llm: LLMProvider, only_stale: bool, source: str | None, json_out: bool
+) -> int:
+    service_result = run_verification_batch(root, llm, only_stale=only_stale, source_filter=source)
+    if not service_result.success or not isinstance(service_result.data, VerificationBatchResult):
+        print(service_result.message, file=sys.stderr)
+        return 1
+    report = service_result.data.raw
+    if json_out:
+        _print_json(report)
+        return 0
+    print(
+        f"checked {report['checked']} notes: {report['ok']} ok, "
+        f"{report['corrections_proposed']} corrections proposed, "
+        f"{report['stale']} stale sources, {report['skipped']} skipped"
+    )
+    if report["corrections_proposed"] or report["stale"]:
+        print("review with `talamus review list`")
+    return 0
+
+
+def _cmd_verify(root: Path, title: str, do_apply: bool, llm: LLMProvider, json_out: bool) -> int:
+    if do_apply:
+        apply_result = apply_note_correction(root, title, llm)
+        if not apply_result.success or apply_result.data is None:
+            print(apply_result.message, file=sys.stderr)
+            return 1
+        corrected = apply_result.data.corrected
+        if json_out:
+            _print_json({"corrected": corrected})
+        else:
+            print(f"verify: {'corrected' if corrected else 'no correction needed for'} '{title}'")
+        return 0
+    note_result = verify_single_note(root, title, llm)
+    if not note_result.success or not isinstance(note_result.data, VerificationNoteResult):
+        print(note_result.message, file=sys.stderr)
+        return 1
+    result = note_result.data.raw
+    if json_out:
+        _print_json(result)
+        return 0
+    if not result.get("found"):
+        print(f"note not found: {title}", file=sys.stderr)
+        return 1
+    if not result.get("checked"):
+        print(f"no source on disk to check for '{title}'")
+        return 0
+    if result.get("ok", True):
+        print(f"'{title}' looks faithful to its source")
+        return 0
+    print(f"'{title}' may need a correction:")
+    print(f"  summary -> {result.get('summary', '')}")
+    print("run `talamus verify <title> --apply` to apply it")
+    return 0
+
+
+def _cmd_overview(
+    root: Path, llm: LLMProvider, json_out: bool, rebuild: bool, policy: str | None = None
+) -> int:
+    if policy == "all":
+        registry = load_registry()
+        collected: list[tuple[str, list[dict]]] = []
+        for brain in registry.brains:
+            if not brain.federated or not (brain.root() / "talamus.json").exists():
+                continue
+            collected.append((brain.name, load_overview(TalamusPaths(brain.root()))))
+        if json_out:
+            _print_json([{"brain": name, "domains": domains} for name, domains in collected])
+            return 0
+        for name, brain_domains in collected:
+            print(f"=== {name} ===")
+            for domain in brain_domains:
+                print(f"## {domain['name']}  ({len(domain.get('members', []))} notes)")
+        return 0
+    paths = TalamusPaths(root)
+    if rebuild or not paths.overview_file.exists():
+        from talamus.domains import TREE_THRESHOLD, build_overview_tree
+
+        domains = build_overview(paths, llm)
+        if len(domains) >= TREE_THRESHOLD:
+            areas = build_overview_tree(paths, llm)
+            if areas and not json_out:
+                print(f"(hierarchical map: {len(areas)} macro-areas over {len(domains)} domains)")
+    else:
+        domains = load_overview(paths)
+    if json_out:
+        _print_json(domains)
+        return 0
+    if not domains:
+        print("no notes yet (ingest something first)")
+        return 0
+    for domain in domains:
+        print(f"## {domain['name']}  ({len(domain['members'])} notes)")
+        if domain.get("description"):
+            print(f"   {domain['description']}")
+    return 0

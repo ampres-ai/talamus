@@ -124,7 +124,7 @@ class JsonCoverageTests(unittest.TestCase):
     def test_plain_status_does_not_compute_readiness(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             main(["init", "--root", tmp])
-            with mock.patch("talamus.cli.inspect_readiness") as inspect:
+            with mock.patch("talamus.cli.lifecycle.inspect_readiness") as inspect:
                 self.assertEqual(0, main(["status", "--root", tmp, "--plain"]))
             inspect.assert_not_called()
 
