@@ -1131,6 +1131,15 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         self.assertIn("from talamus.services.scan import", source)
         self.assertIn("from talamus.services.ingestion import", source)
 
+    def test_app_query_flow_uses_services(self) -> None:
+        import inspect
+
+        import talamus.ui.app as app
+
+        source = inspect.getsource(app)
+        self.assertNotIn("from talamus.recall import", source)
+        self.assertIn("from talamus.services.query import", source)
+
     def test_app_home_route_builds_readiness_on_ui_thread(self) -> None:
         import inspect
 

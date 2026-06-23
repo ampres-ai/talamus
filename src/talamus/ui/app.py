@@ -19,7 +19,6 @@ from talamus.adapters.llm import build_provider
 from talamus.ask import answer_question
 from talamus.config import load_or_default, resolve_language
 from talamus.paths import TalamusPaths
-from talamus.recall import read_note_text, search_notes
 from talamus.services.ingestion import (
     IngestPreview,
     IngestRunResult,
@@ -28,6 +27,7 @@ from talamus.services.ingestion import (
 from talamus.services.ingestion import (
     run_ingest as run_ingest_service,
 )
+from talamus.services.query import read_note, search_brain
 from talamus.services.scan import ScanActionResult, ScanPreview, preview_scan, run_scan
 from talamus.ui import views
 
@@ -411,18 +411,18 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
     def open_note(title: str) -> None:
         title = title.strip().strip("<>").strip()
         state["note"] = title
-        text = read_note_text(paths, title)
-        if text is None:
+        note_result = read_note(paths.project_root, title)
+        if not note_result.success or note_result.data is None or not note_result.data.markdown:
             show(
                 theme.empty_state(
                     ft.Icons.SEARCH_OFF,
                     title or "?",
-                    "Note not found in this brain.",
+                    note_result.message or "Note not found in this brain.",
                 )
             )
             return
         body = ft.Markdown(
-            views.wikilinks_to_md(text),
+            views.wikilinks_to_md(note_result.data.markdown),
             selectable=True,
             extension_set=views.MD,
             on_tap_link=lambda e: open_note(str(e.data)),
@@ -482,8 +482,14 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
                         as_of_value = as_of.value.strip()
                         parse_when(as_of_value)  # validate early
                         items = []
-                        for hit in search_notes(paths, question, limit=5):
-                            version = note_as_of(paths, hit["title"], as_of_value)
+                        search_result = search_brain(paths.project_root, question, limit=5)
+                        hits = (
+                            search_result.data.hits
+                            if search_result.success and search_result.data
+                            else []
+                        )
+                        for hit in hits:
+                            version = note_as_of(paths, hit.title, as_of_value)
                             if version is None:
                                 continue
                             joiner = chr(10)
@@ -493,7 +499,7 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
                             items.append(
                                 {
                                     "route": "as-of",
-                                    "path": f"[as-of {as_of_value}] {hit['title']}",
+                                    "path": f"[as-of {as_of_value}] {hit.title}",
                                     "content": f"{version.get('summary', '')}{joiner}{body}",
                                 }
                             )
@@ -578,16 +584,20 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
         def run_search() -> None:
             if not (query.value or "").strip():
                 return
-            results = search_notes(paths, query.value or "")
-            trace.value = _format_search_trace(query.value or "", len(results))
-            results_box.controls = [
-                ft.ListTile(
-                    title=ft.Text(r["title"]),
-                    subtitle=ft.Text(r["summary"]),
-                    on_click=lambda e, t=r["title"]: open_note(t),
-                )
-                for r in results
-            ] or [ft.Text("No relevant notes.")]
+            result = search_brain(paths.project_root, query.value or "")
+            hits = result.data.hits if result.success and result.data is not None else []
+            trace.value = _format_search_trace(query.value or "", len(hits))
+            if result.success:
+                results_box.controls = [
+                    ft.ListTile(
+                        title=ft.Text(hit.title),
+                        subtitle=ft.Text(hit.summary),
+                        on_click=lambda e, t=hit.title: open_note(t),
+                    )
+                    for hit in hits
+                ] or [ft.Text("No relevant notes.")]
+            else:
+                results_box.controls = [ft.Text(result.message)]
             page.update()
 
         query.on_submit = lambda e: run_search()
