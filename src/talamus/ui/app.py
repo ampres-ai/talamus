@@ -17,7 +17,7 @@ import flet as ft
 
 from talamus.adapters.llm import build_provider
 from talamus.ask import answer_question
-from talamus.config import load_or_default
+from talamus.config import load_or_default, resolve_language
 from talamus.paths import TalamusPaths
 from talamus.recall import read_note_text, search_notes
 from talamus.services.ingestion import (
@@ -208,6 +208,14 @@ def _format_ask_token_promise(question: str, as_of: str) -> str:
         "No LLM call until Ask. "
         f"Current question text: ~{prompt_tokens} tokens; "
         f"answer context cap: {context_budget()} tokens."
+    )
+
+
+def _format_ask_language_promise(language: str) -> str:
+    user_language = language.strip() or "your language"
+    return (
+        f"Language-native recall: notes stay in {user_language}; "
+        "context is built from your prose and citations stay traceable."
     )
 
 
@@ -422,6 +430,11 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
             color=theme.TEXT,
             selectable=True,
         )
+        language_line = ft.Text(
+            _format_ask_language_promise(resolve_language(load_or_default(paths.config_path))),
+            size=12,
+            color=theme.MUTED,
+        )
         run_button = ft.ElevatedButton("Ask", icon=ft.Icons.PSYCHOLOGY)
 
         def refresh_cost() -> None:
@@ -503,6 +516,16 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
                             theme.muted(
                                 "The answer may call your selected engine only after this action."
                             ),
+                        ],
+                        spacing=6,
+                    ),
+                    padding=12,
+                ),
+                theme.panel(
+                    ft.Column(
+                        [
+                            theme.section("Language moat"),
+                            language_line,
                         ],
                         spacing=6,
                     ),

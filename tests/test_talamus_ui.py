@@ -854,6 +854,15 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         self.assertIn("context cap", text)
         self.assertIn("question text", text)
 
+    def test_app_formats_ask_language_promise(self) -> None:
+        from talamus.ui.app import _format_ask_language_promise
+
+        text = _format_ask_language_promise("Italian")
+
+        self.assertIn("Language-native recall", text)
+        self.assertIn("Italian", text)
+        self.assertIn("citations stay traceable", text)
+
     def test_app_formats_answer_trace(self) -> None:
         from talamus.ui.app import _format_answer_trace
 
