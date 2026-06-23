@@ -712,6 +712,15 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
             with self.subTest(destination=destination.label):
                 self.assertIn(_view_name_for_home_action(destination.view), builder_keys)
 
+    def test_app_formats_import_guardrail(self) -> None:
+        from talamus.ui.app import _format_import_guardrail
+
+        text = _format_import_guardrail()
+
+        self.assertIn("Preview cost first", text)
+        self.assertIn("No bulk LLM action before consent", text)
+        self.assertIn("Jobs and partial failures stay visible", text)
+
     def test_theme_has_shell_primitives_for_dense_workbench(self) -> None:
         import flet as ft
 

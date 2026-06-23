@@ -139,6 +139,14 @@ def _provider(paths: TalamusPaths):
     return build_provider(config.llm_provider, config.llm_model)
 
 
+def _format_import_guardrail() -> str:
+    return (
+        "Preview cost first. "
+        "No bulk LLM action before consent. "
+        "Jobs and partial failures stay visible."
+    )
+
+
 def _format_ingest_preview(preview: IngestPreview) -> str:
     lines = [
         f"Target: {preview.target}",
@@ -533,6 +541,8 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
 
     # ---------------------------------------------------------------- ingest
     def ingest_view() -> ft.Control:
+        from talamus.ui import theme
+
         target = ft.TextField(label="File, folder, or URL (or . for this repo)")
         output = ft.Text("", selectable=True)
         confirmed = {"target": "", "kind": ""}
@@ -624,7 +634,21 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
                 ft.ElevatedButton("Run with consent", on_click=lambda e: run_ingest()),
             ]
         )
-        return ft.Column([views.heading("Ingest"), target, buttons, output], spacing=10)
+        guardrail = theme.panel(
+            ft.Column(
+                [
+                    theme.section("Import guardrail"),
+                    theme.muted(_format_import_guardrail()),
+                ],
+                spacing=6,
+                tight=True,
+            ),
+            padding=12,
+        )
+        return ft.Column(
+            [views.heading("Ingest"), guardrail, target, buttons, output],
+            spacing=10,
+        )
 
     # ---------------------------------------------------------------- graph
     def _graph() -> ft.Control:
