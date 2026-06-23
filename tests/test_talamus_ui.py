@@ -373,6 +373,56 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         buttons[0].on_click(None)
         self.assertEqual(opened, ["Alpha"])
 
+    def test_verification_panel_surfaces_pending_source_risk(self) -> None:
+        from talamus.paths import TalamusPaths
+        from talamus.services.result import ServiceResult
+        from talamus.ui import views
+
+        note = SimpleNamespace(
+            found=True,
+            sources=[
+                {"normalized_path": "raw/a.md"},
+                {"normalized_path": "raw/b.md"},
+            ],
+        )
+        matching_item = SimpleNamespace(
+            item_id="review-1",
+            kind="stale_source",
+            title="Memory",
+            detail={"why": "source hash changed"},
+        )
+        other_item = SimpleNamespace(
+            item_id="review-2",
+            kind="correction",
+            title="Other",
+            detail={"why": "unrelated"},
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            with (
+                patch.object(
+                    views,
+                    "get_library_note",
+                    return_value=ServiceResult(True, "loaded", data=note),
+                ) as loaded,
+                patch.object(
+                    views,
+                    "list_review_items",
+                    return_value=ServiceResult(True, "loaded", data=[matching_item, other_item]),
+                ) as listed,
+            ):
+                control = views.build_verification_panel(paths, "Memory")
+
+        loaded.assert_called_once_with(paths.project_root, "Memory")
+        listed.assert_called_once_with(paths.project_root, status="pending")
+        rendered = self._rendered_text(control)
+        self.assertIn("Verification moat", rendered)
+        self.assertIn("2 registered sources", rendered)
+        self.assertIn("stale_source", rendered)
+        self.assertIn("source hash changed", rendered)
+        self.assertNotIn("unrelated", rendered)
+
     def test_review_actions_use_review_service(self) -> None:
         import flet as ft
 

@@ -365,6 +365,8 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
             ),
             theme.section("Sources"),
             views.build_sources_panel(paths, title),
+            theme.section("Verification"),
+            views.build_verification_panel(paths, title),
             theme.section("Relations"),
             views.build_graph(paths, title, open_note),
             theme.section("Timeline"),

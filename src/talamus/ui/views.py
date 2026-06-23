@@ -372,6 +372,59 @@ def build_sources_panel(paths: TalamusPaths, title: str) -> ft.Control:
     return ft.Column(rows, spacing=6)
 
 
+def build_verification_panel(paths: TalamusPaths, title: str) -> ft.Control:
+    from talamus.ui import theme
+
+    note_result = get_library_note(paths.project_root, title)
+    if not note_result.success or note_result.data is None or not note_result.data.found:
+        return theme.panel(
+            ft.Column(
+                [
+                    theme.section("Verification moat"),
+                    theme.muted(note_result.message or "Note not found."),
+                ],
+                spacing=5,
+                tight=True,
+            ),
+            padding=12,
+        )
+    sources = list(getattr(note_result.data, "sources", []) or [])
+    review_result = list_review_items(paths.project_root, status="pending")
+    pending = [
+        item
+        for item in (review_result.data or [])
+        if review_result.success and _review_item_matches_title(item, title)
+    ]
+    rows: list[ft.Control] = [
+        theme.section("Verification moat"),
+        ft.Text("Source truth stays separate from machine truth.", weight=ft.FontWeight.BOLD),
+        theme.muted(f"{_count_label(len(sources), 'registered source')} tracked for this note."),
+    ]
+    if not pending:
+        rows.append(theme.muted("No stale-source or correction review is pending."))
+    for item in pending:
+        detail = getattr(item, "detail", {}) or {}
+        rows.append(
+            ft.Row(
+                [
+                    theme.status_pill(str(getattr(item, "kind", "review")), "warn"),
+                    theme.muted(str(detail.get("why") or getattr(item, "item_id", ""))),
+                ],
+                spacing=8,
+                wrap=True,
+            )
+        )
+    rows.append(theme.muted("Review keeps corrections explicit before anything is applied."))
+    return theme.panel(ft.Column(rows, spacing=6, tight=True), padding=12)
+
+
+def _review_item_matches_title(item: object, title: str) -> bool:
+    if str(getattr(item, "title", "")) == title:
+        return True
+    detail = getattr(item, "detail", {}) or {}
+    return isinstance(detail, dict) and str(detail.get("title", "")) == title
+
+
 # ------------------------------------------------------------------- notes
 
 
