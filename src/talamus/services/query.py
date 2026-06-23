@@ -8,7 +8,7 @@ from talamus.paths import TalamusPaths
 from talamus.recall import read_note_text, recall_context
 from talamus.scope import default_scope, scoped_context_items, scoped_search
 from talamus.services.result import ServiceResult
-from talamus.timeline import note_as_of
+from talamus.timeline import note_as_of, note_history
 
 T = TypeVar("T")
 
@@ -65,6 +65,23 @@ class RecallResult:
     context: str
     scope: str
     warnings: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class OverviewResult:
+    domains: list[dict[str, Any]]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"domains": self.domains}
+
+
+@dataclass(frozen=True)
+class NoteHistoryResult:
+    title: str
+    versions: list[dict[str, Any]]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -166,6 +183,38 @@ def recall_brain(
         message="Recall context built",
         code="recall_completed",
         data=RecallResult(context=context, scope=resolved_policy, warnings=warnings),
+    )
+
+
+def brain_overview(root: str | Path) -> ServiceResult[OverviewResult]:
+    """The brain's domain map (name, description, members): read-only, no LLM."""
+    from talamus.domains import load_overview
+
+    paths = TalamusPaths(Path(root))
+    try:
+        domains = load_overview(paths)
+    except (OSError, TypeError, ValueError, AttributeError) as exc:
+        return _query_error(exc)
+    return ServiceResult(
+        success=True,
+        message="Overview loaded",
+        code="overview_loaded",
+        data=OverviewResult(domains=list(domains)),
+    )
+
+
+def note_history_view(root: str | Path, title: str) -> ServiceResult[NoteHistoryResult]:
+    """A note's past versions (transaction time), oldest first."""
+    paths = TalamusPaths(Path(root))
+    try:
+        versions = note_history(paths, title)
+    except (OSError, TypeError, ValueError, AttributeError) as exc:
+        return _query_error(exc)
+    return ServiceResult(
+        success=True,
+        message="Note history loaded",
+        code="note_history_loaded",
+        data=NoteHistoryResult(title=title, versions=list(versions)),
     )
 
 

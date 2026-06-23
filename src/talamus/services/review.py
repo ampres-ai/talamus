@@ -103,6 +103,28 @@ def reject_review_item(
     )
 
 
+def propose_review_note(
+    root: str | Path, text: str, reason: str = ""
+) -> ServiceResult[ReviewEntry]:
+    """Add an uncertain note to the review queue (F10.4): it never lands directly in
+    the notes. Used by the MCP propose_note tool."""
+    title = text[:80] + ("…" if len(text) > 80 else "")
+    try:
+        item = _queue(root).add(
+            "low_confidence_note",
+            title,
+            {"text": text, "reason": reason or "proposed by an agent"},
+        )
+    except (OSError, TypeError, ValueError, AttributeError) as exc:
+        return _review_store_error(exc)
+    return ServiceResult(
+        success=True,
+        message=f"Proposed note in review: {item.item_id}",
+        code="review_note_proposed",
+        data=_entry(item),
+    )
+
+
 def _queue(root: str | Path) -> ReviewQueue:
     return ReviewQueue(TalamusPaths(Path(root)))
 

@@ -4,7 +4,13 @@ from pathlib import Path
 
 from talamus.demo import create_demo_brain
 from talamus.paths import TalamusPaths
-from talamus.services.query import read_note, recall_brain, search_brain
+from talamus.services.query import (
+    brain_overview,
+    note_history_view,
+    read_note,
+    recall_brain,
+    search_brain,
+)
 
 
 class QueryServiceTests(unittest.TestCase):
@@ -50,6 +56,34 @@ class QueryServiceTests(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertIsNotNone(result.data)
         self.assertIn("No relevant context", result.data.context)
+
+    def test_brain_overview_returns_saved_domains(self) -> None:
+        from talamus.domains import save_overview
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            save_overview(
+                TalamusPaths(root),
+                [{"name": "Models", "description": "ml", "members": ["Embedding"]}],
+            )
+
+            result = brain_overview(root)
+
+        self.assertTrue(result.success)
+        self.assertIsNotNone(result.data)
+        self.assertEqual("Models", result.data.domains[0]["name"])
+
+    def test_note_history_view_reads_versions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+
+            result = note_history_view(root, "Reranking")
+
+        self.assertTrue(result.success)
+        self.assertIsNotNone(result.data)
+        self.assertTrue(result.data.versions)
 
 
 if __name__ == "__main__":

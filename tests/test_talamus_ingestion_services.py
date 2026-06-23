@@ -5,7 +5,7 @@ from pathlib import Path
 
 from talamus.ingest import CHUNK_CHARS, split_chunks
 from talamus.paths import TalamusPaths
-from talamus.services.ingestion import preview_ingest, run_ingest
+from talamus.services.ingestion import ingest_raw_text, preview_ingest, run_ingest
 from talamus.store import load_notes
 from tests.support import FakeLLMProvider
 
@@ -95,6 +95,22 @@ class TalamusIngestionServiceTests(unittest.TestCase):
         self.assertEqual(expected, result.data.notes_written)
         self.assertEqual(expected, result.data.chunks)
         self.assertEqual("completed", result.data.state)
+
+    def test_ingest_raw_text_writes_a_note(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = _brain(tmp)
+            llm = FakeLLMProvider([_note_json("Insight")])
+
+            result = ingest_raw_text(tmp, "A short insight worth keeping.", llm)
+
+            notes = load_notes(paths)
+
+        self.assertTrue(result.success, result.message)
+        self.assertEqual("text_ingested", result.code)
+        self.assertIsNotNone(result.data)
+        assert result.data is not None
+        self.assertEqual(1, result.data.notes_written)
+        self.assertEqual(1, len(notes))
 
 
 if __name__ == "__main__":

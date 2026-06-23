@@ -6,7 +6,7 @@ from typing import Any, TypeVar, cast
 
 from talamus.adapters.llm import LLMProvider
 from talamus.errors import TalamusError
-from talamus.ingest import estimate_chunks, ingest_path
+from talamus.ingest import estimate_chunks, ingest_path, ingest_text
 from talamus.paths import TalamusPaths
 from talamus.services.result import ServiceResult
 from talamus.sources import is_url
@@ -93,6 +93,30 @@ def run_ingest(
         message="Ingest completed",
         code="ingest_completed",
         data=_run_result(root_path, target, result),
+    )
+
+
+def ingest_raw_text(
+    root: str | Path,
+    text: str,
+    llm: LLMProvider,
+    *,
+    name: str = "insight",
+) -> ServiceResult[IngestRunResult]:
+    """Compile a raw text string into brain notes (no file on disk). Used by the
+    MCP remember/ingest_text tools."""
+    root_path = Path(root)
+    try:
+        result = cast(dict[str, Any], ingest_text(TalamusPaths(root_path), text, llm, name=name))
+    except TalamusError as exc:
+        return ServiceResult(success=False, message=f"Ingest failed: {exc}", code="ingest_failed")
+    except (OSError, TypeError, ValueError, AttributeError) as exc:
+        return _ingestion_error(exc)
+    return ServiceResult(
+        success=True,
+        message="Text ingested",
+        code="text_ingested",
+        data=_run_result(root_path, name, result),
     )
 
 

@@ -13,15 +13,24 @@ from mcp.server.fastmcp import FastMCP
 
 from talamus.adapters.llm import LLMProvider, build_provider
 from talamus.config import load_or_default
-from talamus.domains import load_overview
-from talamus.ingest import ingest_text as sdk_ingest_text
 from talamus.paths import TalamusPaths
 from talamus.services.graph import list_graph_neighbors
+from talamus.services.ingestion import ingest_raw_text
 from talamus.services.library import get_library_note
 from talamus.services.ontology import get_ontology_status
+from talamus.services.query import (
+    brain_overview,
+    note_history_view,
+    recall_brain,
+    search_brain,
+)
 from talamus.services.query import read_note as read_note_service
-from talamus.services.query import recall_brain, search_brain
-from talamus.services.review import apply_review_item, list_review_items, reject_review_item
+from talamus.services.review import (
+    apply_review_item,
+    list_review_items,
+    propose_review_note,
+    reject_review_item,
+)
 
 server = FastMCP("talamus")
 
@@ -32,16 +41,16 @@ def _paths() -> TalamusPaths:
     return TalamusPaths(_root)
 
 
-def _paths_for(scope: str) -> TalamusPaths:
-    """Resolve the brain for an explicit scope (F10.1): 'project' (default) or
+def _root_for(scope: str) -> Path:
+    """Resolve the brain root for an explicit scope (F10.1): 'project' (default) or
     'central' (the personal hub). Writes default to the project brain (F10.4)."""
     if scope == "central":
         from talamus.registry import central_brain
 
         central = central_brain()
         if central is not None:
-            return TalamusPaths(central.root())
-    return _paths()
+            return Path(central.root())
+    return _root
 
 
 def _provider() -> LLMProvider:
@@ -90,7 +99,10 @@ def recall(question: str) -> str:
 def overview() -> str:
     """Show the Talamus brain's domain map (name, description, note count): an
     overview to get oriented before searching. Read-only, no LLM cost."""
-    domains = load_overview(_paths())
+    result = brain_overview(_root)
+    if not result.success or result.data is None:
+        return result.message
+    domains = result.data.domains
     if not domains:
         return "No domain map yet. Run `talamus overview` to build it."
     lines: list[str] = []
@@ -121,9 +133,10 @@ def neighbors(concept: str) -> str:
 def history(title: str) -> str:
     """The past versions of a brain note (transaction time), oldest first: when
     Talamus changed that record and how."""
-    from talamus.timeline import note_history
-
-    versions = note_history(_paths(), title)
+    result = note_history_view(_root, title)
+    if not result.success or result.data is None:
+        return result.message
+    versions = result.data.versions
     if not versions:
         return f"No version for: {title}"
     return "\n".join(f"[{v.get('updated_at', '?')}] {v.get('summary', '')}" for v in versions)
@@ -163,30 +176,30 @@ def remember(text: str, scope: str = "project") -> str:
     """Save into the Talamus brain an important insight or decision that emerged in
     the session, turning it into a note. scope: 'project' (default) or 'central' for
     the personal brain — writing to the global brain must be explicit."""
-    result = sdk_ingest_text(_paths_for(scope), text, _provider())
-    return f"Remembered in [{scope}]: {result['notes_written']} notes saved."
+    result = ingest_raw_text(_root_for(scope), text, _provider())
+    if not result.success or result.data is None:
+        return result.message
+    return f"Remembered in [{scope}]: {result.data.notes_written} notes saved."
 
 
 @server.tool()
 def ingest_text(text: str, name: str = "insight", scope: str = "project") -> str:
     """Compile a text into brain notes (without the 'worth remembering' gate: use it
     for already-selected content). scope: 'project' (default) or 'central'."""
-    result = sdk_ingest_text(_paths_for(scope), text, _provider(), name=name)
-    return f"Ingested in [{scope}]: {result['notes_written']} notes."
+    result = ingest_raw_text(_root_for(scope), text, _provider(), name=name)
+    if not result.success or result.data is None:
+        return result.message
+    return f"Ingested in [{scope}]: {result.data.notes_written} notes."
 
 
 @server.tool()
 def propose_note(text: str, reason: str = "") -> str:
     """Propose UNCERTAIN knowledge: it lands in the brain's review queue, not directly
     in the notes (F10.4). A human will apply or reject it."""
-    from talamus.review import ReviewQueue
-
-    item = ReviewQueue(_paths()).add(
-        "low_confidence_note",
-        text[:80] + ("…" if len(text) > 80 else ""),
-        {"text": text, "reason": reason or "proposed by an agent"},
-    )
-    return f"In review: {item.item_id} (decide with `talamus review`)."
+    result = propose_review_note(_root, text, reason)
+    if not result.success or result.data is None:
+        return result.message
+    return f"In review: {result.data.item_id} (decide with `talamus review`)."
 
 
 @server.tool()
