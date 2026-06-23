@@ -42,9 +42,9 @@ class ConsolidateTests(unittest.TestCase):
             self.assertEqual("Hybrid search", groups[0]["canonical"])
 
     def test_merge_unions_retrieval_text(self) -> None:
-        """Regressione dal libro: la fusione buttava il retrieval_text (e i
-        sintomi) delle note assorbite — hit vago crollato da 0.625 a 0.375.
-        Il retrieval_text è un campo di ricerca: si unisce, mai scartare."""
+        """Regression from the book: the merge dropped the retrieval_text (and the
+        symptoms) of the absorbed notes — vague hit collapsed from 0.625 to 0.375.
+        retrieval_text is a search field: union it, never discard."""
         import dataclasses
 
         from talamus.store import merge_notes
@@ -56,8 +56,8 @@ class ConsolidateTests(unittest.TestCase):
         self.assertIn("si inventa le cose", merged.retrieval_text)
 
     def test_truncated_model_answer_salvages_complete_groups(self) -> None:
-        """Regressione dal libro: la risposta lunga arrivava troncata e il parse
-        all-or-nothing buttava TUTTI i gruppi ('no duplicates' con 20+ veri)."""
+        """Regression from the book: the long answer arrived truncated and the
+        all-or-nothing parse dropped ALL groups ('no duplicates' with 20+ real)."""
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
@@ -67,20 +67,20 @@ class ConsolidateTests(unittest.TestCase):
             truncated = (
                 '[\n {"canonical": "Hybrid search",\n  "members": ["Hybrid search", '
                 '"Ricerca ibrida"]},\n {"canonical": "Reranking", "members": ["Rerank'
-            )  # tronca a metà del secondo gruppo
+            )  # truncated halfway through the second group
             groups = find_duplicates(paths, FakeLLMProvider([truncated]))
-            self.assertEqual(1, len(groups))  # il gruppo completo si salva
+            self.assertEqual(1, len(groups))  # the complete group is salvaged
             self.assertEqual("Hybrid search", groups[0]["canonical"])
 
     def test_apply_accepts_reviewed_groups(self) -> None:
-        """La detection propone, la revisione decide: apply accetta gruppi già
-        filtrati senza richiamare il modello."""
+        """Detection proposes, review decides: apply accepts already-filtered
+        groups without calling the model again."""
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
             write_note(paths, _note("Hybrid search"))
             write_note(paths, _note("Ricerca ibrida"))
-            llm = FakeLLMProvider([])  # nessuna chiamata
+            llm = FakeLLMProvider([])  # no call
             reviewed = [
                 {"canonical": "Hybrid search", "members": ["Hybrid search", "Ricerca ibrida"]}
             ]

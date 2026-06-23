@@ -164,7 +164,7 @@ class TalamusAskTests(unittest.TestCase):
 
             paths_found = [item["path"] for item in bundle.items]
             self.assertTrue(any("Alpha" in p for p in paths_found))
-            # Beta non combacia per parole, ma entra perche' collegato ad Alpha nell'ontologia
+            # Beta doesn't match by words, but enters because it's linked to Alpha in the ontology
             self.assertTrue(any("Beta" in p for p in paths_found))
 
 

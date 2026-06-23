@@ -94,7 +94,7 @@ class ProvenanceTests(unittest.TestCase):
             rebuild_indexes(paths)
             by_title = {n.title: n for n in load_notes(paths)}
             self.assertEqual(provenance_status(paths, by_title["Vera"])["status"], "ok")
-            # e quando la fonte cambia DAVVERO, lo dice
+            # and when the source REALLY changes, it says so
             (raw / "vera.md").write_text("Contenuto riscritto.", encoding="utf-8")
             self.assertEqual(provenance_status(paths, by_title["Vera"])["status"], "source_changed")
 

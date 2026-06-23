@@ -105,7 +105,7 @@ class TwoLevelRoutingTests(unittest.TestCase):
             )
             build_overview_tree(paths, FakeLLMProvider([grouping]))
             trace: dict = {}
-            # coda: routing area, routing dominio, espansione query (RS3), risposta
+            # queue: area routing, domain routing, query expansion (RS3), answer
             llm = FakeLLMProvider(["area-area-b", "dom-dominio-07", "prova", "Risposta [1]."])
             answer = answer_question(paths, "domanda di prova", llm, trace=trace)
             self.assertIn("Risposta", answer)

@@ -84,7 +84,7 @@ class TalamusCliTests(unittest.TestCase):
         from talamus.cli import _ensure_utf8_output
 
         with redirect_stdout(io.StringIO()):
-            _ensure_utf8_output()  # non deve sollevare eccezioni
+            _ensure_utf8_output()  # must not raise
 
     def test_ingest_then_ask_with_injected_provider(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

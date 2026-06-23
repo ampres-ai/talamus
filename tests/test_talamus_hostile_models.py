@@ -1,8 +1,8 @@
-"""Batteria 'modello ostile': il prodotto deve restare eccellente anche con
-motori deboli (regola di prodotto, 2026-06-12 — il focus è QUALSIASI utente,
-non il brain di prova). I modelli economici rispondono con JSON troncato,
-malformato, vuoto, avvolto in prosa, control character letterali: ogni punto
-del motore che consuma output LLM deve degradare con grazia, mai corrompere."""
+"""'Hostile model' battery: the product must stay excellent even with weak
+engines (product rule, 2026-06-12 — the focus is ANY user, not the test brain).
+Cheap models answer with truncated, malformed, empty, prose-wrapped JSON and
+literal control characters: every point of the engine that consumes LLM output
+must degrade gracefully, never corrupt."""
 
 import tempfile
 import unittest
@@ -14,11 +14,11 @@ from talamus.store import rebuild_indexes, write_note
 from tests.support import FakeLLMProvider
 
 HOSTILE = [
-    "",  # vuoto
-    "Sure! Here are the results you asked for.",  # prosa senza JSON
-    '[{"title": "Rotto",',  # troncato
-    '{"oggetto": "non array"}',  # tipo sbagliato
-    '```json\n[{"id": 1}]\n```extra',  # fence + spazzatura
+    "",  # empty
+    "Sure! Here are the results you asked for.",  # prose without JSON
+    '[{"title": "Rotto",',  # truncated
+    '{"oggetto": "non array"}',  # wrong type
+    '```json\n[{"id": 1}]\n```extra',  # fence + garbage
 ]
 
 
@@ -47,8 +47,8 @@ class HostileExtractionTests(unittest.TestCase):
             try:
                 notes = extract_notes(package, FakeLLMProvider([raw]))
             except ValueError:
-                continue  # errore pulito e azionabile: accettabile
-            self.assertEqual(notes, [])  # altrimenti lista vuota: MAI note corrotte
+                continue  # clean, actionable error: acceptable
+            self.assertEqual(notes, [])  # otherwise empty list: NEVER corrupt notes
 
     def test_control_characters_in_strings_are_tolerated(self) -> None:
         from talamus.extract import _extract_json_array
@@ -71,7 +71,7 @@ class HostileRoutingTests(unittest.TestCase):
                 llm = FakeLLMProvider([raw, raw, raw, "Risposta [1]."])
                 answer = answer_question(paths, "concetto", llm, trace=trace)
                 self.assertNotIn("Traceback", answer)
-                self.assertTrue(trace["items_read"])  # qualcosa viene SEMPRE letto
+                self.assertTrue(trace["items_read"])  # something is ALWAYS read
 
 
 class HostileDomainsTests(unittest.TestCase):
@@ -83,7 +83,7 @@ class HostileDomainsTests(unittest.TestCase):
         for raw in HOSTILE:
             domains = _name_domains_batched(clusters, summaries, FakeLLMProvider([raw] * 5))
             members = sorted(m for d in domains for m in d["members"])
-            self.assertEqual(members, sorted(summaries))  # ogni nota resta mappata
+            self.assertEqual(members, sorted(summaries))  # every note stays mapped
 
 
 class HostileEnrichTests(unittest.TestCase):
@@ -95,8 +95,8 @@ class HostileEnrichTests(unittest.TestCase):
             paths = _brain(tmp, ["Concetto"])
             original = load_notes(paths)[0].retrieval_text
             junk = (
-                '[{"id": "concetto", "symptoms": "' + "x" * 800 + '"}]',  # oltre il tetto
-                '[{"id": "concetto", "symptoms": "{\\"json\\": \\"dentro\\"}"}]',  # struttura
+                '[{"id": "concetto", "symptoms": "' + "x" * 800 + '"}]',  # beyond the cap
+                '[{"id": "concetto", "symptoms": "{\\"json\\": \\"dentro\\"}"}]',  # structure
                 *HOSTILE,
             )
             for raw in junk:

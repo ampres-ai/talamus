@@ -1,9 +1,9 @@
-"""Arricchimento sintomi (RS2.4-bis): lotti, idempotenza, consenso CLI.
+"""Symptom enrichment (RS2.4-bis): batches, idempotency, CLI consent.
 
-Il gap vago è semantico puro (misurato: PRF e triangolazione bocciati); il ponte
-si costruisce UNA volta scrivendo nel retrieval_text le frasi con cui un utente
-porrebbe il problema. Separato dall'estrazione: caricare il prompt di ingest è
-stato misurato e costa copertura ai modelli lite."""
+The vague gap is purely semantic (measured: PRF and triangulation rejected); the
+bridge is built ONCE by writing into retrieval_text the phrasings a user would
+pose the problem with. Kept separate from extraction: loading the ingest prompt
+was measured and costs coverage on lite models."""
 
 import io
 import json
@@ -98,7 +98,7 @@ class EnrichTests(unittest.TestCase):
             with redirect_stdout(out):
                 code = main(["enrich", "--root", tmp], llm=llm)
             self.assertEqual(0, code)
-            self.assertEqual(llm.prompts, [])  # stima = zero chiamate
+            self.assertEqual(llm.prompts, [])  # estimate = zero calls
             self.assertIn("--yes", out.getvalue())
             answer = json.dumps([{"id": "allucinazione", "symptoms": "si inventa le cose"}])
             out = io.StringIO()

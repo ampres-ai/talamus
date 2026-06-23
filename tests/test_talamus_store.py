@@ -88,7 +88,7 @@ class StoreTests(unittest.TestCase):
             self.assertEqual(2, len(merged.sources))  # provenienza accumulata
             self.assertIn("infra", merged.tags)
             self.assertIn("ricerca", merged.tags)
-            self.assertEqual("secondo", merged.summary)  # prosa della confidenza piu' alta
+            self.assertEqual("secondo", merged.summary)  # prose from the higher-confidence one
             self.assertEqual(0.9, merged.confidence)
 
     def test_rebuild_indexes_persists_ontology(self) -> None:
