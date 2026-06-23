@@ -971,6 +971,12 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
     diagnostics = diagnostics_result.data
     index_backend = diagnostics.index_backend if diagnostics is not None else "none"
     index_bytes = diagnostics.index_bytes if diagnostics is not None else 0
+    cache_current = bool(getattr(diagnostics, "cache_current", False))
+    note_count = int(getattr(diagnostics, "notes", 0) or 0)
+    domain_count = int(getattr(diagnostics, "overview_domains", 0) or 0)
+    llm_provider = str(getattr(diagnostics, "llm_provider", "unknown"))
+    llm_status = str(getattr(diagnostics, "llm_status", "unknown"))
+    search_provider = str(getattr(diagnostics, "search_provider", "unknown"))
     mcp_status = "installed"
     hook_command = "talamus hook"
     if integrations_result.data is not None:
@@ -1037,7 +1043,15 @@ def build_settings(paths: TalamusPaths, notify: Callable[[str], None] | None = N
             theme.card(
                 ft.Column(
                     [
+                        theme.section("Diagnostics"),
                         theme.muted(f"Index: {index_backend} ({index_bytes:,} bytes)"),
+                        theme.muted(f"Cache: {'fresh' if cache_current else 'stale'}"),
+                        theme.muted(
+                            f"{_count_label(note_count, 'note')}; "
+                            f"{_count_label(domain_count, 'domain')}"
+                        ),
+                        theme.muted(f"Engine: {llm_provider} ({llm_status})"),
+                        theme.muted(f"Search: {search_provider}"),
                         theme.muted(f"Context budget: {budget} tokens (TALAMUS_CONTEXT_BUDGET)"),
                     ],
                     spacing=4,

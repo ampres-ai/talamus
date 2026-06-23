@@ -712,7 +712,16 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
                     return_value=ServiceResult(
                         True,
                         "diagnostics",
-                        data=SimpleNamespace(index_backend="sqlite", index_bytes=12),
+                        data=SimpleNamespace(
+                            index_backend="sqlite",
+                            index_bytes=12,
+                            cache_current=False,
+                            notes=9,
+                            overview_domains=3,
+                            llm_provider="claude-cli",
+                            llm_status="available",
+                            search_provider="builtin-bm25",
+                        ),
                     ),
                 ),
             ):
@@ -727,6 +736,12 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
         self.assertIn("selected", rendered)
         self.assertIn("shared retrieval", rendered)
         self.assertIn("not sensitive", rendered)
+        self.assertIn("Diagnostics", rendered)
+        self.assertIn("Cache: stale", rendered)
+        self.assertIn("9 notes", rendered)
+        self.assertIn("3 domains", rendered)
+        self.assertIn("Engine: claude-cli (available)", rendered)
+        self.assertIn("Search: builtin-bm25", rendered)
 
     def test_home_action_route_aliases_match_existing_views(self) -> None:
         from talamus.ui.app import _view_name_for_home_action
