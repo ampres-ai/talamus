@@ -149,7 +149,7 @@ def recall_brain(
     try:
         if resolved_policy == "central-only":
             items, warnings = scoped_context_items(root_path, question, "central-only", limit=limit)
-            context = _render_scoped_items(items) or "Nessun contesto pertinente trovato nel brain."
+            context = _render_scoped_items(items) or "No relevant context found in the brain."
         else:
             context = recall_context(TalamusPaths(root_path), question, limit=limit)
             if resolved_policy in ("project+central", "all"):

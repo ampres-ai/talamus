@@ -16,7 +16,12 @@ from talamus.config import load_or_default
 from talamus.domains import load_overview
 from talamus.ingest import ingest_text as sdk_ingest_text
 from talamus.paths import TalamusPaths
-from talamus.recall import concept_neighbors, read_note_text, recall_context, search_notes
+from talamus.services.graph import list_graph_neighbors
+from talamus.services.library import get_library_note
+from talamus.services.ontology import get_ontology_status
+from talamus.services.query import read_note as read_note_service
+from talamus.services.query import recall_brain, search_brain
+from talamus.services.review import apply_review_item, list_review_items, reject_review_item
 
 server = FastMCP("talamus")
 
@@ -56,24 +61,29 @@ def search(query: str, smart: bool = False) -> str:
         from talamus.smartsearch import expand_query
 
         query_text = expand_query(_paths(), query, _provider())
-    results = search_notes(_paths(), query_text)
-    if not results:
+    result = search_brain(_root, query_text)
+    if not result.success or result.data is None:
+        return result.message
+    if not result.data.hits:
         return "No relevant note in the brain."
-    return "\n".join(f"- {item['title']}: {item['summary']}" for item in results)
+    return "\n".join(f"- {hit.title}: {hit.summary}" for hit in result.data.hits)
 
 
 @server.tool()
 def read_note(title: str) -> str:
     """Read the full Markdown content of a Talamus note given its title."""
-    text = read_note_text(_paths(), title)
-    return text if text is not None else f"Note not found: {title}"
+    result = read_note_service(_root, title)
+    if result.data is not None and result.data.markdown is not None:
+        return result.data.markdown
+    return f"Note not found: {title}"
 
 
 @server.tool()
 def recall(question: str) -> str:
     """Recall from the Talamus brain the context relevant to a question (real notes).
     Reason over the context yourself to answer."""
-    return recall_context(_paths(), question)
+    result = recall_brain(_root, question)
+    return result.data.context if result.success and result.data is not None else result.message
 
 
 @server.tool()
@@ -96,12 +106,14 @@ def overview() -> str:
 def neighbors(concept: str) -> str:
     """Show the concepts connected to a concept in the brain (the map/ontology),
     with the relation type."""
-    items = concept_neighbors(_paths(), concept)
-    if not items:
+    result = list_graph_neighbors(_root, concept)
+    if not result.success or result.data is None:
+        return result.message
+    if not result.data:
         return "No connected concept."
     return "\n".join(
-        f"{'->' if item['direction'] == 'out' else '<-'} [{item['relation']}] {item['title']}"
-        for item in items
+        f"{'->' if item.direction == 'out' else '<-'} [{item.relation}] {item.title}"
+        for item in result.data
     )
 
 
@@ -120,29 +132,29 @@ def history(title: str) -> str:
 @server.tool()
 def sources(title: str) -> str:
     """The sources (provenance) of a note: where each statement comes from."""
-    from talamus.store import load_notes
-
-    for note in load_notes(_paths()):
-        if note.title.lower() == title.strip().lower():
-            if not note.sources:
-                return "The note has no recorded sources."
-            return "\n".join(f"- {s.normalized_path} ({s.locator})" for s in note.sources)
-    return f"Note not found: {title}"
+    result = get_library_note(_root, title)
+    if not result.success or result.data is None or not result.data.found:
+        return f"Note not found: {title}"
+    note_sources = result.data.sources
+    if not note_sources:
+        return "The note has no recorded sources."
+    return "\n".join(f"- {s['normalized_path']} ({s['locator']})" for s in note_sources)
 
 
 @server.tool()
 def ontology_status() -> str:
     """The state of the emergent type system: schema version, active/candidate types,
     and the coverage of typed edges."""
-    from talamus.ontology_lab import schema_status
-
-    status = schema_status(_paths())
-    cov = status["coverage"]
-    lines = [f"schema {status['schema_id']} (v{status['version']})"]
-    for state, count in sorted(status["types"].items()):
+    result = get_ontology_status(_root)
+    if not result.success or result.data is None:
+        return result.message
+    report = result.data
+    cov = report.coverage
+    lines = [f"schema {report.schema_id} (v{report.version})"]
+    for state, count in sorted(report.types.items()):
         lines.append(f"{state}: {count}")
-    if cov["edges"]:
-        lines.append(f"coverage: {cov['non_related']}/{cov['edges']} typed edges")
+    if cov.get("edges"):
+        lines.append(f"coverage: {cov.get('non_related')}/{cov.get('edges')} typed edges")
     return "\n".join(lines)
 
 
@@ -180,38 +192,27 @@ def propose_note(text: str, reason: str = "") -> str:
 @server.tool()
 def review_list() -> str:
     """The decisions pending in the brain's review queue."""
-    from talamus.review import ReviewQueue
-
-    pending = ReviewQueue(_paths()).list(status="pending")
-    if not pending:
+    result = list_review_items(_root, status="pending")
+    if not result.success or result.data is None:
+        return result.message
+    if not result.data:
         return "Review queue empty."
-    return "\n".join(f"- {i.item_id} [{i.kind}] {i.title}" for i in pending)
+    return "\n".join(f"- {i.item_id} [{i.kind}] {i.title}" for i in result.data)
 
 
 @server.tool()
 def review_apply(item_id: str) -> str:
     """Apply an item from the review queue (corrections are written to the brain while
     preserving history)."""
-    from talamus.correct import apply_proposed_correction
-    from talamus.review import ReviewQueue
-
-    queue = ReviewQueue(_paths())
-    entry = queue.get(item_id)
-    if entry is None:
-        return f"No item: {item_id}"
-    if entry.kind == "correction" and not apply_proposed_correction(_paths(), entry.detail):
-        return f"Cannot apply: note '{entry.detail.get('title')}' not found."
-    applied = queue.apply(item_id)
-    return f"Applied: {item_id}" if applied else f"'{item_id}' is not pending."
+    result = apply_review_item(_root, item_id)
+    return f"Applied: {item_id}" if result.success else result.message
 
 
 @server.tool()
 def review_reject(item_id: str, reason: str = "") -> str:
     """Reject an item from the review queue (the decision stays recorded)."""
-    from talamus.review import ReviewQueue
-
-    rejected = ReviewQueue(_paths()).reject(item_id, reason)
-    return f"Rejected: {item_id}" if rejected else f"'{item_id}' is not pending."
+    result = reject_review_item(_root, item_id, reason)
+    return f"Rejected: {item_id}" if result.success else result.message
 
 
 def _build_parser() -> argparse.ArgumentParser:
