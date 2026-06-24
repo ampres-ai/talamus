@@ -89,24 +89,11 @@ def _build_top_bar(
 ) -> ft.Container:
     from talamus.ui import theme
 
-    controls: list[ft.Control] = [
-        ft.Column([main_title, main_subtitle], spacing=2),
-        ft.Row(
-            [
-                theme.status_pill("Local-first", "ready"),
-                theme.status_pill("Token cost visible", "accent"),
-            ],
-            spacing=8,
-            wrap=True,
-        ),
-    ]
+    controls: list[ft.Control] = [ft.Column([main_title, main_subtitle], spacing=2)]
     if mobile_nav is not None:
         controls.append(mobile_nav)
     return theme.panel(
-        ft.Column(
-            controls,
-            spacing=8,
-        ),
+        ft.Column(controls, spacing=8),
         padding=12,
     )
 
@@ -316,7 +303,9 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
         sidebar_visible = _show_sidebar_for_width(page.width)
         sidebar.visible = sidebar_visible
         mobile_nav.visible = not sidebar_visible
-        inspector_panel.visible = _show_inspector_for_width(page.width)
+        # The inspector is contextual: it only appears once something is selected,
+        # so browsing views (Home/Ask/Library/Graph) get the full width.
+        inspector_panel.visible = _show_inspector_for_width(page.width) and bool(state["note"])
 
     def _on_resize(e) -> None:
         _sync_shell_width()
@@ -387,26 +376,13 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
                 ft.Column(
                     [
                         ft.Text("Talamus", size=19, weight=ft.FontWeight.BOLD, color=theme.TEXT),
-                        theme.muted("Hybrid Brain OS"),
-                        theme.muted(str(paths.project_root), size=11),
+                        theme.muted(paths.project_root.name or "brain", size=11),
                     ],
                     spacing=3,
                 ),
                 ft.Divider(height=1, color=theme.BORDER),
                 *[_nav_item(destination) for destination in PRIMARY_NAV_DESTINATIONS],
                 ft.Container(expand=True),
-                theme.panel(
-                    ft.Column(
-                        [
-                            theme.section("Readiness"),
-                            theme.status_pill("No auto-create", "ready"),
-                            theme.status_pill("Services spine", "accent"),
-                        ],
-                        spacing=8,
-                    ),
-                    padding=10,
-                    bgcolor=theme.BG,
-                ),
             ],
             spacing=10,
             expand=True,
@@ -414,7 +390,7 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
 
     def _refresh_topbar(canonical_name: str) -> None:
         main_title.value = _title_for_view(canonical_name)
-        main_subtitle.value = "Task-first UI over the same services used by CLI, SDK, and agents."
+        main_subtitle.value = paths.project_root.name or "brain"
 
     def _refresh_inspector() -> None:
         title = state["note"]
@@ -458,6 +434,7 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
     def _close_inspector() -> None:
         state["note"] = ""
         _refresh_inspector()
+        _sync_shell_width()
         page.update()
 
     def open_note(title: str) -> None:

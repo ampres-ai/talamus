@@ -922,7 +922,7 @@ class WorkbenchBuildersSmokeTests(unittest.TestCase):
 
         top_bar = _build_top_bar(ft.Text("Home"), ft.Text("Root"))
 
-        self.assertIn("Token cost visible", self._rendered_text(top_bar))
+        self.assertIn("Home", self._rendered_text(top_bar))
         for item in self._walk_controls(top_bar):
             if isinstance(item, ft.Row) and item.wrap:
                 for child in item.controls:
