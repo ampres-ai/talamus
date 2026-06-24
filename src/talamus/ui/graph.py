@@ -1,9 +1,9 @@
-"""The living graph view — force-directed canvas, Obsidian-style (Fase R2).
+"""The living graph view: force-directed canvas, Obsidian-style (Phase R2).
 
 Rendering layer over ``talamus.ui.physics``: nodes colored by domain (overview),
 sized by degree, typed edges brighter than ``related`` ones, animated until the
 layout settles. **Tap a node to open its note.** Pure Python on ``flet.canvas``
-— no JS, no extra dependencies.
+- no JS, no extra dependencies.
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ from talamus.ontology import load_ontology
 from talamus.paths import TalamusPaths
 from talamus.ui import physics
 
-CANVAS_W = 880.0
-CANVAS_H = 560.0
+CANVAS_W = 660.0
+CANVAS_H = 430.0
 _EDGE_RELATED = "#3A4148"
 _EDGE_TYPED = "#7E8A96"
 _NODE_DEFAULT = "#90A4AE"
@@ -82,6 +82,63 @@ def _shapes(layout: physics.Layout, colors: dict[str, str], focus: str) -> list[
     return shapes
 
 
+def _count_label(count: int, singular: str, plural: str | None = None) -> str:
+    suffix = singular if count == 1 else plural or f"{singular}s"
+    return f"{count} {suffix}"
+
+
+def _accessible_node_list(
+    layout: physics.Layout,
+    open_note: Callable[[str], None],
+) -> ft.Control:
+    from talamus.ui import theme
+
+    rows: list[ft.Control] = [
+        theme.section("Accessible graph list"),
+        theme.muted(
+            f"{_count_label(len(layout.nodes), 'node')}; "
+            f"{_count_label(len(layout.edges), 'relation')} in the visible graph."
+        ),
+    ]
+    for node_id in sorted(layout.nodes):
+        node = layout.nodes[node_id]
+        degree = sum(1 for src, dst, _ in layout.edges if node_id in (src, dst))
+        domain = node.domain or "No domain"
+        rows.append(
+            ft.Row(
+                [
+                    ft.TextButton(
+                        f"Open {node_id}",
+                        on_click=lambda e, title=node_id: open_note(title),
+                    ),
+                    theme.muted(f"{domain}; {_count_label(degree, 'edge')}"),
+                ],
+                spacing=8,
+                wrap=True,
+            )
+        )
+    return theme.panel(ft.Column(rows, spacing=8), padding=12)
+
+
+def _relation_legend(layout: physics.Layout) -> ft.Control:
+    from talamus.ui import theme
+
+    typed = sum(1 for _src, _dst, edge_type in layout.edges if edge_type != "related")
+    related = len(layout.edges) - typed
+    return theme.panel(
+        ft.Row(
+            [
+                ft.Text("Relation legend", weight=ft.FontWeight.BOLD),
+                theme.muted(f"Typed relations: {typed}"),
+                theme.muted(f"Related links: {related}"),
+            ],
+            spacing=12,
+            wrap=True,
+        ),
+        padding=10,
+    )
+
+
 def build_graph_canvas(
     paths: TalamusPaths,
     focus: str,
@@ -99,15 +156,18 @@ def build_graph_canvas(
     all_nodes = sorted({n for s, d, _ in edges for n in (s, d)})
     if focus and any(focus in (s, d) for s, d, _ in edges):
         node_ids = physics.select_neighborhood(edges, focus)
-        subtitle = f"vicinato di «{focus}» (tocca un nodo per aprirlo)"
+        subtitle = f'neighborhood of "{focus}" (tap a node to open it)'
     else:
         node_ids = physics.select_global(edges, all_nodes)
-        subtitle = "le note più connesse (tocca un nodo per aprirlo)"
+        if focus:
+            subtitle = f'"{focus}" is not connected yet; showing global graph instead.'
+        else:
+            subtitle = "most connected notes (tap a node to open one)"
     if not node_ids:
         return ft.Column(
             [
-                ft.Text("Grafo", size=22, weight=ft.FontWeight.BOLD),
-                ft.Text("Nessuna connessione ancora: ingerisci qualcosa e torna qui."),
+                ft.Text("Graph", size=22, weight=ft.FontWeight.BOLD),
+                ft.Text("No connections yet: ingest something and come back here."),
             ]
         )
     layout = physics.build_layout(node_ids, edges, width=CANVAS_W, height=CANVAS_H, domains=domains)
@@ -161,9 +221,17 @@ def build_graph_canvas(
             )
         )  # fmt: skip
     header: list[ft.Control] = [
-        ft.Text("Grafo", size=22, weight=ft.FontWeight.BOLD),
+        ft.Text("Graph", size=22, weight=ft.FontWeight.BOLD),
         ft.Text(subtitle, size=12, opacity=0.7),
     ]
     if legend_items:
         header.append(ft.Row(legend_items, wrap=True, spacing=12))
-    return ft.Column([*header, ft.Container(surface, border_radius=8)], spacing=8)
+    return ft.Column(
+        [
+            *header,
+            _relation_legend(layout),
+            ft.Container(surface, border_radius=8),
+            _accessible_node_list(layout, open_note),
+        ],
+        spacing=8,
+    )
