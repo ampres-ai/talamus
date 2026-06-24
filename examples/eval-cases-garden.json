@@ -1,0 +1,40 @@
+{
+  "cases": [
+    {"question": "What is the Maillard reaction?", "relevant": ["Maillard Reaction"], "category": "direct"},
+    {"question": "What is an index fund?", "relevant": ["Index Funds"], "category": "direct"},
+    {"question": "What is habeas corpus?", "relevant": ["Habeas Corpus"], "category": "direct"},
+    {"question": "What is photosynthesis?", "relevant": ["Photosynthesis"], "category": "direct"},
+    {"question": "What is stellar parallax?", "relevant": ["Stellar Parallax"], "category": "direct"},
+    {"question": "What is compound interest?", "relevant": ["Compound Interest"], "category": "direct"},
+    {"question": "What is CRISPR gene editing?", "relevant": ["CRISPR Gene Editing"], "category": "direct"},
+    {"question": "What was the Silk Road?", "relevant": ["The Silk Road"], "category": "direct"},
+    {"question": "What is an emergency fund?", "relevant": ["Emergency Fund"], "category": "direct"},
+    {"question": "What is redshift?", "relevant": ["Redshift"], "category": "direct"},
+
+    {"question": "why does seared meat taste better than boiled meat?", "relevant": ["Maillard Reaction"], "category": "vague"},
+    {"question": "how do small savings grow into a large amount over time?", "relevant": ["Compound Interest"], "category": "vague"},
+    {"question": "what protects someone from being detained without charge?", "relevant": ["Habeas Corpus"], "category": "vague"},
+    {"question": "why does bread rise without adding commercial yeast?", "relevant": ["Sourdough Fermentation"], "category": "vague"},
+    {"question": "why does the Moon always show the same face to Earth?", "relevant": ["Tidal Locking"], "category": "vague"},
+    {"question": "how do plants turn sunlight into food and release oxygen?", "relevant": ["Photosynthesis"], "category": "vague"},
+    {"question": "what keeps oil and water from separating in a sauce?", "relevant": ["Emulsification"], "category": "vague"},
+    {"question": "how do astronomers measure the distance to nearby stars?", "relevant": ["Stellar Parallax"], "category": "vague"},
+
+    {"question": "how do interest compounding and low-cost index funds both build wealth over time?", "relevant": ["Compound Interest", "Index Funds"], "category": "cross-source"},
+    {"question": "what ancient networks and inventions helped ideas spread across regions?", "relevant": ["The Silk Road", "Movable-Type Printing"], "category": "cross-source"},
+    {"question": "what biological structure and editing tool both involve DNA?", "relevant": ["CRISPR Gene Editing", "Mitochondria"], "category": "cross-source"},
+
+    {"question": "how does a jet engine produce thrust?", "relevant": [], "category": "negative"},
+    {"question": "what is the best smartphone to buy in 2026?", "relevant": [], "category": "negative"},
+    {"question": "how do I configure a Kubernetes cluster?", "relevant": [], "category": "negative"},
+    {"question": "what is the capital of Brazil?", "relevant": [], "category": "negative"},
+    {"question": "who won the football World Cup in 2018?", "relevant": [], "category": "negative"},
+    {"question": "how do I train for a marathon?", "relevant": [], "category": "negative"},
+    {"question": "what is the plot of Hamlet?", "relevant": [], "category": "negative"},
+    {"question": "how does Bluetooth pairing work?", "relevant": [], "category": "negative"},
+    {"question": "how do I change a flat car tyre?", "relevant": [], "category": "negative"},
+    {"question": "what is the population of Tokyo?", "relevant": [], "category": "negative"},
+    {"question": "how do I write a Python decorator?", "relevant": [], "category": "negative"},
+    {"question": "what time zone is New York in?", "relevant": [], "category": "negative"}
+  ]
+}
