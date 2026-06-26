@@ -37,7 +37,7 @@ talamus-mcp = "talamus.mcp_server:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-talamus = ["py.typed"]
+talamus = ["py.typed", "webapi/static/**/*"]
 
 [tool.unittest]
 start-dir = "tests"
