@@ -55,7 +55,13 @@ class WebApiTests(unittest.TestCase):
         node = data["nodes"][0]
         for key in ("id", "label", "x", "y", "r"):
             self.assertIn(key, node)
-        self.assertIsInstance(data["edges"], list)
+        self.assertGreaterEqual(len(data["edges"]), 1)
+
+    def test_root_serves_index_or_placeholder(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            resp = self._client(Path(tmp)).get("/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Talamus", resp.text)
 
 
 if __name__ == "__main__":

@@ -1,35 +1,33 @@
 """Server-side note-graph layout for the web graph hero.
 
-Reuses the deterministic pure-Python force layout (talamus.ui.physics) so the client
-only renders. Data comes from the graph service (the same seam the CLI/MCP use): note
-nodes + the relations between them."""
+Mirrors the Flet graph (ui/graph.py): note titles are the nodes, the typed relations
+from the ontology are the edges, laid out by the deterministic pure-Python force
+layout (talamus.ui.physics) so the client only renders + pans/zooms."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from talamus.services.graph import get_graph_snapshot
+from talamus.ontology import load_ontology
+from talamus.paths import TalamusPaths
+from talamus.store import load_notes
 from talamus.ui import physics
 
 
 def compute_note_graph(root: Path, width: float = 900.0, height: float = 600.0) -> dict:
-    result = get_graph_snapshot(root)
-    snapshot = result.data
-    if snapshot is None:
-        return {"nodes": [], "edges": [], "width": width, "height": height}
-    note_ids = {node.id for node in snapshot.nodes if node.kind == "note"}
-    labels = {node.id: node.label for node in snapshot.nodes if node.kind == "note"}
+    paths = TalamusPaths(Path(root))
+    titles = [note.title for note in load_notes(paths)]
+    ontology = load_ontology(paths)
     edges = [
-        (edge.source, edge.target, edge.type)
-        for edge in snapshot.edges
-        if edge.source in note_ids and edge.target in note_ids
+        (str(edge["source"]), str(edge["target"]), str(edge.get("type", "related")))
+        for edge in ontology.get("edges", [])
     ]
-    layout = physics.build_layout(sorted(note_ids), edges, width=width, height=height)
+    layout = physics.build_layout(titles, edges, width=width, height=height)
     physics.settle(layout)
     nodes = [
         {
             "id": node_id,
-            "label": labels.get(node_id, node_id),
+            "label": node_id,
             "x": round(node.x, 1),
             "y": round(node.y, 1),
             "r": round(layout.radius(node_id), 1),
