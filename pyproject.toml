@@ -26,7 +26,7 @@ bench = [
     "mem0ai>=0.1",
 ]
 docs = ["mkdocs-material>=9"]
-ui = ["flet>=0.24"]
+ui = ["flet>=0.24", "fastapi>=0.110", "uvicorn>=0.29", "pywebview>=5.0"]
 pdf = ["pypdf>=4"]
 
 [project.scripts]
