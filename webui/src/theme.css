@@ -11,3 +11,16 @@ body { margin: 0; background: var(--bg); color: var(--text);
   font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; }
 h2 { font-weight: 500; }
 button { font-family: inherit; }
+
+/* Reusable interactive controls (real :hover needs CSS; light transitions only) */
+.btn {
+  font: inherit; font-size: 13px; padding: 7px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  cursor: pointer; transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:disabled { opacity: 0.45; cursor: default; border-color: var(--border); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #7E6DFF; border-color: #7E6DFF; }
+.btn-ghost { background: transparent; color: var(--muted); }
+.btn-ghost:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); }

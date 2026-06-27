@@ -1,9 +1,10 @@
 import { useState, ReactNode } from "react";
 
 const NAV = [
-  { id: "home", label: "Home", icon: "⌂" },
-  { id: "graph", label: "Graph", icon: "✸" },
-  { id: "library", label: "Library", icon: "▤" },
+  { id: "home", label: "Home", icon: "⌂", tip: "Home — readiness & command center" },
+  { id: "graph", label: "Graph", icon: "✸", tip: "Graph — the living constellation of notes" },
+  { id: "library", label: "Library", icon: "▤", tip: "Library — browse every note" },
+  { id: "review", label: "Review", icon: "✓", tip: "Review — approve or reject proposed changes" },
 ];
 
 export function Shell({
@@ -44,6 +45,7 @@ export function Shell({
             key={n.id}
             onClick={() => open(n.id)}
             aria-label={n.label}
+            title={n.tip}
             style={{
               width: 40,
               height: 40,
