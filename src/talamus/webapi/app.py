@@ -10,9 +10,14 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+from talamus.adapters.llm import LLMProvider, build_provider
+from talamus.config import load_or_default
+from talamus.errors import EngineNotFound
+from talamus.paths import TalamusPaths
 from talamus.services.ask import ask_brain
 from talamus.services.brains import list_brains
 from talamus.services.diagnostics import inspect_diagnostics
+from talamus.services.ingestion import ingest_raw_text, preview_ingest, run_ingest
 from talamus.services.library import list_library_notes
 from talamus.services.ontology import (
     apply_ontology_candidate,
@@ -27,10 +32,21 @@ from talamus.services.review import (
     list_review_items,
     reject_review_item,
 )
+from talamus.services.scan import preview_scan, run_scan
 from talamus.webapi.graph_layout import compute_note_graph
 
 _STATIC = Path(__file__).parent / "static"
 _PLACEHOLDER = "<!doctype html><title>Talamus</title><h1>Talamus web workbench</h1>"
+_NO_ENGINE = {
+    "success": False,
+    "code": "import_no_engine",
+    "message": "No engine connected — run `talamus setup` to connect one before importing.",
+}
+
+
+def _provider(root: Path) -> LLMProvider:
+    config = load_or_default(TalamusPaths(root).config_path)
+    return build_provider(config.llm_provider, config.llm_model)
 
 
 def create_app(root: Path) -> FastAPI:
@@ -79,6 +95,52 @@ def create_app(root: Path) -> FastAPI:
     @app.get("/api/brains")
     def brains() -> dict:
         return list_brains().to_dict()
+
+    @app.post("/api/import/preview")
+    def import_preview(payload: dict | None = None) -> dict:
+        target = str((payload or {}).get("target", ""))
+        return preview_ingest(root, target).to_dict()
+
+    @app.post("/api/import/run")
+    def import_run(payload: dict | None = None) -> dict:
+        data = payload or {}
+        target = str(data.get("target", ""))
+        confirmed = bool(data.get("confirmed", False))
+        try:
+            provider = _provider(root)
+        except EngineNotFound:
+            return _NO_ENGINE
+        return run_ingest(root, target, provider, confirmed=confirmed).to_dict()
+
+    @app.post("/api/import/text")
+    def import_text(payload: dict | None = None) -> dict:
+        text = str((payload or {}).get("text", ""))
+        if not text.strip():
+            return {"success": False, "code": "import_empty", "message": "Paste some text first."}
+        try:
+            provider = _provider(root)
+        except EngineNotFound:
+            return _NO_ENGINE
+        return ingest_raw_text(root, text, provider).to_dict()
+
+    @app.post("/api/scan/preview")
+    def scan_preview_endpoint(payload: dict | None = None) -> dict:
+        target = str((payload or {}).get("target", ""))
+        return preview_scan(root, target).to_dict()
+
+    @app.post("/api/scan/run")
+    def scan_run_endpoint(payload: dict | None = None) -> dict:
+        data = payload or {}
+        target = str(data.get("target", ""))
+        confirmed = bool(data.get("confirmed", False))
+        allow_secrets = bool(data.get("allow_secrets", False))
+        return run_scan(
+            root,
+            target,
+            lambda: _provider(root),
+            confirmed=confirmed,
+            allow_secrets=allow_secrets,
+        ).to_dict()
 
     @app.get("/api/ontology/status")
     def ontology_status() -> dict:

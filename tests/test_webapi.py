@@ -269,6 +269,61 @@ class WebApiTests(unittest.TestCase):
         self.assertEqual(data["brains"][0]["name"], "alpha")
         self.assertIn("brains", data)
 
+    def test_import_preview_estimates_a_file(self) -> None:
+        from talamus.config import TalamusConfig, save_config
+        from talamus.demo import create_demo_brain
+        from talamus.paths import TalamusPaths
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            save_config(TalamusPaths(root).config_path, TalamusConfig.default())
+            source = root / "import_me.md"
+            source.write_text("# Topic\n" + ("some prose about retrieval. " * 40), encoding="utf-8")
+            resp = self._client(root).post("/api/import/preview", json={"target": str(source)})
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertTrue(body["success"])
+        self.assertEqual(body["code"], "ingest_preview_ready")
+        for key in ("chunks", "est_llm_calls", "est_input_tokens", "requires_confirmation"):
+            self.assertIn(key, body["data"])
+
+    def test_scan_preview_lists_files(self) -> None:
+        from talamus.config import TalamusConfig, save_config
+        from talamus.demo import create_demo_brain
+        from talamus.paths import TalamusPaths
+
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as src:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            save_config(TalamusPaths(root).config_path, TalamusConfig.default())
+            (Path(src) / "a.md").write_text("# A\n" + ("text " * 50), encoding="utf-8")
+            (Path(src) / "b.txt").write_text("hello " * 40, encoding="utf-8")
+            resp = self._client(root).post("/api/scan/preview", json={"target": src})
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertTrue(body["success"])
+        self.assertEqual(body["code"], "scan_preview_ready")
+        self.assertGreaterEqual(body["data"]["files"], 2)
+
+    def test_scan_run_requires_confirmation(self) -> None:
+        from talamus.config import TalamusConfig, save_config
+        from talamus.demo import create_demo_brain
+        from talamus.paths import TalamusPaths
+
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as src:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            save_config(TalamusPaths(root).config_path, TalamusConfig.default())
+            (Path(src) / "a.md").write_text("# A\n" + ("text " * 50), encoding="utf-8")
+            resp = self._client(root).post(
+                "/api/scan/run", json={"target": src, "confirmed": False}
+            )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertTrue(body["success"])
+        self.assertEqual(body["code"], "scan_confirmation_required")
+
     def test_root_serves_index_or_placeholder(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             resp = self._client(Path(tmp)).get("/")
