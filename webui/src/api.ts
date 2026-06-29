@@ -38,6 +38,28 @@ export type ReviewItem = {
   detail: Record<string, unknown>;
 };
 
+export type OntologyStatus = {
+  schema_id: string;
+  version: number;
+  types: Record<string, number>;
+  coverage: { edges?: number; non_related?: number; non_related_share?: number };
+};
+
+export type OntologyType = {
+  id: string;
+  name: string;
+  definition: string;
+  inverse: string;
+  surfaces: string[];
+  examples: string[];
+  support: number;
+  distinct_notes: number;
+  confidence: number;
+  status: string;
+  valid_from: string;
+  valid_to: string;
+};
+
 export type AskSource = { title: string; summary: string };
 
 export type AskResult = {
@@ -80,4 +102,11 @@ export const api = {
   rejectReview: (id: string, reason = "") =>
     post<ServiceResult<ReviewItem>>(`/api/review/${encodeURIComponent(id)}/reject`, { reason }),
   ask: (question: string) => post<ServiceResult<AskResult>>("/api/ask", { question }),
+  ontologyStatus: () => get<ServiceResult<OntologyStatus>>("/api/ontology/status"),
+  ontologyTypes: (status = "candidate") =>
+    get<ServiceResult<OntologyType[]>>(`/api/ontology/types?status=${encodeURIComponent(status)}`),
+  promoteOntology: (id: string) =>
+    post<ServiceResult<unknown>>(`/api/ontology/${encodeURIComponent(id)}/promote`),
+  rejectOntology: (id: string, reason = "") =>
+    post<ServiceResult<unknown>>(`/api/ontology/${encodeURIComponent(id)}/reject`, { reason }),
 };
