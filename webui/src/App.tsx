@@ -8,6 +8,7 @@ import { Graph } from "./views/Graph";
 import { Library } from "./views/Library";
 import { Ontology } from "./views/Ontology";
 import { Review } from "./views/Review";
+import { Brains } from "./views/Brains";
 import { System } from "./views/System";
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
         library: <Library />,
         ontology: <Ontology />,
         review: <Review onOpenNote={setNote} />,
+        brains: <Brains />,
         system: <System />,
       }}
       inspector={note ? <Inspector title={note} onClose={() => setNote(null)} /> : null}

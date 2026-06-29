@@ -7,6 +7,7 @@ const NAV = [
   { id: "library", label: "Library", icon: "▤", tip: "Library — browse every note" },
   { id: "ontology", label: "Ontology", icon: "❖", tip: "Ontology — the schema that emerges from your notes" },
   { id: "review", label: "Review", icon: "✓", tip: "Review — approve or reject proposed changes" },
+  { id: "brains", label: "Brains", icon: "⊞", tip: "Brains — the registry of local brains & scope" },
   { id: "system", label: "System", icon: "⊙", tip: "System — health, providers & diagnostics" },
 ];
 

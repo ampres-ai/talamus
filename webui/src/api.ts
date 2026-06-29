@@ -38,6 +38,31 @@ export type ReviewItem = {
   detail: Record<string, unknown>;
 };
 
+export type BrainItem = {
+  id: string;
+  name: string;
+  path: string;
+  type: string;
+  federated: boolean;
+  sensitive: boolean;
+  selected: boolean;
+  exists: boolean;
+  notes: number;
+  created_at: string;
+  updated_at: string;
+  last_accessed_at: string;
+  project: Record<string, unknown> | null;
+};
+
+export type UnregisteredBrain = { name: string; path: string; register_command: string };
+
+export type BrainList = {
+  registry_path: string;
+  selected: string;
+  brains: BrainItem[];
+  unregistered: UnregisteredBrain[];
+};
+
 export type DiagnosticCheck = {
   check_id: string;
   label: string;
@@ -132,6 +157,7 @@ export const api = {
     post<ServiceResult<ReviewItem>>(`/api/review/${encodeURIComponent(id)}/reject`, { reason }),
   ask: (question: string) => post<ServiceResult<AskResult>>("/api/ask", { question }),
   diagnostics: () => get<ServiceResult<Diagnostics>>("/api/diagnostics"),
+  brains: () => get<ServiceResult<BrainList>>("/api/brains"),
   ontologyStatus: () => get<ServiceResult<OntologyStatus>>("/api/ontology/status"),
   ontologyTypes: (status = "candidate") =>
     get<ServiceResult<OntologyType[]>>(`/api/ontology/types?status=${encodeURIComponent(status)}`),
