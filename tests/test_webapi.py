@@ -324,6 +324,54 @@ class WebApiTests(unittest.TestCase):
         self.assertTrue(body["success"])
         self.assertEqual(body["code"], "scan_confirmation_required")
 
+    def test_active_endpoint_reports_current_brain(self) -> None:
+        from talamus.config import TalamusConfig, save_config
+        from talamus.demo import create_demo_brain
+        from talamus.paths import TalamusPaths
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            save_config(TalamusPaths(root).config_path, TalamusConfig.default())
+            resp = self._client(root).get("/api/active")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertTrue(body["success"])
+        self.assertTrue(body["data"]["initialized"])
+        self.assertEqual(body["data"]["notes"], 3)
+
+    def test_set_active_switches_to_another_brain(self) -> None:
+        import os
+        from unittest.mock import patch
+
+        from talamus.config import TalamusConfig, save_config
+        from talamus.demo import create_demo_brain
+        from talamus.paths import TalamusPaths
+
+        with (
+            tempfile.TemporaryDirectory() as home,
+            tempfile.TemporaryDirectory() as a,
+            tempfile.TemporaryDirectory() as b,
+        ):
+            for d in (a, b):
+                create_demo_brain(TalamusPaths(Path(d)))
+                save_config(TalamusPaths(Path(d)).config_path, TalamusConfig.default())
+            client = self._client(Path(a))  # workbench launched against brain A
+            with patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                switched = client.post("/api/active", json={"path": b}).json()
+                now = client.get("/api/active").json()
+        self.assertTrue(switched["success"])
+        self.assertEqual(switched["code"], "brain_activated")
+        self.assertEqual(Path(now["data"]["path"]), Path(b).resolve())  # root really moved
+
+    def test_set_active_rejects_a_non_brain_folder(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as empty:
+            resp = self._client(Path(tmp)).post("/api/active", json={"path": empty})
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertFalse(body["success"])
+        self.assertEqual(body["code"], "brain_not_initialized")
+
     def test_root_serves_index_or_placeholder(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             resp = self._client(Path(tmp)).get("/")

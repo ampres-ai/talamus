@@ -14,6 +14,7 @@ from talamus.adapters.llm import LLMProvider, build_provider
 from talamus.config import load_or_default
 from talamus.errors import EngineNotFound
 from talamus.paths import TalamusPaths
+from talamus.registry import load_registry, register_brain, select_brain
 from talamus.services.ask import ask_brain
 from talamus.services.brains import list_brains
 from talamus.services.diagnostics import inspect_diagnostics
@@ -47,6 +48,25 @@ _NO_ENGINE = {
 def _provider(root: Path) -> LLMProvider:
     config = load_or_default(TalamusPaths(root).config_path)
     return build_provider(config.llm_provider, config.llm_model)
+
+
+def _brain_summary(root_path: Path) -> dict:
+    """A light description of the active brain (the one the workbench is pointed at)."""
+    name = root_path.name
+    try:
+        info = load_registry().by_path(root_path)
+        if info is not None:
+            name = info.name
+    except (OSError, TypeError, ValueError, AttributeError):
+        pass
+    notes_dir = root_path / "notes"
+    notes = sum(1 for p in notes_dir.glob("*.md") if p.is_file()) if notes_dir.is_dir() else 0
+    return {
+        "path": str(root_path),
+        "name": name,
+        "initialized": (root_path / "talamus.json").is_file(),
+        "notes": notes,
+    }
 
 
 def create_app(root: Path) -> FastAPI:
@@ -95,6 +115,57 @@ def create_app(root: Path) -> FastAPI:
     @app.get("/api/brains")
     def brains() -> dict:
         return list_brains().to_dict()
+
+    @app.get("/api/active")
+    def active() -> dict:
+        return {"success": True, "code": "brain_active", "data": _brain_summary(root)}
+
+    @app.post("/api/active")
+    def set_active(payload: dict | None = None) -> dict:
+        """Switch the brain the workbench is pointed at (Obsidian-style vault switch).
+        Accepts a registered brain {name} or an arbitrary {path}; persists the choice
+        in the registry. Every view re-reads the new brain on the next request."""
+        nonlocal root
+        data = payload or {}
+        name = str(data.get("name", "")).strip()
+        path = str(data.get("path", "")).strip()
+        if name:
+            info = load_registry().by_name(name)
+            if info is None:
+                return {
+                    "success": False,
+                    "code": "brain_not_found",
+                    "message": f"No brain named {name!r}",
+                }
+            target = Path(info.root())
+            select_brain(name)
+        elif path:
+            target = Path(path).expanduser()
+            if not target.is_dir():
+                return {
+                    "success": False,
+                    "code": "brain_path_missing",
+                    "message": f"Folder not found: {path}",
+                }
+            if not (target / "talamus.json").is_file():
+                return {
+                    "success": False,
+                    "code": "brain_not_initialized",
+                    "message": "No talamus.json here. Run `talamus init` in that folder first.",
+                }
+            target = target.resolve()
+            registry = load_registry()
+            existing = registry.by_path(target)
+            chosen = existing if existing is not None else register_brain(target)
+            select_brain(chosen.name)
+        else:
+            return {
+                "success": False,
+                "code": "brain_target_missing",
+                "message": "Provide a brain name or a folder path.",
+            }
+        root = target
+        return {"success": True, "code": "brain_activated", "data": _brain_summary(root)}
 
     @app.post("/api/import/preview")
     def import_preview(payload: dict | None = None) -> dict:
