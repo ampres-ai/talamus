@@ -200,6 +200,8 @@ export const api = {
   getActive: () => get<ServiceResult<ActiveBrain>>("/api/active"),
   setActiveBrain: (body: { name?: string; path?: string }) =>
     post<ServiceResult<ActiveBrain>>("/api/active", body),
+  initBrain: (body: { path: string; name?: string }) =>
+    post<ServiceResult<BrainItem>>("/api/brains/init", body),
   ontologyStatus: () => get<ServiceResult<OntologyStatus>>("/api/ontology/status"),
   ontologyTypes: (status = "candidate") =>
     get<ServiceResult<OntologyType[]>>(`/api/ontology/types?status=${encodeURIComponent(status)}`),

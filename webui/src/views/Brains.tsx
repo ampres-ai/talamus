@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActiveBrain, api, BrainItem, BrainList, ServiceResult } from "../api";
+import { ActiveBrain, api, BrainItem, BrainList } from "../api";
 
 const panel: React.CSSProperties = {
   background: "var(--surface)",
@@ -8,7 +8,9 @@ const panel: React.CSSProperties = {
   padding: 16,
 };
 
-type Switch = (body: { name?: string; path?: string }) => Promise<ServiceResult<ActiveBrain>>;
+type Outcome = { success: boolean; message?: string };
+type Switch = (body: { name?: string; path?: string }) => Promise<Outcome>;
+type Init = (body: { path: string; name?: string }) => Promise<Outcome>;
 
 function Section({ children }: { children: React.ReactNode }) {
   return (
@@ -106,7 +108,15 @@ function BrainCard({
   );
 }
 
-export function Brains({ active, onSwitch }: { active?: ActiveBrain | null; onSwitch?: Switch }) {
+export function Brains({
+  active,
+  onSwitch,
+  onInit,
+}: {
+  active?: ActiveBrain | null;
+  onSwitch?: Switch;
+  onInit?: Init;
+}) {
   const [d, setD] = useState<BrainList | null>(null);
   const [folder, setFolder] = useState("");
   const [busy, setBusy] = useState(false);
@@ -119,16 +129,24 @@ export function Brains({ active, onSwitch }: { active?: ActiveBrain | null; onSw
       .catch(() => setD(null));
   }, []);
 
-  const doSwitch = async (body: { name?: string; path?: string }) => {
-    if (!onSwitch || busy) return;
+  // On success the shell remounts (App bumps its key), so this component unmounts —
+  // the finally still clears busy defensively if anything goes wrong.
+  const runAction = async (fn: () => Promise<Outcome> | undefined) => {
+    if (busy) return;
     setBusy(true);
     setError(null);
-    const r = await onSwitch(body); // on success the page reloads
-    if (!r.success) {
-      setError(r.message ?? "Could not switch brain.");
+    try {
+      const r = await fn();
+      if (r && !r.success) setError(r.message ?? "Could not switch brain.");
+    } catch {
+      setError("Could not reach the brain.");
+    } finally {
       setBusy(false);
     }
   };
+
+  const doSwitch = (body: { name?: string; path?: string }) => runAction(() => onSwitch?.(body));
+  const doInit = () => folder.trim() && runAction(() => onInit?.({ path: folder.trim() }));
 
   if (!d) return <div style={{ color: "var(--muted)" }}>Loading…</div>;
 
@@ -142,36 +160,39 @@ export function Brains({ active, onSwitch }: { active?: ActiveBrain | null; onSw
       </div>
 
       <div style={{ ...panel, borderLeft: "3px solid var(--accent)" }}>
-        <Section>Open a folder</Section>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input
-            value={folder}
-            onChange={(e) => setFolder(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && folder.trim() && doSwitch({ path: folder.trim() })}
-            placeholder="Path to a Talamus brain folder…"
-            style={{
-              flex: 1,
-              minWidth: 240,
-              background: "var(--bg)",
-              color: "var(--text)",
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              padding: "9px 12px",
-              font: "inherit",
-              fontSize: 13,
-            }}
-          />
+        <Section>Open or create a brain</Section>
+        <input
+          value={folder}
+          onChange={(e) => setFolder(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && doSwitch({ path: folder.trim() })}
+          placeholder="Path to a brain folder…"
+          style={{
+            width: "100%",
+            background: "var(--bg)",
+            color: "var(--text)",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            padding: "9px 12px",
+            font: "inherit",
+            fontSize: 13,
+          }}
+        />
+        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
           <button
             className="btn btn-primary"
-            onClick={() => folder.trim() && doSwitch({ path: folder.trim() })}
+            onClick={() => doSwitch({ path: folder.trim() })}
             disabled={busy || !folder.trim()}
           >
-            {busy ? "Opening…" : "Open"}
+            {busy ? "Working…" : "Open"}
+          </button>
+          <button className="btn" onClick={doInit} disabled={busy || !folder.trim()}>
+            Create new brain here
           </button>
         </div>
         <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 8 }}>
-          The folder must already be a brain (have <code>talamus.json</code>). New folders are
-          remembered in the registry.
+          <strong>Open</strong> an existing brain (it has <code>talamus.json</code>), or{" "}
+          <strong>create</strong> a new one in any folder — it’s scaffolded and remembered in the
+          registry.
         </div>
         {error ? (
           <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 8 }}>{error}</div>
