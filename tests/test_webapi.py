@@ -244,6 +244,31 @@ class WebApiTests(unittest.TestCase):
         self.assertEqual("diagnostics_not_initialized", body["code"])
         self.assertIn("checks", body["data"])
 
+    def test_brains_endpoint_lists_registry(self) -> None:
+        import os
+        from unittest.mock import patch
+
+        from talamus.registry import register_brain, select_brain
+
+        with (
+            tempfile.TemporaryDirectory() as home,
+            tempfile.TemporaryDirectory() as brain_root,
+        ):
+            root = Path(brain_root)
+            (root / "talamus.json").write_text("{}", encoding="utf-8")
+            (root / "notes").mkdir()
+            register_brain(root, name="alpha", home=Path(home))
+            select_brain("alpha", home=Path(home))
+            with patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                resp = self._client(Path(brain_root)).get("/api/brains")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertTrue(body["success"])
+        data = body["data"]
+        self.assertEqual(data["selected"], "alpha")
+        self.assertEqual(data["brains"][0]["name"], "alpha")
+        self.assertIn("brains", data)
+
     def test_root_serves_index_or_placeholder(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             resp = self._client(Path(tmp)).get("/")

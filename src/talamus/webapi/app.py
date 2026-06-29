@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from talamus.services.ask import ask_brain
+from talamus.services.brains import list_brains
 from talamus.services.diagnostics import inspect_diagnostics
 from talamus.services.library import list_library_notes
 from talamus.services.ontology import (
@@ -74,6 +75,10 @@ def create_app(root: Path) -> FastAPI:
     @app.get("/api/diagnostics")
     def diagnostics() -> dict:
         return inspect_diagnostics(root).to_dict()
+
+    @app.get("/api/brains")
+    def brains() -> dict:
+        return list_brains().to_dict()
 
     @app.get("/api/ontology/status")
     def ontology_status() -> dict:
