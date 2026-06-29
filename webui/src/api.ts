@@ -38,6 +38,35 @@ export type ReviewItem = {
   detail: Record<string, unknown>;
 };
 
+export type DiagnosticCheck = {
+  check_id: string;
+  label: string;
+  status: string;
+  message: string;
+  detail: string;
+  action: string;
+};
+
+export type Diagnostics = {
+  root: string;
+  ok: boolean;
+  storage_provider: string;
+  pdf_converter: string;
+  ocr_provider: string;
+  ocr_model: string;
+  llm_provider: string;
+  llm_status: string;
+  graph_provider: string;
+  search_provider: string;
+  notes: number;
+  index_backend: string;
+  index_bytes: number;
+  overview_built: boolean;
+  overview_domains: number;
+  cache_current: boolean;
+  checks: DiagnosticCheck[];
+};
+
 export type OntologyStatus = {
   schema_id: string;
   version: number;
@@ -102,6 +131,7 @@ export const api = {
   rejectReview: (id: string, reason = "") =>
     post<ServiceResult<ReviewItem>>(`/api/review/${encodeURIComponent(id)}/reject`, { reason }),
   ask: (question: string) => post<ServiceResult<AskResult>>("/api/ask", { question }),
+  diagnostics: () => get<ServiceResult<Diagnostics>>("/api/diagnostics"),
   ontologyStatus: () => get<ServiceResult<OntologyStatus>>("/api/ontology/status"),
   ontologyTypes: (status = "candidate") =>
     get<ServiceResult<OntologyType[]>>(`/api/ontology/types?status=${encodeURIComponent(status)}`),
