@@ -21,6 +21,8 @@ export type GraphData = {
   edges: GraphEdge[];
   width: number;
   height: number;
+  total?: number;
+  shown?: number;
 };
 
 export type NoteSummary = { title: string; summary: string };
