@@ -1,15 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { api, GraphData, GraphNode } from "../api";
 
-// linear blend between two hex colors (0..1)
-function mix(a: [number, number, number], b: [number, number, number], t: number): string {
-  const r = Math.round(a[0] + (b[0] - a[0]) * t);
-  const g = Math.round(a[1] + (b[1] - a[1]) * t);
-  const bl = Math.round(a[2] + (b[2] - a[2]) * t);
-  return `rgb(${r},${g},${bl})`;
-}
-const LOW: [number, number, number] = [110, 91, 255]; // indigo
-const HIGH: [number, number, number] = [150, 200, 255]; // toward cyan-white
+const LOW: [number, number, number] = [120, 104, 235]; // indigo (leaves)
+const HIGH: [number, number, number] = [176, 214, 255]; // bright (hubs)
+const mix = (a: number[], b: number[], t: number) =>
+  `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 
 export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -31,8 +27,29 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
     const canvas = ref.current;
     if (!canvas || !g || g.nodes.length === 0) return;
     const ctx = canvas.getContext("2d")!;
-    const byId = new Map(g.nodes.map((n) => [n.id, n]));
+
     const maxDeg = Math.max(1, ...g.nodes.map((n) => n.degree));
+    // derived radius for a stronger hub/leaf hierarchy
+    const radius = new Map<string, number>();
+    const ratio = new Map<string, number>();
+    const order = new Map<string, number>(); // entrance stagger order (hubs first)
+    [...g.nodes]
+      .sort((a, b) => b.degree - a.degree)
+      .forEach((n, i) => order.set(n.id, i));
+    for (const n of g.nodes) {
+      const r = n.degree / maxDeg;
+      ratio.set(n.id, r);
+      radius.set(n.id, 3 + 10 * Math.pow(r, 0.7));
+    }
+    const labelSet = new Set(
+      [...g.nodes].sort((a, b) => b.degree - a.degree).slice(0, 11).map((n) => n.id),
+    );
+    const byId = new Map(g.nodes.map((n) => [n.id, n]));
+    const adj = new Map<string, Set<string>>();
+    for (const e of g.edges) {
+      (adj.get(e.source) ?? adj.set(e.source, new Set()).get(e.source)!).add(e.target);
+      (adj.get(e.target) ?? adj.set(e.target, new Set()).get(e.target)!).add(e.source);
+    }
 
     const xs = g.nodes.map((n) => n.x);
     const ys = g.nodes.map((n) => n.y);
@@ -40,36 +57,35 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
     const minY = Math.min(...ys), maxY = Math.max(...ys);
     const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
 
-    const adj = new Map<string, Set<string>>();
-    for (const e of g.edges) {
-      (adj.get(e.source) ?? adj.set(e.source, new Set()).get(e.source)!).add(e.target);
-      (adj.get(e.target) ?? adj.set(e.target, new Set()).get(e.target)!).add(e.source);
-    }
-
     let W = 0, H = 0, dpr = 1;
-    const sizeToBox = () => {
-      dpr = window.devicePixelRatio || 1;
-      W = canvas.clientWidth;
-      H = canvas.clientHeight;
-      canvas.width = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
-    };
     const tx = () => W / 2 - cx * view.current.scale + view.current.ox;
     const ty = () => H / 2 - cy * view.current.scale + view.current.oy;
-
     const fit = () => {
-      const pad = 80;
-      const bw = Math.max(1, maxX - minX), bh = Math.max(1, maxY - minY);
-      const s = Math.min((W - pad) / bw, (H - pad) / bh, 1.6);
-      view.current.scale = Math.max(0.3, Math.min(2.4, s || 1));
+      const pad = 110;
+      const s = Math.min((W - pad) / Math.max(1, maxX - minX), (H - pad) / Math.max(1, maxY - minY), 1.5);
+      view.current.scale = Math.max(0.25, Math.min(2, s || 1));
       view.current.ox = 0;
       view.current.oy = 0;
       view.current.fitted = true;
     };
 
-    const draw = () => {
-      sizeToBox();
+    let start = 0;
+    let raf = 0;
+
+    const draw = (now?: number) => {
+      dpr = window.devicePixelRatio || 1;
+      W = canvas.clientWidth;
+      H = canvas.clientHeight;
+      if (canvas.width !== Math.round(W * dpr)) canvas.width = Math.round(W * dpr);
+      if (canvas.height !== Math.round(H * dpr)) canvas.height = Math.round(H * dpr);
       if (!view.current.fitted) fit();
+
+      const elapsed = now && start ? now - start : 9999;
+      const intro = (id: string) => {
+        const delay = (order.get(id) ?? 0) * 5;
+        return easeOut(Math.max(0, Math.min(1, (elapsed - delay) / 420)));
+      };
+
       const { scale } = view.current;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
@@ -78,57 +94,81 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
       ctx.scale(scale, scale);
 
       const hot = hover.current;
-      const near = hot ? adj.get(hot) ?? new Set<string>() : null;
+      const near = hot ? (adj.get(hot) ?? new Set<string>()) : null;
 
-      // edges
+      // edges — faint, slightly curved threads (not a spiderweb)
       for (const e of g.edges) {
-        const a = byId.get(e.source);
-        const b = byId.get(e.target);
+        const a = byId.get(e.source), b = byId.get(e.target);
         if (!a || !b) continue;
+        const p = Math.min(intro(e.source), intro(e.target));
+        if (p <= 0.01) continue;
         const lit = hot && (e.source === hot || e.target === hot);
-        if (lit) ctx.strokeStyle = "rgba(79,195,247,0.7)";
-        else if (e.typed) ctx.strokeStyle = "rgba(125,150,255,0.34)";
-        else ctx.strokeStyle = hot ? "rgba(110,91,255,0.07)" : "rgba(110,91,255,0.16)";
-        ctx.lineWidth = (lit ? 1.8 : e.typed ? 1.2 : 0.8) / scale;
+        const faded = hot && !lit;
+        ctx.globalAlpha = p * (faded ? 0.25 : 1);
+        ctx.strokeStyle = lit
+          ? "rgba(79,195,247,0.75)"
+          : e.typed
+            ? "rgba(135,160,255,0.3)"
+            : "rgba(120,104,235,0.13)";
+        ctx.lineWidth = (lit ? 1.8 : e.typed ? 1.1 : 0.7) / scale;
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        const nx = -(b.y - a.y), ny = b.x - a.x;
+        const len = Math.hypot(nx, ny) || 1;
+        const k = Math.hypot(b.x - a.x, b.y - a.y) * 0.07;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
+        ctx.quadraticCurveTo(mx + (nx / len) * k, my + (ny / len) * k, b.x, b.y);
         ctx.stroke();
       }
+      ctx.globalAlpha = 1;
 
       // nodes
       for (const n of g.nodes) {
-        const t = n.degree / maxDeg;
-        const dim = hot && n.id !== hot && !near?.has(n.id);
-        const core = mix(LOW, HIGH, t);
-        // soft Aurora halo
-        ctx.fillStyle = `rgba(110,91,255,${dim ? 0.04 : 0.1})`;
+        const t = ratio.get(n.id)!;
+        const r = radius.get(n.id)! * (0.3 + 0.7 * intro(n.id));
+        const isHot = n.id === hot;
+        const dim = hot && !isHot && !near?.has(n.id);
+        ctx.globalAlpha = intro(n.id) * (dim ? 0.32 : 1);
+        // subtle glow only on hubs / hovered (no blanket neon)
+        if (isHot || t > 0.45) {
+          ctx.fillStyle = isHot ? "rgba(79,195,247,0.22)" : "rgba(120,104,235,0.16)";
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r + (isHot ? 10 : 6), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = isHot ? "#CDEBFF" : mix(LOW, HIGH, t);
         ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r + 9, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = `rgba(110,91,255,${dim ? 0.08 : 0.2})`;
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r + 4, 0, Math.PI * 2);
-        ctx.fill();
-        // core
-        ctx.globalAlpha = dim ? 0.45 : 1;
-        ctx.fillStyle = n.id === hot ? "#BFE6FF" : core;
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
         ctx.fill();
         ctx.lineWidth = 1 / scale;
-        ctx.strokeStyle = "rgba(255,255,255,0.2)";
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
         ctx.stroke();
         ctx.globalAlpha = 1;
-        // label — only where it won't clutter (important nodes, hovered, or zoomed in)
-        const show = n.id === hot || (!dim && (t > 0.34 || scale > 1.1));
-        if (show) {
-          ctx.fillStyle = n.id === hot ? "#EAF6FF" : "rgba(201,210,224,0.85)";
-          ctx.font = `${n.id === hot ? 600 : 400} ${12 / scale}px ui-sans-serif, system-ui, sans-serif`;
-          ctx.fillText(n.label, n.x + n.r + 5 / scale, n.y + 4 / scale);
-        }
+      }
+
+      // labels — only hubs + hovered (+ its neighbours), with a legibility backing
+      ctx.textBaseline = "middle";
+      for (const n of g.nodes) {
+        const show = n.id === hot || near?.has(n.id) || (!hot && labelSet.has(n.id));
+        if (!show || intro(n.id) < 0.6) continue;
+        const r = radius.get(n.id)!;
+        const fs = (n.id === hot ? 13 : 12) / scale;
+        ctx.font = `${n.id === hot ? 600 : 500} ${fs}px ui-sans-serif, system-ui, sans-serif`;
+        const tw = ctx.measureText(n.label).width;
+        const lx = n.x + r + 6 / scale, ly = n.y;
+        ctx.fillStyle = "rgba(10,14,20,0.66)";
+        ctx.beginPath();
+        const pad = 4 / scale;
+        ctx.roundRect(lx - pad, ly - fs / 2 - pad, tw + pad * 2, fs + pad * 2, 4 / scale);
+        ctx.fill();
+        ctx.fillStyle = n.id === hot ? "#EAF6FF" : "rgba(213,221,235,0.92)";
+        ctx.fillText(n.label, lx, ly + 0.5 / scale);
       }
       ctx.restore();
+
+      if (elapsed < 9999 && elapsed < (g.nodes.length * 5 + 480)) {
+        raf = requestAnimationFrame(draw);
+      }
     };
 
     const worldAt = (sx: number, sy: number) => ({
@@ -140,9 +180,8 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
       let best: GraphNode | null = null;
       let bestD = Infinity;
       for (const n of g.nodes) {
-        const dx = w.x - n.x, dy = w.y - n.y;
-        const d = dx * dx + dy * dy;
-        const rr = (n.r + 7) * (n.r + 7);
+        const rr = (radius.get(n.id)! + 6) ** 2;
+        const d = (w.x - n.x) ** 2 + (w.y - n.y) ** 2;
         if (d <= rr && d < bestD) {
           best = n;
           bestD = d;
@@ -151,13 +190,14 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
       return best;
     };
 
-    draw();
+    start = performance.now();
+    draw(start);
     const ro = new ResizeObserver(() => draw());
     ro.observe(canvas);
 
     const onWheel = (ev: WheelEvent) => {
       ev.preventDefault();
-      view.current.scale = Math.min(3.5, Math.max(0.2, view.current.scale * (ev.deltaY < 0 ? 1.12 : 0.89)));
+      view.current.scale = Math.min(3.5, Math.max(0.18, view.current.scale * (ev.deltaY < 0 ? 1.12 : 0.89)));
       draw();
     };
     const onDown = (ev: MouseEvent) => {
@@ -169,8 +209,7 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
     const onMove = (ev: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       if (view.current.drag) {
-        const dx = ev.clientX - view.current.px;
-        const dy = ev.clientY - view.current.py;
+        const dx = ev.clientX - view.current.px, dy = ev.clientY - view.current.py;
         view.current.moved += Math.abs(dx) + Math.abs(dy);
         view.current.ox += dx;
         view.current.oy += dy;
@@ -179,8 +218,7 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
         draw();
         return;
       }
-      const h = hit(ev.clientX - rect.left, ev.clientY - rect.top);
-      const id = h?.id ?? null;
+      const id = hit(ev.clientX - rect.left, ev.clientY - rect.top)?.id ?? null;
       if (id !== hover.current) {
         hover.current = id;
         canvas.style.cursor = id ? "pointer" : "grab";
@@ -201,6 +239,7 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
+      cancelAnimationFrame(raf);
       ro.disconnect();
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("mousedown", onDown);
@@ -217,13 +256,12 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
         <h2 style={{ margin: 0 }}>Graph</h2>
         {g ? (
           <span style={{ color: "var(--muted)", fontSize: 13 }} className="tnum">
-            {capped ? `top ${g.shown} of ${g.total} notes` : `${g.nodes.length} notes`}
+            {capped ? `${g.shown} most-connected of ${g.total} notes` : `${g.nodes.length} notes`}
           </span>
         ) : null}
       </div>
       <div style={{ color: "var(--muted)", fontSize: 13, margin: "6px 0 12px" }}>
-        The living constellation — drag to pan, wheel to zoom, hover to trace links, click a node
-        to open it.
+        Hubs are larger and brighter — hover a note to trace its links, click to open it.
       </div>
       <div
         style={{
@@ -234,37 +272,19 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
           borderRadius: "var(--r-lg)",
           overflow: "hidden",
           background:
-            "radial-gradient(900px 520px at 50% 18%, rgba(110,91,255,0.08), transparent 60%), #0A0E14",
+            "radial-gradient(820px 520px at 50% 30%, rgba(110,91,255,0.07), transparent 60%), #0A0E14",
         }}
       >
-        <canvas
-          ref={ref}
-          style={{ width: "100%", height: "100%", display: "block", cursor: "grab" }}
-        />
+        <canvas ref={ref} style={{ width: "100%", height: "100%", display: "block", cursor: "grab" }} />
         {loading ? (
           <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "grid",
-              placeItems: "center",
-              color: "var(--muted)",
-              fontSize: 13,
-            }}
+            style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "var(--muted)", fontSize: 13 }}
           >
             Mapping the constellation…
           </div>
         ) : g && g.nodes.length === 0 ? (
           <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "grid",
-              placeItems: "center",
-              color: "var(--faint)",
-              fontSize: 13,
-              textAlign: "center",
-            }}
+            style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "var(--faint)", fontSize: 13 }}
           >
             No notes yet — import a document to start the constellation.
           </div>
