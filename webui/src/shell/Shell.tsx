@@ -1,18 +1,34 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, ComponentType } from "react";
+import {
+  House,
+  Sparkle,
+  Graph as GraphIc,
+  Books,
+  DownloadSimple,
+  TreeStructure,
+  CheckCircle,
+  Brain,
+  Gauge,
+  Stack,
+  CaretDown,
+  X as XIcon,
+  type IconProps,
+} from "@phosphor-icons/react";
 import { ActiveBrain } from "../api";
 
-type Nav = { id: string; label: string; icon: string; tip: string; desc: string };
+type Icon = ComponentType<IconProps>;
+type Nav = { id: string; label: string; Icon: Icon };
 
 const NAV: Nav[] = [
-  { id: "home", label: "Home", icon: "⌂", tip: "Home", desc: "Readiness & command center" },
-  { id: "ask", label: "Ask", icon: "✦", tip: "Ask", desc: "Question your memory, get a cited answer" },
-  { id: "graph", label: "Graph", icon: "✸", tip: "Graph", desc: "The living constellation of notes" },
-  { id: "library", label: "Library", icon: "▤", tip: "Library", desc: "Browse every note" },
-  { id: "import", label: "Import", icon: "⊕", tip: "Import", desc: "Bring documents into your brain" },
-  { id: "ontology", label: "Ontology", icon: "❖", tip: "Ontology", desc: "The schema that emerges from your notes" },
-  { id: "review", label: "Review", icon: "✓", tip: "Review", desc: "Approve or reject proposed changes" },
-  { id: "brains", label: "Brains", icon: "⊞", tip: "Brains", desc: "Switch the active brain" },
-  { id: "system", label: "System", icon: "⊙", tip: "System", desc: "Health, providers & diagnostics" },
+  { id: "home", label: "Home", Icon: House },
+  { id: "ask", label: "Ask", Icon: Sparkle },
+  { id: "graph", label: "Graph", Icon: GraphIc },
+  { id: "library", label: "Library", Icon: Books },
+  { id: "import", label: "Import", Icon: DownloadSimple },
+  { id: "ontology", label: "Ontology", Icon: TreeStructure },
+  { id: "review", label: "Review", Icon: CheckCircle },
+  { id: "brains", label: "Brains", Icon: Brain },
+  { id: "system", label: "System", Icon: Gauge },
 ];
 
 const meta = (id: string) => NAV.find((n) => n.id === id);
@@ -43,58 +59,30 @@ export function Shell({
     });
   };
 
-  const current = meta(active);
-
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: inspector ? "54px 248px 1fr 360px" : "54px 248px 1fr",
-        height: "100vh",
+        gridTemplateColumns: inspector ? "232px 1fr 360px" : "232px 1fr",
+        gridTemplateRows: "minmax(0, 1fr)",
+        height: "100dvh",
         overflow: "hidden",
       }}
     >
-      {/* activity bar */}
-      <nav
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 6,
-          paddingTop: 12,
-          borderRight: "1px solid var(--border)",
-          background: "rgba(10,14,20,0.5)",
-        }}
-      >
-        {NAV.map((n) => (
-          <button
-            key={n.id}
-            className={"act" + (active === n.id ? " on" : "")}
-            onClick={() => open(n.id)}
-            aria-label={n.label}
-            title={n.tip}
-          >
-            {n.icon}
-          </button>
-        ))}
-      </nav>
-
-      {/* side panel */}
+      {/* nav sidebar */}
       <aside
         style={{
           display: "flex",
           flexDirection: "column",
+          minHeight: 0,
           borderRight: "1px solid var(--border)",
-          background: "var(--surface)",
-          minWidth: 0,
+          background: "rgba(13,17,25,0.6)",
         }}
       >
-        <div style={{ padding: "16px 16px 12px" }}>
-          <div style={{ fontWeight: 600, fontSize: 18, letterSpacing: "-0.02em" }}>
-            Talamus<span style={{ color: "var(--accent)" }}>●</span>
-          </div>
+        <div style={{ padding: "16px 16px 12px", fontWeight: 600, fontSize: 18, letterSpacing: "-0.02em" }}>
+          Talamus<span style={{ color: "var(--accent)" }}>●</span>
         </div>
-        <div style={{ padding: "0 12px 12px" }}>
+        <div style={{ padding: "0 12px 10px" }}>
           <button
             onClick={() => open("brains")}
             title="Switch brain"
@@ -110,8 +98,8 @@ export function Shell({
               color: "var(--text)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ color: "var(--accent-2)", fontSize: 12 }}>⊞</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Stack size={15} color="var(--accent-2)" />
               <span
                 style={{
                   fontWeight: 600,
@@ -123,42 +111,37 @@ export function Shell({
               >
                 {activeBrain ? activeBrain.name : "—"}
               </span>
-              <span style={{ marginLeft: "auto", color: "var(--faint)", fontSize: 11 }}>▾</span>
+              <CaretDown size={12} color="var(--faint)" style={{ marginLeft: "auto" }} />
             </div>
             <div style={{ color: "var(--muted)", fontSize: 11, marginTop: 3 }}>
               {activeBrain
                 ? activeBrain.initialized
-                  ? `${activeBrain.notes} notes · switch brain`
-                  : "not initialized · switch brain"
-                : "switch brain"}
+                  ? `${activeBrain.notes} notes`
+                  : "not initialized"
+                : "no brain"}
             </div>
           </button>
         </div>
-        {current ? (
-          <div
-            style={{
-              padding: "14px 16px",
-              borderTop: "1px solid var(--border)",
-              flex: 1,
-              minHeight: 0,
-              overflow: "auto",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <span style={{ color: "var(--accent-1)", fontSize: 16 }}>{current.icon}</span>
-              <span style={{ fontWeight: 600, fontSize: 15 }}>{current.label}</span>
-            </div>
-            <div style={{ color: "var(--muted)", fontSize: 12.5, marginTop: 6, lineHeight: 1.5 }}>
-              {current.desc}
-            </div>
-          </div>
-        ) : (
-          <div style={{ flex: 1 }} />
-        )}
+        <nav style={{ padding: "6px 12px", display: "grid", gap: 2, overflow: "auto", minHeight: 0 }}>
+          {NAV.map((n) => (
+            <button
+              key={n.id}
+              className={"nav-item" + (active === n.id ? " on" : "")}
+              onClick={() => open(n.id)}
+              aria-current={active === n.id ? "page" : undefined}
+            >
+              <span className="ic">
+                <n.Icon size={18} weight={active === n.id ? "fill" : "regular"} />
+              </span>
+              {n.label}
+            </button>
+          ))}
+        </nav>
+        <div style={{ flex: 1 }} />
       </aside>
 
       {/* editor area */}
-      <main style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <main style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
         <div
           style={{
             display: "flex",
@@ -168,49 +151,49 @@ export function Shell({
             borderBottom: "1px solid var(--border)",
             overflowX: "auto",
             background: "rgba(10,14,20,0.35)",
+            flexShrink: 0,
           }}
         >
           {openTabs.map((id) => {
             const m = meta(id);
+            const I = m?.Icon;
             return (
               <div
                 key={id}
                 className={"tab" + (active === id ? " on" : "")}
                 onClick={() => setActive(id)}
               >
-                <span style={{ color: active === id ? "var(--accent-1)" : "inherit", fontSize: 13 }}>
-                  {m?.icon}
-                </span>
+                {I ? (
+                  <span style={{ display: "inline-flex", color: active === id ? "var(--accent-1)" : "inherit" }}>
+                    <I size={15} weight={active === id ? "fill" : "regular"} />
+                  </span>
+                ) : null}
                 <span className="lbl">{m?.label ?? id}</span>
                 <span className="x" onClick={(e) => close(id, e)} title="Close" aria-label="Close tab">
-                  ✕
+                  <XIcon size={12} />
                 </span>
               </div>
             );
           })}
         </div>
-        <div style={{ flex: 1, overflow: "auto", padding: 22, minHeight: 0 }}>
+
+        <div
+          key={active}
+          className="view"
+          style={{ flex: 1, overflow: "auto", minHeight: 0, padding: 22 }}
+        >
           {active && views[active] ? (
             views[active]
           ) : (
-            <div
-              style={{
-                height: "100%",
-                display: "grid",
-                placeItems: "center",
-                color: "var(--faint)",
-                textAlign: "center",
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 30, color: "var(--accent)", opacity: 0.5 }}>●</div>
-                <div style={{ marginTop: 10, fontSize: 14 }}>
-                  Talamus — pick a view from the left rail.
-                </div>
+            <div style={{ height: "100%", display: "grid", placeItems: "center", color: "var(--faint)" }}>
+              <div style={{ textAlign: "center" }}>
+                <Sparkle size={30} color="var(--accent)" weight="duotone" />
+                <div style={{ marginTop: 10, fontSize: 14 }}>Pick a view from the left.</div>
               </div>
             </div>
           )}
         </div>
+
         <footer
           style={{
             display: "flex",
@@ -221,11 +204,12 @@ export function Shell({
             color: "var(--muted)",
             fontSize: 11.5,
             background: "rgba(10,14,20,0.5)",
+            flexShrink: 0,
           }}
         >
           <span style={{ color: "var(--ok)" }}>● local-first</span>
           {activeBrain ? <span>{activeBrain.name}</span> : null}
-          {current ? <span style={{ color: "var(--faint)" }}>{current.label}</span> : null}
+          {meta(active) ? <span style={{ color: "var(--faint)" }}>{meta(active)!.label}</span> : null}
           <span style={{ marginLeft: "auto", color: "var(--faint)" }}>token cost visible</span>
         </footer>
       </main>
@@ -236,6 +220,7 @@ export function Shell({
             background: "var(--surface)",
             borderLeft: "1px solid var(--border)",
             overflow: "hidden",
+            minHeight: 0,
           }}
         >
           {inspector}

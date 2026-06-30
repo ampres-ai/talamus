@@ -59,7 +59,7 @@ export default function App() {
         home: <Home />,
         ask: <Ask onOpenNote={setNote} />,
         graph: <Graph onOpenNote={setNote} />,
-        library: <Library />,
+        library: <Library onOpenNote={setNote} />,
         import: <Import />,
         ontology: <Ontology />,
         review: <Review onOpenNote={setNote} />,
