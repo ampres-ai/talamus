@@ -416,13 +416,27 @@ the hero**. The Flet UI (codex's work) keeps running and its views/copy/tests ar
 server-side. Spec + plan:
 [dev/specs/2026-06-26-p7-web-workbench-design.md](specs/2026-06-26-p7-web-workbench-design.md),
 [dev/plans/2026-06-26-p7-web-workbench-skeleton.md](plans/2026-06-26-p7-web-workbench-skeleton.md).
-**Walking skeleton DONE** (branch `feat/p7-web-workbench`): FastAPI bridge
-(`/api/readiness|library|graph`) + Aurora shell (activity-bar + tabs + sidebar +
-status-bar) + Home + Graph-hero on the real brain — verified in-browser (renders AND
-**screenshots cleanly**, unlike Flutter-web), gate green (563). **Remaining
-sub-projects:** port the other views with the new IA + explainability;
-multi-tab/command-palette; onboarding (novice↔expert); packaging + Flet retirement at
-parity. The "Anchor design" below stays the IA/copy reference for the port.
+**Workbench BUILT + on `main`** (2026-06-27, gate green 585). Beyond the skeleton:
+- **All 9 views ported** to React on the services seam — Home, Ask (cited answer),
+  Graph, Library, Import (preview→consent→run, cost gate), Ontology Lab, Review
+  (the verifiability moat), Brains, System — plus a right-side Inspector (note body,
+  metadata behind a "details" toggle).
+- **Brain switching like Obsidian vaults**: `GET/POST /api/active` swaps the active
+  brain at runtime (mutable root); the sidebar shows the current vault; Brains lets you
+  open a registered brain, open any folder, or **create a new brain** (`/api/brains/init`).
+- **Aesthetic + IDE pass** (used the design skills): Aurora design-token system, VS Code
+  chrome (activity-bar indicator, closeable tabs, labeled nav with **@phosphor-icons**),
+  real scrolling, staggered CSS motion, focus rings.
+- **Graph**: organic radial **d3-force** constellation (client-side layout; the bridge
+  ships nodes+edges only, fast at any size), degree-based hierarchy, faint curved edges,
+  hub labels, hover-trace, fit-to-view.
+
+**Remaining (deferred — not blocking the return to engine/product):** Flet retirement at
+parity; packaging (PyInstaller desktop-icon binary); a bundled offline display font;
+command palette (⌘K); WCAG audit; surfacing the as-of/verify moats in the new views.
+**2026-06-27 decision (Giovanni): the UI is in good shape — focus returns to the ENGINE
+and the real product** (P2 engines/tiering, P3 ingestion quality+lightness, the invisible
+moats). The "Anchor design" below stays the IA/copy reference.
 
 **Anchor design:** build on **codex's UI-completion design**
 (`.superpowers/specs/2026-06-15-talamus-ui-completion-design.md`) — a strong,
