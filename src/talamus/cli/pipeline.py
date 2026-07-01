@@ -17,6 +17,7 @@ from talamus.paths import TalamusPaths
 from talamus.registry import (
     load_registry,
 )
+from talamus.routing import StaticRouter
 from talamus.scan import (
     execute_plan,
     format_plan,
@@ -133,7 +134,9 @@ def _run_ingest_job(root: Path, record: JobRecord) -> int:
     if not file_path.is_file():
         print(f"error: source file missing: {file_path}", file=sys.stderr)
         return 1
-    report = ingest_large(TalamusPaths(root), file_path, _provider_for(root), job_record=record)
+    report = ingest_large(
+        TalamusPaths(root), file_path, StaticRouter(_provider_for(root)), job_record=record
+    )
     print(
         f"ingest {report['state']}: {report['notes_written']} notes from "
         f"{report['chunks']} chunks (job {report['job_id']})"

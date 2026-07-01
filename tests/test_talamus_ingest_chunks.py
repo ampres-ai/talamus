@@ -22,6 +22,7 @@ from talamus.ingest import (
 )
 from talamus.jobs import JobStore
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.store import load_notes
 from tests.support import FakeLLMProvider
 
@@ -97,7 +98,7 @@ class ChunkedIngestTests(unittest.TestCase):
             book = self._book(tmp)
             expected = len(split_chunks(book.read_text(encoding="utf-8")))
             llm = FakeLLMProvider([_note_json(f"Nota {i}") for i in range(expected)])
-            result = ingest_file(paths, book, llm)
+            result = ingest_file(paths, book, StaticRouter(llm))
             self.assertEqual(result["chunks"], expected)
             self.assertEqual(result["state"], "completed")
             self.assertEqual(result["notes_written"], expected)
@@ -126,14 +127,14 @@ class ChunkedIngestTests(unittest.TestCase):
                     return _note_json(f"Nota {self.calls}")
 
             with self.assertRaises(EngineFailed):
-                ingest_file(paths, book, FlakyProvider())
+                ingest_file(paths, book, StaticRouter(FlakyProvider()))
             store = JobStore(paths)
             failed = [r for r in store.list() if r.kind == "ingest"][0]
             self.assertEqual(failed.state, "failed")
             self.assertEqual(failed.progress["done"], 2)  # progress survived the crash
 
             resumed = FakeLLMProvider([_note_json(f"Ripresa {i}") for i in range(len(chunks))])
-            report = ingest_large(paths, book, resumed, job_record=failed)
+            report = ingest_large(paths, book, StaticRouter(resumed), job_record=failed)
             self.assertEqual(report["state"], "completed")
             self.assertEqual(len(resumed.prompts), len(chunks) - 2)  # done chunks NOT redone
 
@@ -147,7 +148,7 @@ class ChunkedIngestTests(unittest.TestCase):
             # chunk 1: bad first answer, good on retry -> rescued, NOT failed
             responses = [_note_json("Nota 0"), "NON-JSON", _note_json("Riprovata")]
             responses += [_note_json(f"Nota {i}") for i in range(2, expected)]
-            result = ingest_file(paths, book, FakeLLMProvider(responses))
+            result = ingest_file(paths, book, StaticRouter(FakeLLMProvider(responses)))
             self.assertEqual(result["state"], "completed")
             self.assertEqual(result["failed"], [])
             self.assertEqual(result["notes_written"], expected)
@@ -160,7 +161,7 @@ class ChunkedIngestTests(unittest.TestCase):
             # chunk 1: bad twice (first try + retry) -> recorded, book continues
             responses = [_note_json("Nota 0"), "NON-JSON", "ANCORA-NON-JSON"]
             responses += [_note_json(f"Nota {i}") for i in range(2, expected)]
-            result = ingest_file(paths, book, FakeLLMProvider(responses))
+            result = ingest_file(paths, book, StaticRouter(FakeLLMProvider(responses)))
             self.assertEqual(result["state"], "completed")
             self.assertEqual(len(result["failed"]), 1)
             self.assertEqual(result["failed"][0]["chunk"], 1)
@@ -175,7 +176,7 @@ class ChunkedIngestTests(unittest.TestCase):
             book_pdfish = book.rename(Path(tmp) / "libro.txt")
             expected = len(split_chunks(book_pdfish.read_text(encoding="utf-8")))
             llm = FakeLLMProvider([_note_json(f"Nota {i}") for i in range(expected)])
-            ingest_file(paths, book_pdfish, llm)
+            ingest_file(paths, book_pdfish, StaticRouter(llm))
             chunk_files = sorted(paths.raw.glob("libro-c*"))
             self.assertEqual(len(chunk_files), expected)
             self.assertTrue(all(f.suffix == ".md" for f in chunk_files))

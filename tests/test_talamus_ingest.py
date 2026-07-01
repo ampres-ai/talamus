@@ -5,6 +5,7 @@ from pathlib import Path
 
 from talamus.ingest import ingest_dir, ingest_file, ingest_text, remember_session
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.store import load_notes
 from tests.support import FakeLLMProvider
 
@@ -34,7 +35,7 @@ class IngestTests(unittest.TestCase):
                 ]
             )
 
-            result = ingest_file(paths, source, llm)
+            result = ingest_file(paths, source, StaticRouter(llm))
 
             self.assertEqual(1, result["notes_written"])
             self.assertEqual(1, len(load_notes(paths)))
@@ -85,7 +86,7 @@ class IngestTests(unittest.TestCase):
                 ]
             )
 
-            ingest_file(paths, source, llm)
+            ingest_file(paths, source, StaticRouter(llm))
 
             rag_md = (paths.notes / "RAG.md").read_text(encoding="utf-8")
             self.assertIn("[[Vector Store", rag_md)
@@ -115,7 +116,7 @@ class IngestTests(unittest.TestCase):
                 ]
             )
 
-            result = remember_session(paths, transcript, diff, llm)
+            result = remember_session(paths, transcript, diff, StaticRouter(llm))
 
             self.assertFalse(result["skipped"])
             self.assertEqual(1, result["notes_written"])
@@ -142,7 +143,7 @@ class IngestTests(unittest.TestCase):
                 ]
             )
 
-            result = ingest_text(paths, "Abbiamo deciso X perche Y.", llm)
+            result = ingest_text(paths, "Abbiamo deciso X perche Y.", StaticRouter(llm))
 
             self.assertEqual(1, result["notes_written"])
             self.assertEqual(1, len(load_notes(paths)))
@@ -172,7 +173,7 @@ class IngestTests(unittest.TestCase):
                 ]
             )
 
-            result = ingest_dir(paths, src, llm)
+            result = ingest_dir(paths, src, StaticRouter(llm))
 
             self.assertEqual(1, result["files"])
             self.assertEqual(1, result["notes_written"])
@@ -184,7 +185,7 @@ class IngestTests(unittest.TestCase):
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
 
-            result = remember_session(paths, "ok grazie", "", FakeLLMProvider([]))
+            result = remember_session(paths, "ok grazie", "", StaticRouter(FakeLLMProvider([])))
 
             self.assertTrue(result["skipped"])
             self.assertEqual(0, result["notes_written"])

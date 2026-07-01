@@ -3,6 +3,7 @@ import unittest
 
 from talamus.extract import extract_notes
 from talamus.normalize import normalize_text
+from talamus.routing import StaticRouter, TaskClass
 from tests.support import FakeLLMProvider
 
 
@@ -30,7 +31,7 @@ class ExtractTests(unittest.TestCase):
         )
         llm = FakeLLMProvider([llm_json])
 
-        notes = extract_notes(self._package(), llm)
+        notes = extract_notes(self._package(), StaticRouter(llm))
 
         self.assertEqual(1, len(notes))
         note = notes[0]
@@ -42,9 +43,20 @@ class ExtractTests(unittest.TestCase):
     def test_ignores_text_around_json_array(self) -> None:
         llm = FakeLLMProvider(['Ecco le note:\n[{"title":"X","supported_claims":["y"]}]\nfine'])
 
-        notes = extract_notes(self._package(), llm)
+        notes = extract_notes(self._package(), StaticRouter(llm))
 
         self.assertEqual("X", notes[0].title)
+
+    def test_extract_notes_resolves_the_extraction_task_from_the_router(self) -> None:
+        requested: list[TaskClass] = []
+
+        class RecordingRouter:
+            def for_task(self, task: TaskClass):
+                requested.append(task)
+                return FakeLLMProvider(['[{"title": "X", "summary": "s"}]'])
+
+        extract_notes(self._package(), RecordingRouter())
+        self.assertEqual(requested, [TaskClass.EXTRACTION])
 
 
 if __name__ == "__main__":

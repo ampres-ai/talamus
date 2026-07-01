@@ -29,6 +29,7 @@ class GardenEnrichTests(unittest.TestCase):
         from talamus.ingest import ingest_path
         from talamus.ontology_lab import induce_candidates
         from talamus.paths import TalamusPaths
+        from talamus.routing import StaticRouter
         from talamus.store import load_notes
 
         provider = build_provider(
@@ -39,7 +40,7 @@ class GardenEnrichTests(unittest.TestCase):
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
 
-            ingest_path(paths, str(_GARDEN), provider)
+            ingest_path(paths, str(_GARDEN), StaticRouter(provider))
             notes = load_notes(paths)
             self.assertTrue(notes, "extraction produced no notes")
             # extraction built a graph: at least one note carries typed relations

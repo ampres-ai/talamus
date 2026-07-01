@@ -10,6 +10,7 @@ from pathlib import Path
 
 from talamus.models import CanonicalNote, SourceRef
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.store import rebuild_indexes, write_note
 from tests.support import FakeLLMProvider
 
@@ -45,7 +46,7 @@ class HostileExtractionTests(unittest.TestCase):
         package = normalize_text("raw/a.md", "Testo sorgente.")
         for raw in HOSTILE:
             try:
-                notes = extract_notes(package, FakeLLMProvider([raw]))
+                notes = extract_notes(package, StaticRouter(FakeLLMProvider([raw])))
             except ValueError:
                 continue  # clean, actionable error: acceptable
             self.assertEqual(notes, [])  # otherwise empty list: NEVER corrupt notes

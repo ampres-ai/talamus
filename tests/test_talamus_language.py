@@ -14,6 +14,7 @@ from pathlib import Path
 from talamus.config import TalamusConfig, load_config, resolve_language, save_config
 from talamus.extract import extract_notes
 from talamus.normalize import normalize_text
+from talamus.routing import StaticRouter
 from tests.support import FakeLLMProvider
 
 
@@ -48,7 +49,7 @@ class ExtractionPromptTests(unittest.TestCase):
     def _prompt_for(self, language: str) -> str:
         llm = FakeLLMProvider(["[]"])
         package = normalize_text("raw/a.md", "Some source text about retrieval.")
-        extract_notes(package, llm, language=language)
+        extract_notes(package, StaticRouter(llm), language=language)
         return llm.prompts[0]
 
     def test_instructions_are_english_with_output_language(self) -> None:

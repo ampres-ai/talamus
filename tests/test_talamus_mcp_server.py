@@ -110,12 +110,13 @@ class CaptureLogTests(unittest.TestCase):
 
         from talamus.ingest import remember_session
         from talamus.paths import TalamusPaths
+        from talamus.routing import StaticRouter
         from tests.support import FakeLLMProvider
 
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
-            result = remember_session(paths, "ok grazie", "", FakeLLMProvider([]))
+            result = remember_session(paths, "ok grazie", "", StaticRouter(FakeLLMProvider([])))
             self.assertTrue(result["skipped"])
             self.assertIn("gate", result["reason"])
             log = (paths.logs / "capture.log").read_text(encoding="utf-8")
@@ -135,7 +136,9 @@ class CaptureLogTests(unittest.TestCase):
                     }
                 ]
             )
-            remember_session(paths, transcript, "diff --git a/x b/x\n+1", FakeLLMProvider([note]))
+            remember_session(
+                paths, transcript, "diff --git a/x b/x\n+1", StaticRouter(FakeLLMProvider([note]))
+            )
             log = (paths.logs / "capture.log").read_text(encoding="utf-8")
             self.assertIn("capture", log)
 

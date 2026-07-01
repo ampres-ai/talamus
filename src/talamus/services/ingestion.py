@@ -8,6 +8,7 @@ from talamus.adapters.llm import LLMProvider
 from talamus.errors import TalamusError
 from talamus.ingest import estimate_chunks, ingest_path, ingest_text
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.services.result import ServiceResult
 from talamus.sources import is_url
 
@@ -79,7 +80,9 @@ def run_ingest(
                 code="ingest_confirmation_required",
                 data=preview,
             )
-        result = cast(dict[str, Any], ingest_path(TalamusPaths(root_path), target, llm))
+        result = cast(
+            dict[str, Any], ingest_path(TalamusPaths(root_path), target, StaticRouter(llm))
+        )
     except TalamusError as exc:
         return ServiceResult(
             success=False,
@@ -107,7 +110,10 @@ def ingest_raw_text(
     MCP remember/ingest_text tools."""
     root_path = Path(root)
     try:
-        result = cast(dict[str, Any], ingest_text(TalamusPaths(root_path), text, llm, name=name))
+        result = cast(
+            dict[str, Any],
+            ingest_text(TalamusPaths(root_path), text, StaticRouter(llm), name=name),
+        )
     except TalamusError as exc:
         return ServiceResult(success=False, message=f"Ingest failed: {exc}", code="ingest_failed")
     except (OSError, TypeError, ValueError, AttributeError) as exc:

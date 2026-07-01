@@ -5,6 +5,7 @@ from pathlib import Path
 
 from talamus.ingest import ingest_dir
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from tests.support import FakeLLMProvider
 
 
@@ -31,10 +32,10 @@ class BulkTests(unittest.TestCase):
             (Path(src) / "a.md").write_text("# A\nalpha", encoding="utf-8")
             (Path(src) / "b.md").write_text("# B\nbeta", encoding="utf-8")
 
-            first = ingest_dir(paths, Path(src), _llm(2))
+            first = ingest_dir(paths, Path(src), StaticRouter(_llm(2)))
             self.assertEqual(2, first["files"])
 
-            second = ingest_dir(paths, Path(src), _llm(2))
+            second = ingest_dir(paths, Path(src), StaticRouter(_llm(2)))
             self.assertEqual(0, second["files"])
             self.assertEqual(2, second["skipped"])
 

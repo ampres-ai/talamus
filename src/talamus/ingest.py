@@ -5,12 +5,12 @@ import json
 import shutil
 from pathlib import Path
 
-from talamus.adapters.llm import LLMProvider
 from talamus.errors import EngineFailed, EngineNotFound
 from talamus.extract import extract_notes
 from talamus.linking import NoteRegistry
 from talamus.normalize import NormalizedPackage, normalize_text
 from talamus.paths import TalamusPaths
+from talamus.routing import Router, TaskClass
 from talamus.session import normalize_session, session_worth_remembering
 from talamus.sources import extract_text, is_url, read_url
 from talamus.store import load_notes, rebuild_indexes, render_note_markdown, write_note_json
@@ -35,9 +35,10 @@ def _save_hashes(paths: TalamusPaths, hashes: dict) -> None:
 def _compile_package(
     paths: TalamusPaths,
     package: NormalizedPackage,
-    llm: LLMProvider,
+    router: Router,
     preamble: str = "",
     reindex: bool = True,
+    task: TaskClass = TaskClass.EXTRACTION,
 ) -> int:
     """Extract the notes from the package, write them, resolve wikilinks in batch,
     and rebuild the indexes."""
@@ -49,7 +50,12 @@ def _compile_package(
     normalized_rel = normalized_file.relative_to(paths.project_root).as_posix()
     language = resolve_language(load_or_default(paths.config_path))
     notes = extract_notes(
-        package, llm, normalized_path=normalized_rel, preamble=preamble, language=language
+        package,
+        router,
+        normalized_path=normalized_rel,
+        preamble=preamble,
+        language=language,
+        task=task,
     )
     # Phase 1: persist every canonical object, so the whole batch is known.
     for note in notes:
@@ -104,7 +110,7 @@ def estimate_chunks(paths: TalamusPaths, file_path: Path) -> dict:
     }
 
 
-def ingest_file(paths: TalamusPaths, file_path: Path, llm: LLMProvider) -> dict:
+def ingest_file(paths: TalamusPaths, file_path: Path, router: Router) -> dict:
     paths.ensure_directories()
     text = extract_text(file_path)
     raw_copy = paths.raw / file_path.name
@@ -112,15 +118,15 @@ def ingest_file(paths: TalamusPaths, file_path: Path, llm: LLMProvider) -> dict:
     chunks = split_chunks(text)
     if len(chunks) == 1:
         package = normalize_text(raw_copy.as_posix(), text)
-        written = _compile_package(paths, package, llm)
+        written = _compile_package(paths, package, router)
         hashes = _load_hashes(paths)
         hashes[file_path.name] = _content_hash(text)
         _save_hashes(paths, hashes)
         return {"notes_written": written, "source": file_path.name}
-    return ingest_large(paths, file_path, llm)
+    return ingest_large(paths, file_path, router)
 
 
-def ingest_large(paths: TalamusPaths, file_path: Path, llm: LLMProvider, job_record=None) -> dict:
+def ingest_large(paths: TalamusPaths, file_path: Path, router: Router, job_record=None) -> dict:
     """Big-document ingest as a persistent, resumable job: one extraction call per
     chunk, progress saved after each — a 500-page book survives crashes and
     interruptions, and `talamus jobs resume` picks up exactly where it stopped."""
@@ -150,7 +156,7 @@ def ingest_large(paths: TalamusPaths, file_path: Path, llm: LLMProvider, job_rec
             try:
                 # no reindex per chunk: a book would do N rebuilds on a growing
                 # brain — rebuild ONCE at the end of the job (even on a crash)
-                notes_total += _compile_package(paths, package, llm, reindex=False)
+                notes_total += _compile_package(paths, package, router, reindex=False)
                 return
             except (EngineFailed, EngineNotFound):
                 raise  # engine down: the job stops resumably, the chunks are not burned
@@ -181,17 +187,17 @@ def ingest_large(paths: TalamusPaths, file_path: Path, llm: LLMProvider, job_rec
     }
 
 
-def ingest_url(paths: TalamusPaths, url: str, llm: LLMProvider) -> dict:
+def ingest_url(paths: TalamusPaths, url: str, router: Router) -> dict:
     paths.ensure_directories()
     text = read_url(url)
     raw_path = paths.raw / f"web-{_content_hash(text)[:8]}.md"
     raw_path.write_text(text, encoding="utf-8")
     package = normalize_text(raw_path.as_posix(), text)
-    written = _compile_package(paths, package, llm)
+    written = _compile_package(paths, package, router)
     return {"notes_written": written, "source": url}
 
 
-def ingest_dir(paths: TalamusPaths, directory: Path, llm: LLMProvider) -> dict:
+def ingest_dir(paths: TalamusPaths, directory: Path, router: Router) -> dict:
     """Ingest every supported file in a folder (recursive); skip unchanged ones.
 
     Files that can't be read or compiled are collected in ``failed`` (name + reason)
@@ -213,7 +219,7 @@ def ingest_dir(paths: TalamusPaths, directory: Path, llm: LLMProvider) -> dict:
             skipped += 1
             continue
         try:
-            written = ingest_file(paths, path, llm)
+            written = ingest_file(paths, path, router)
         except Exception as exc:  # extraction/compile failure — record and continue
             failed.append({"file": path.name, "error": str(exc)})
             continue
@@ -222,14 +228,14 @@ def ingest_dir(paths: TalamusPaths, directory: Path, llm: LLMProvider) -> dict:
     return {"files": files, "skipped": skipped, "notes_written": notes, "failed": failed}
 
 
-def ingest_path(paths: TalamusPaths, target: str, llm: LLMProvider) -> dict:
+def ingest_path(paths: TalamusPaths, target: str, router: Router) -> dict:
     """Ingest a file, a folder (recursively), or a URL."""
     if is_url(target):
-        return ingest_url(paths, target, llm)
+        return ingest_url(paths, target, router)
     path = Path(target)
     if path.is_dir():
-        return ingest_dir(paths, path, llm)
-    return ingest_file(paths, path, llm)
+        return ingest_dir(paths, path, router)
+    return ingest_file(paths, path, router)
 
 
 def _log_capture(paths: TalamusPaths, decision: str, detail: str) -> None:
@@ -243,7 +249,7 @@ def _log_capture(paths: TalamusPaths, decision: str, detail: str) -> None:
         handle.write(f"{stamp} {decision} {detail}\n")
 
 
-def remember_session(paths: TalamusPaths, transcript: str, diff: str, llm: LLMProvider) -> dict:
+def remember_session(paths: TalamusPaths, transcript: str, diff: str, router: Router) -> dict:
     """An agent session (transcript + diff) becomes notes, if it passes the gate."""
     paths.ensure_directories()
     if not session_worth_remembering(transcript, diff):
@@ -259,7 +265,7 @@ def remember_session(paths: TalamusPaths, transcript: str, diff: str, llm: LLMPr
         transcript + ("\n\n---\n\n" + diff if diff.strip() else ""), encoding="utf-8"
     )
     package = normalize_session(raw_path.as_posix(), transcript, diff)
-    written = _compile_package(paths, package, llm)
+    written = _compile_package(paths, package, router, task=TaskClass.SESSION_REMEMBER)
     _log_capture(paths, "capture", f"session-{digest}: {written} notes")
     return {"skipped": False, "notes_written": written}
 
@@ -267,7 +273,7 @@ def remember_session(paths: TalamusPaths, transcript: str, diff: str, llm: LLMPr
 def ingest_text(
     paths: TalamusPaths,
     text: str,
-    llm: LLMProvider,
+    router: Router,
     name: str = "insight",
     preamble: str = "",
 ) -> dict:
@@ -279,5 +285,5 @@ def ingest_text(
     raw_path = paths.raw / f"{name}-{digest}.md"
     raw_path.write_text(text, encoding="utf-8")
     package = normalize_text(raw_path.as_posix(), text)
-    written = _compile_package(paths, package, llm, preamble=preamble)
+    written = _compile_package(paths, package, router, preamble=preamble)
     return {"notes_written": written}

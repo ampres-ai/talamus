@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Protocol
 
 from talamus.adapters.llm import (
     ENGINE_LABELS,
@@ -38,6 +39,19 @@ class TaskClass(StrEnum):
 class TaskIntent:
     tier: str  # "economy" | "quality"
     effort: str  # "low" | "high"
+
+
+class Router(Protocol):
+    """The interface leaf functions depend on: resolve a TaskClass to a provider.
+
+    Both EngineRouter (real per-task tiering) and StaticRouter (one fixed engine)
+    satisfy it structurally, so a leaf annotated ``router: Router`` accepts either —
+    production code passes an EngineRouter, tests and single-engine callers a
+    StaticRouter, with no leaf-side change."""
+
+    label: str
+
+    def for_task(self, task: TaskClass) -> LLMProvider: ...
 
 
 DEFAULT_INTENTS: dict[TaskClass, TaskIntent] = {

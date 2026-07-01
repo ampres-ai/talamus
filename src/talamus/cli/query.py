@@ -18,6 +18,7 @@ from talamus.registry import (
     central_brain,
 )
 from talamus.relations import list_relations, prune_relations
+from talamus.routing import StaticRouter
 from talamus.scope import (
     default_scope,
     scoped_context_items,
@@ -143,7 +144,7 @@ def _cmd_remember(
 ) -> int:
     transcript = Path(transcript_file).read_text(encoding="utf-8")
     diff = Path(diff_file).read_text(encoding="utf-8") if diff_file else ""
-    result = remember_session(TalamusPaths(root), transcript, diff, llm)
+    result = remember_session(TalamusPaths(root), transcript, diff, StaticRouter(llm))
     if json_out:
         _print_json(result)
         return 0

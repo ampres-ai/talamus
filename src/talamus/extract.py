@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 
-from talamus.adapters.llm import LLMProvider
 from talamus.models import CanonicalNote, ProposedLink, Relation, SourceRef
 from talamus.normalize import NormalizedPackage, NormalizedSection
+from talamus.routing import Router, TaskClass
 
 # Instructions are ALWAYS English (cheap local models follow English best); the
 # user-facing prose comes out in {language}; the machine layer (canonical alias,
@@ -88,16 +88,20 @@ def _section_source(
 
 def extract_notes(
     package: NormalizedPackage,
-    llm: LLMProvider,
+    router: Router,
     normalized_path: str | None = None,
     preamble: str = "",
     language: str = "English",
+    task: TaskClass = TaskClass.EXTRACTION,
 ) -> list[CanonicalNote]:
     """Extract concept notes. ``preamble`` prepends extra instructions to the
     librarian prompt (e.g. the code-aware variant used by repo scans);
-    ``language`` is the user's reading language for the note prose."""
+    ``language`` is the user's reading language for the note prose. ``task`` lets
+    callers with a different intent than bulk extraction (e.g. remembering a single
+    agent session) request their own tier — see talamus.routing.TaskClass."""
     norm = normalized_path or package.raw_path
     text = "\n\n".join(f"# {s.title}\n{s.text}" for s in package.sections)
+    llm = router.for_task(task)
     raw = llm.complete(preamble + _PROMPT.format(text=text, language=language))
     candidates = _extract_json_array(raw)
     primary_section = package.sections[0]
