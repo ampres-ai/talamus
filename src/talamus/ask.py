@@ -4,13 +4,13 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from talamus.adapters.llm import LLMProvider
 from talamus.budget import context_budget, estimate_tokens, fit_to_budget
 from talamus.domains import load_overview, load_overview_tree
 from talamus.graph import load_graph, query_graph
 from talamus.naming import note_filename
 from talamus.ontology import load_ontology, neighbors
 from talamus.paths import TalamusPaths
+from talamus.routing import Router, TaskClass
 from talamus.search import BM25Index
 
 
@@ -110,7 +110,7 @@ QUESTION: {question}
 def _route_member_titles(
     paths: TalamusPaths,
     question: str,
-    llm: LLMProvider,
+    router: Router,
     trace: dict | None = None,
 ) -> list[str]:
     """Route via the domain overview and return the chosen domains' member titles
@@ -120,6 +120,7 @@ def _route_member_titles(
     overview = load_overview(paths)
     if not overview:
         return []
+    llm = router.for_task(TaskClass.ASK_ROUTING)
     tree = load_overview_tree(paths)
     if tree:
         # Fase R5: two-level routing — pick macro-areas first, then only their
@@ -197,17 +198,17 @@ def _select_bundle_titles(
 def _overview_bundle(
     paths: TalamusPaths,
     question: str,
-    llm: LLMProvider,
+    router: Router,
     limit: int = 8,
     trace: dict | None = None,
 ) -> ContextBundle:
-    titles = _route_member_titles(paths, question, llm, trace=trace)
+    titles = _route_member_titles(paths, question, router, trace=trace)
     if not titles:
         return ContextBundle(question=question, items=[])
     # RS3: the LLM acts as the embedding model — it translates the question into the
     # corpus vocabulary BEFORE selection. Measured on the book: ask hit 0.861 -> 0.972,
     # vague 0.50 -> 0.81, cross 0.50 -> 0.88. Costs one extra call per ask.
-    expanded = _expand_query(question, llm)
+    expanded = _expand_query(question, router)
     ranking_query = f"{question} {expanded}".strip() if expanded != question else question
     if trace is not None:
         trace["expanded_query"] = expanded
@@ -229,7 +230,8 @@ QUESTION: {question}
 """
 
 
-def _expand_query(question: str, llm: LLMProvider) -> str:
+def _expand_query(question: str, router: Router) -> str:
+    llm = router.for_task(TaskClass.QUERY_EXPANSION)
     return llm.complete(_EXPAND_PROMPT.format(question=question)).strip() or question
 
 
@@ -248,7 +250,7 @@ CONTEXT:
 def answer_question(
     paths: TalamusPaths,
     question: str,
-    llm: LLMProvider,
+    router: Router,
     extra_items: list[dict] | None = None,
     trace: dict | None = None,
 ) -> str:
@@ -256,7 +258,7 @@ def answer_question(
     context (real note contents with scope markers) before the budget cut.
     Pass a dict as ``trace`` to get the route explained (F3.10): domains, route,
     notes read, context tokens, whether fallbacks fired."""
-    bundle = _overview_bundle(paths, question, llm, trace=trace)
+    bundle = _overview_bundle(paths, question, router, trace=trace)
     route = "overview" if bundle.items else "none"
     if not bundle.items:
         graph = (
@@ -269,7 +271,7 @@ def answer_question(
         if bundle.items:
             route = "index"
         elif not extra_items:
-            bundle = build_context_bundle(paths, graph, search, _expand_query(question, llm))
+            bundle = build_context_bundle(paths, graph, search, _expand_query(question, router))
             if bundle.items:
                 route = "expansion"
     all_items = [*bundle.items, *(extra_items or [])]
@@ -278,11 +280,11 @@ def answer_question(
         trace["extra_items"] = len(extra_items or [])
     if not all_items:
         return "No context found in the brain for this question."
-    return answer_from_items(question, all_items, llm, trace=trace)
+    return answer_from_items(question, all_items, router, trace=trace)
 
 
 def answer_from_items(
-    question: str, all_items: list[dict], llm: LLMProvider, trace: dict | None = None
+    question: str, all_items: list[dict], router: Router, trace: dict | None = None
 ) -> str:
     """Budget the items, answer with citations, append the Sources legend."""
     items = fit_to_budget(all_items, context_budget())
@@ -292,6 +294,7 @@ def answer_from_items(
     context = "\n\n".join(
         f"[{idx}] {item['path']}\n{item['content']}" for idx, item in enumerate(items, start=1)
     )
+    llm = router.for_task(TaskClass.ASK_ANSWER)
     answer = llm.complete(_ANSWER_PROMPT.format(question=question, context=context)).strip()
     if not answer:
         return "The engine produced no answer. Try again or check the engine."

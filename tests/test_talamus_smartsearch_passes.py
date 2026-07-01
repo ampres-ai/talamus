@@ -4,6 +4,7 @@ from pathlib import Path
 
 from talamus.errors import EngineFailed
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.smartsearch import expand_query_multi
 
 
@@ -29,7 +30,7 @@ class ExpandMultiTests(unittest.TestCase):
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
             llm = _SeqLLM(["memory bits", "bits cost"])
-            out = expand_query_multi(paths, "quantization", llm, passes=2)
+            out = expand_query_multi(paths, "quantization", StaticRouter(llm), passes=2)
             self.assertEqual(llm.calls, 2)
             for term in ("memory", "bits", "cost", "quantization"):
                 self.assertIn(term, out)
@@ -40,7 +41,7 @@ class ExpandMultiTests(unittest.TestCase):
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
             llm = _SeqLLM(["memory bits"])
-            out = expand_query_multi(paths, "quantization", llm, passes=1)
+            out = expand_query_multi(paths, "quantization", StaticRouter(llm), passes=1)
             self.assertIn("quantization", out)
             self.assertIn("memory", out)
 
@@ -48,7 +49,7 @@ class ExpandMultiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
-            out = expand_query_multi(paths, "quantization", _DownLLM(), passes=2)
+            out = expand_query_multi(paths, "quantization", StaticRouter(_DownLLM()), passes=2)
             self.assertEqual(out, "quantization")  # never worse than the question
 
 

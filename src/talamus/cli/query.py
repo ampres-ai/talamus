@@ -40,6 +40,7 @@ def _cmd_ask(
 ) -> int:
     policy = policy or default_scope(root)
     trace: dict | None = {"scope": policy} if with_trace else None
+    router = StaticRouter(llm)  # CLI pins the one configured engine for every sub-call
     if as_of:
         when = parse_when(as_of)
         if trace is not None and when.warning:
@@ -62,7 +63,7 @@ def _cmd_ask(
         if not items:
             print(f"no knowledge in the brain as of {as_of}")
             return 0
-        answer = answer_from_items(question, items, llm, trace=trace)
+        answer = answer_from_items(question, items, router, trace=trace)
         if json_out:
             temporal_payload: dict = {
                 "answer": answer,
@@ -80,7 +81,7 @@ def _cmd_ask(
         if central is None:
             print("no central brain registered (run `talamus init --global`)", file=sys.stderr)
             return 1
-        answer = answer_question(TalamusPaths(central.root()), question, llm, trace=trace)
+        answer = answer_question(TalamusPaths(central.root()), question, router, trace=trace)
     else:
         extra: list[dict] = []
         if policy == "project+central":
@@ -89,7 +90,9 @@ def _cmd_ask(
             )
         elif policy == "all":
             extra, _ = scoped_context_items(root, question, "all", limit=5, exclude_roots=[root])
-        answer = answer_question(TalamusPaths(root), question, llm, extra_items=extra, trace=trace)
+        answer = answer_question(
+            TalamusPaths(root), question, router, extra_items=extra, trace=trace
+        )
     if json_out:
         payload: dict = {"answer": answer, "scope": policy}
         if trace is not None:
@@ -169,7 +172,7 @@ def _cmd_search(
         from talamus.smartsearch import expand_query
 
         provider = llm if llm is not None else _provider_for(root)
-        query = expand_query(TalamusPaths(root), query, provider)
+        query = expand_query(TalamusPaths(root), query, StaticRouter(provider))
     search_result = search_brain(root, query, policy=policy, limit=limit)
     if not search_result.success or search_result.data is None:
         print(search_result.message, file=sys.stderr)

@@ -6,6 +6,7 @@ from pathlib import Path
 from talamus.domains import build_overview
 from talamus.models import CanonicalNote, SourceRef
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.store import rebuild_indexes, write_note
 from tests.support import FakeLLMProvider
 
@@ -69,7 +70,7 @@ class DomainsTests(unittest.TestCase):
             answer = answer_question(
                 paths,
                 "come funziona?",
-                FakeLLMProvider(["Retrieval", "retrieval rag", "Risposta [1]."]),
+                StaticRouter(FakeLLMProvider(["Retrieval", "retrieval rag", "Risposta [1]."])),
             )
 
             self.assertIn("[1]", answer)
@@ -85,7 +86,7 @@ class DomainsTests(unittest.TestCase):
             # no overview built -> routing skipped; the literal question misses; expansion recovers.
             llm = FakeLLMProvider(["reranking", "Risposta [1]."])
 
-            answer = answer_question(paths, "come ordino meglio i risultati?", llm)
+            answer = answer_question(paths, "come ordino meglio i risultati?", StaticRouter(llm))
 
             self.assertIn("[1]", answer)
 

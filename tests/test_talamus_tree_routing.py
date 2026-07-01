@@ -13,6 +13,7 @@ from talamus.domains import (
 )
 from talamus.models import CanonicalNote, SourceRef
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.store import rebuild_indexes, write_note
 from tests.support import FakeLLMProvider
 
@@ -107,7 +108,7 @@ class TwoLevelRoutingTests(unittest.TestCase):
             trace: dict = {}
             # queue: area routing, domain routing, query expansion (RS3), answer
             llm = FakeLLMProvider(["area-area-b", "dom-dominio-07", "prova", "Risposta [1]."])
-            answer = answer_question(paths, "domanda di prova", llm, trace=trace)
+            answer = answer_question(paths, "domanda di prova", StaticRouter(llm), trace=trace)
             self.assertIn("Risposta", answer)
             self.assertEqual(trace["routing_levels"], 2)
             self.assertEqual(trace["areas_chosen"], ["area-area-b"])

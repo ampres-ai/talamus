@@ -14,6 +14,7 @@ from pathlib import Path
 from talamus.errors import EngineFailed
 from talamus.models import CanonicalNote, SourceRef
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.smartsearch import _cache_path, expand_query
 from talamus.store import rebuild_indexes, write_note
 from tests.support import FakeLLMProvider
@@ -42,12 +43,12 @@ class SmartSearchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp)
             llm = FakeLLMProvider(["hallucination makes things up"])
-            out = expand_query(paths, "il modello inventa", llm)
+            out = expand_query(paths, "il modello inventa", StaticRouter(llm))
             self.assertIn("il modello inventa", out)
             self.assertIn("hallucination", out)
             self.assertTrue(_cache_path(paths).is_file())
             # second call hits the cache: no further LLM calls
-            again = expand_query(paths, "il modello inventa", FakeLLMProvider([]))
+            again = expand_query(paths, "il modello inventa", StaticRouter(FakeLLMProvider([])))
             self.assertEqual(out, again)
 
     def test_degrades_to_plain_query_on_engine_failure(self) -> None:
@@ -57,14 +58,14 @@ class SmartSearchTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp)
-            out = expand_query(paths, "una domanda", Down())
+            out = expand_query(paths, "una domanda", StaticRouter(Down()))
             self.assertEqual(out, "una domanda")  # never worse than plain search
             self.assertFalse(_cache_path(paths).is_file())  # nothing cached on failure
 
     def test_empty_query_is_returned_untouched(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp)
-            self.assertEqual(expand_query(paths, "   ", FakeLLMProvider([])), "   ")
+            self.assertEqual(expand_query(paths, "   ", StaticRouter(FakeLLMProvider([]))), "   ")
 
     def test_cli_smart_expands_before_search(self) -> None:
         from talamus.cli import main

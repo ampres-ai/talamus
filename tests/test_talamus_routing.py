@@ -6,6 +6,7 @@ from talamus.ask import answer_question
 from talamus.domains import load_overview, save_overview
 from talamus.models import CanonicalNote, SourceRef
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.store import rebuild_indexes, write_note
 from tests.support import FakeLLMProvider
 
@@ -71,7 +72,9 @@ class StructuredRoutingTests(unittest.TestCase):
             trace: dict = {}
             # queue: routing, query expansion (RS3), answer
             llm = FakeLLMProvider(["dom-tempo", "tempo versioni", "Risposta sul tempo [1]."])
-            answer = answer_question(paths, "che versioni esistono?", llm, trace=trace)
+            answer = answer_question(
+                paths, "che versioni esistono?", StaticRouter(llm), trace=trace
+            )
             self.assertIn("Risposta sul tempo", answer)
             self.assertEqual(trace["domains_chosen"], ["dom-tempo"])
             self.assertFalse(trace["routing_fallback"])
@@ -85,7 +88,7 @@ class StructuredRoutingTests(unittest.TestCase):
             trace: dict = {}
             # queue: routing (name fallback), query expansion (RS3), answer
             llm = FakeLLMProvider(["Recupero", "recupero ricerca", "Risposta sul recupero [1]."])
-            answer = answer_question(paths, "come cerco?", llm, trace=trace)
+            answer = answer_question(paths, "come cerco?", StaticRouter(llm), trace=trace)
             self.assertIn("Risposta sul recupero", answer)
             self.assertTrue(trace["routing_fallback"])
 
@@ -95,7 +98,7 @@ class StructuredRoutingTests(unittest.TestCase):
             trace: dict = {}
             # routing returns nothing valid and no name matches -> index path
             llm = FakeLLMProvider(["nessuno", "Risposta [1]."])
-            answer_question(paths, "recupero indice ricerca", llm, trace=trace)
+            answer_question(paths, "recupero indice ricerca", StaticRouter(llm), trace=trace)
             self.assertEqual(trace["route"], "index")
             self.assertGreater(trace["context_tokens"], 0)
 

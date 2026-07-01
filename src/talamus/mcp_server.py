@@ -67,9 +67,10 @@ def search(query: str, smart: bool = False) -> str:
     call per new query."""
     query_text = query
     if smart:
+        from talamus.routing import StaticRouter
         from talamus.smartsearch import expand_query
 
-        query_text = expand_query(_paths(), query, _provider())
+        query_text = expand_query(_paths(), query, StaticRouter(_provider()))
     result = search_brain(_root, query_text)
     if not result.success or result.data is None:
         return result.message

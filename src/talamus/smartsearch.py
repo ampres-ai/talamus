@@ -17,10 +17,10 @@ from __future__ import annotations
 
 import json
 
-from talamus.adapters.llm import LLMProvider
 from talamus.ask import _EXPAND_PROMPT
 from talamus.errors import EngineFailed, EngineNotFound
 from talamus.paths import TalamusPaths
+from talamus.routing import Router, TaskClass
 
 
 def _cache_path(paths: TalamusPaths):
@@ -43,7 +43,7 @@ def _save_cache(paths: TalamusPaths, cache: dict[str, str]) -> None:
     _cache_path(paths).write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def expand_query(paths: TalamusPaths, question: str, llm: LLMProvider) -> str:
+def expand_query(paths: TalamusPaths, question: str, router: Router) -> str:
     """Return the question augmented with LLM-predicted terms, cached on disk.
 
     The expansion depends only on the question (not the brain), so caching by
@@ -58,6 +58,7 @@ def expand_query(paths: TalamusPaths, question: str, llm: LLMProvider) -> str:
         expanded = cache[key]
     else:
         try:
+            llm = router.for_task(TaskClass.QUERY_EXPANSION)
             expanded = llm.complete(_EXPAND_PROMPT.format(question=question)).strip()
         except (EngineFailed, EngineNotFound):
             return question
@@ -66,9 +67,7 @@ def expand_query(paths: TalamusPaths, question: str, llm: LLMProvider) -> str:
     return f"{question} {expanded}".strip() if expanded else question
 
 
-def expand_query_multi(
-    paths: TalamusPaths, question: str, llm: LLMProvider, passes: int = 1
-) -> str:
+def expand_query_multi(paths: TalamusPaths, question: str, router: Router, passes: int = 1) -> str:
     """N-pass expansion union to smooth the nondeterministic LLM expansion
     (RS4 measured run-to-run swings of ~0.06 hit). ``passes <= 1`` is the cached
     single-pass path. Extra passes are uncached (each is a fresh sample) and their
@@ -77,9 +76,10 @@ def expand_query_multi(
     (e.g. ollama at temperature 0) one pass already reproduces — multi-pass is for
     sampling engines where a small union reduces variance."""
     if passes <= 1:
-        return expand_query(paths, question, llm)
+        return expand_query(paths, question, router)
     terms = question.split()
     seen = {t.lower() for t in terms}
+    llm = router.for_task(TaskClass.QUERY_EXPANSION)
     for _ in range(passes):
         try:
             expansion = llm.complete(_EXPAND_PROMPT.format(question=question)).strip()

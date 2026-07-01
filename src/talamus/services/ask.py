@@ -18,6 +18,7 @@ from talamus.ask import answer_question
 from talamus.config import load_or_default
 from talamus.errors import EngineFailed, EngineNotFound
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.services.query import search_brain
 from talamus.services.result import ServiceResult
 
@@ -83,7 +84,7 @@ def ask_brain(
 
     trace: dict[str, Any] = {}
     try:
-        answer = answer_question(paths, text, provider, trace=trace)
+        answer = answer_question(paths, text, StaticRouter(provider), trace=trace)
     except (EngineNotFound, EngineFailed) as exc:
         return _degraded(
             text,

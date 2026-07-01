@@ -38,7 +38,9 @@ def _context_hit(items_read: list[str], relevant_titles: set[str]) -> bool:
 
 def _run(paths: TalamusPaths, corpus: JudgedCorpus, ask_llm, judge_llm) -> dict:
     from talamus.ask import answer_question
+    from talamus.routing import StaticRouter
 
+    router = StaticRouter(ask_llm)
     text_by_id = {doc_id: text for doc_id, _t, text in corpus.docs}
     faithful = correct = hit = 0
     n = 0
@@ -46,7 +48,7 @@ def _run(paths: TalamusPaths, corpus: JudgedCorpus, ask_llm, judge_llm) -> dict:
     for qid, question in corpus.queries.items():
         relevant = set(corpus.qrels.get(qid, {}))
         trace: dict = {}
-        answer = answer_question(paths, question, ask_llm, trace=trace)
+        answer = answer_question(paths, question, router, trace=trace)
         routes[trace.get("route", "?")] = routes.get(trace.get("route", "?"), 0) + 1
         if _context_hit(trace.get("items_read", []), relevant):
             hit += 1

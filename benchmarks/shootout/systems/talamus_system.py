@@ -10,6 +10,7 @@ from talamus.adapters.llm import LLMProvider
 from talamus.indexes import search_index
 from talamus.models import CanonicalNote, SourceRef
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.smartsearch import expand_query
 from talamus.store import overwrite_note_json, rebuild_indexes
 
@@ -64,4 +65,4 @@ class TalamusSmart(_TalamusBase):
         self._llm = llm
 
     def query(self, q: str, k: int) -> list[str]:
-        return self._search(expand_query(self._paths, q, self._llm), k)
+        return self._search(expand_query(self._paths, q, StaticRouter(self._llm)), k)

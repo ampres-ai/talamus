@@ -8,6 +8,7 @@ from talamus.graph import build_graph, load_graph
 from talamus.ingest import ingest_file
 from talamus.models import CanonicalNote, Relation, SourceRef
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter, TaskClass
 from talamus.search import BM25Index
 from talamus.store import rebuild_indexes, write_note
 from tests.support import FakeLLMProvider
@@ -80,16 +81,36 @@ class TalamusAskTests(unittest.TestCase):
             paths.ensure_directories()
             source = root / "rag.md"
             source.write_text("# RAG\nRAG collega il modello a fonti esterne.", encoding="utf-8")
-            ingest_file(paths, source, FakeLLMProvider([_extract_response()]))
+            ingest_file(paths, source, StaticRouter(FakeLLMProvider([_extract_response()])))
             answering = FakeLLMProvider(["RAG collega il modello a fonti esterne [1]."])
 
-            answer = answer_question(paths, "Come collego il modello a fonti esterne?", answering)
+            answer = answer_question(
+                paths, "Come collego il modello a fonti esterne?", StaticRouter(answering)
+            )
 
             self.assertIn("RAG", answer)
             self.assertIn("Retrieval-Augmented Generation", answering.prompts[0])
             # the answer carries a sources legend mapping [n] -> the cited note file
             self.assertIn("Sources:", answer)
             self.assertIn(".md", answer)
+
+    def test_answer_question_resolves_the_ask_answer_task_via_the_router(self) -> None:
+        requested: list[TaskClass] = []
+
+        class RecordingRouter:
+            def for_task(self, task: TaskClass):
+                requested.append(task)
+                return FakeLLMProvider(["RAG collega il modello a fonti esterne [1]."])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = TalamusPaths(root)
+            paths.ensure_directories()
+            source = root / "rag.md"
+            source.write_text("# RAG\nRAG collega il modello a fonti esterne.", encoding="utf-8")
+            ingest_file(paths, source, StaticRouter(FakeLLMProvider([_extract_response()])))
+            answer_question(paths, "Come collego il modello a fonti esterne?", RecordingRouter())
+        self.assertIn(TaskClass.ASK_ANSWER, requested)
 
     def test_answer_question_handles_empty_engine_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -98,10 +119,12 @@ class TalamusAskTests(unittest.TestCase):
             paths.ensure_directories()
             source = root / "rag.md"
             source.write_text("# RAG\nRAG collega il modello a fonti esterne.", encoding="utf-8")
-            ingest_file(paths, source, FakeLLMProvider([_extract_response()]))
+            ingest_file(paths, source, StaticRouter(FakeLLMProvider([_extract_response()])))
 
             answer = answer_question(
-                paths, "Come collego il modello a fonti esterne?", FakeLLMProvider([""])
+                paths,
+                "Come collego il modello a fonti esterne?",
+                StaticRouter(FakeLLMProvider([""])),
             )
 
             self.assertIn("engine", answer.lower())
@@ -114,7 +137,9 @@ class TalamusAskTests(unittest.TestCase):
 
             rebuild_indexes(paths)
 
-            answer = answer_question(paths, "qualcosa", FakeLLMProvider(["non dovrebbe servire"]))
+            answer = answer_question(
+                paths, "qualcosa", StaticRouter(FakeLLMProvider(["non dovrebbe servire"]))
+            )
 
             self.assertIn("no context", answer.lower())
 

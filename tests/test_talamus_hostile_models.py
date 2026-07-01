@@ -70,7 +70,7 @@ class HostileRoutingTests(unittest.TestCase):
             for raw in HOSTILE:
                 trace: dict = {}
                 llm = FakeLLMProvider([raw, raw, raw, "Risposta [1]."])
-                answer = answer_question(paths, "concetto", llm, trace=trace)
+                answer = answer_question(paths, "concetto", StaticRouter(llm), trace=trace)
                 self.assertNotIn("Traceback", answer)
                 self.assertTrue(trace["items_read"])  # something is ALWAYS read
 

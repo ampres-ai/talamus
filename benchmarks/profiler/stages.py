@@ -82,12 +82,14 @@ def hallucination_rate(paths: TalamusPaths, cases: list[dict], ask_llm, judge_ll
     grounded in the cited notes. Lower is better; the verifiability moat in a
     number. Needs two providers (ask + judge); use a local model to stay free."""
     from talamus.ask import answer_question
+    from talamus.routing import StaticRouter
 
+    router = StaticRouter(ask_llm)
     judged = 0
     grounded = 0
     for case in cases:
         question = case["question"]
-        answer = answer_question(paths, question, ask_llm)
+        answer = answer_question(paths, question, router)
         verdict = judge_llm.complete(
             "You are a strict fact-checker. Below is an ANSWER with a 'Fonti'/sources "
             "section. Reply with exactly one word: GROUNDED if every claim is supported "

@@ -19,6 +19,7 @@ from talamus.adapters.llm import build_provider
 from talamus.ask import answer_question
 from talamus.config import load_or_default, resolve_language
 from talamus.paths import TalamusPaths
+from talamus.routing import StaticRouter
 from talamus.services.ingestion import (
     IngestPreview,
     IngestRunResult,
@@ -536,7 +537,7 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
                         trace["as_of"] = as_of_value
                         if items:
                             answer.value = answer_from_items(
-                                question, items, _provider(paths), trace=trace
+                                question, items, StaticRouter(_provider(paths)), trace=trace
                             )
                         else:
                             trace["items_read"] = []
@@ -544,7 +545,7 @@ def _build(page: ft.Page, paths: TalamusPaths) -> None:
                             answer.value = f"No knowledge in the brain as of {as_of_value}."
                     else:
                         answer.value = answer_question(
-                            paths, question, _provider(paths), trace=trace
+                            paths, question, StaticRouter(_provider(paths)), trace=trace
                         )
                     trace_text.value = _format_answer_trace(trace)
                 except Exception as exc:  # surface engine errors instead of hanging
