@@ -65,20 +65,24 @@ sensible cost-minimizing behavior with zero setup, matching the free-first const
 Two providers (`codex-cli`, `gemini-cli`) already have an unused `-m <model>` hook in the
 adapter, with comments hinting this exact intent ("e.g. a mini model for fast bulk
 ingest" / "e.g. a flash model") — this design wires up what was already anticipated.
-Being honest about what's confirmed vs. what needs verification against the installed
-CLI version before merging:
+The flag forms below were **smoke-tested against the installed CLIs on 2026-07-01**
+(Task 1): each flag *parsed and was accepted* (claude reached its 401 auth stage with
+`--model haiku -p`; codex echoed `model: gpt-5-mini / reasoning effort: low`; gemini
+accepted `-m gemini-2.5-flash` and only stalled at interactive login).
 
 | Provider | Tier → model | Effort mechanism | Confidence |
 |---|---|---|---|
-| `claude-cli` | NOT wired today (hardcoded `["claude", "-p"]`, no model flag passed) | — | `--model <alias>` needs a smoke-test at implementation time (Task 1) |
-| `codex-cli` | Already wired via `-m` | `-c model_reasoning_effort=low\|high` (config override) | Smoke-test at implementation time |
-| `gemini-cli` | Already wired via `-m` | No known simple flag | Assume unsupported (effort no-ops) unless the smoke-test finds one |
+| `claude-cli` | NOT wired today (hardcoded `["claude", "-p"]`); wire `--model <alias>` before `-p` | — | **Confirmed: `claude --model <alias> -p`** (flag parsed; failed only at 401 auth) |
+| `codex-cli` | Already wired via `-m` | `-c model_reasoning_effort=low\|high` | **Confirmed: both `-m <model>` and `-c model_reasoning_effort=<level>` accepted** (codex echoed them in its run header) |
+| `gemini-cli` | Already wired via `-m` | No effort flag | **Confirmed: `-m <model>` accepted; no effort flag → effort no-ops** |
 | `ollama` | Model name only (already supported) | None — ollama has no effort concept | N/A, always no-ops |
 | `anthropic-api` | Model name only | Out of scope this round (would need `max_tokens`/thinking-budget changes to the Messages API call) | Documented gap, not implemented |
 
 The exact default model string per tier (e.g. which Claude alias means "economy") is a
-config default seeded at implementation time from the installed CLI's supported aliases —
-not hardcoded to a specific dated model ID that will go stale.
+config default (`haiku`/`opus`, `gpt-5-mini`/`gpt-5`, `gemini-2.5-flash`/`gemini-2.5-pro`)
+overridable via `provider_models` — not hardcoded to a specific dated model ID that will
+go stale. (`gpt-5-mini` was confirmed a valid model name by codex's echo; the others are
+the providers' standard aliases.)
 
 ## Components
 
