@@ -79,9 +79,9 @@ accepted `-m gemini-2.5-flash` and only stalled at interactive login).
 | `anthropic-api` | Model name only | Out of scope this round (would need `max_tokens`/thinking-budget changes to the Messages API call) | Documented gap, not implemented |
 
 The exact default model string per tier (e.g. which Claude alias means "economy") is a
-config default (`haiku`/`opus`, `gpt-5-mini`/`gpt-5`, `gemini-2.5-flash`/`gemini-2.5-pro`)
+config default (`haiku`/`opus`, `gpt-5.4-mini`/`gpt-5.5`, `gemini-2.5-flash`/`gemini-2.5-pro`)
 overridable via `provider_models` — not hardcoded to a specific dated model ID that will
-go stale. (`gpt-5-mini` was confirmed a valid model name by codex's echo; the others are
+go stale. (2026-07-02 smoke-tests: `gpt-5.4-mini`+`low` and `gpt-5.5`+`xhigh` both accepted and answered — codex effort also supports `medium`/`xhigh` beyond our two-axis low/high; the others are
 the providers' standard aliases.)
 
 ## Components

@@ -118,5 +118,30 @@ class HostileConsolidateTests(unittest.TestCase):
                 self.assertEqual(find_duplicates(paths, StaticRouter(FakeLLMProvider([raw]))), [])
 
 
+class HostileTieredProviderTests(unittest.TestCase):
+    """P2: the new model/effort constructor args must not change how hostile engine
+    output is handled — a tiered provider degrades exactly like an untiered one."""
+
+    def test_tiered_providers_still_degrade_gracefully(self) -> None:
+        from talamus.adapters.llm import build_provider_for_task
+        from talamus.config import TalamusConfig
+        from talamus.extract import extract_notes
+        from talamus.normalize import normalize_text
+
+        package = normalize_text("raw/a.md", "Testo sorgente.")
+        for provider_name in ("claude-cli", "codex-cli", "gemini-cli"):
+            for tier, effort in (("economy", "low"), ("quality", "high")):
+                for raw in HOSTILE:
+                    provider = build_provider_for_task(
+                        provider_name, TalamusConfig.default(), tier, effort
+                    )
+                    provider._runner = lambda args, prompt, raw=raw: raw  # type: ignore[attr-defined]
+                    try:
+                        notes = extract_notes(package, StaticRouter(provider))
+                    except ValueError:
+                        continue  # clean, actionable error: acceptable
+                    self.assertEqual(notes, [])  # never corrupt notes
+
+
 if __name__ == "__main__":
     unittest.main()

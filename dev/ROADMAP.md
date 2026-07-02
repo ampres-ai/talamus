@@ -236,6 +236,23 @@ model + effort**, while gracefully surviving exhausted limits.
 promise "works with your subscription" is **partly false** (Kimi/opencode not wired;
 Cursor wrongly implied).
 
+**Tiering DONE (2026-07-02, branch `feat/p2-tiering`):** every LLM call site now
+resolves its model+effort through `talamus.routing.EngineRouter`, per a `TaskClass`
+(ten classes; spec:
+[dev/specs/2026-07-01-p2-model-effort-tiering-design.md](specs/2026-07-01-p2-model-effort-tiering-design.md)).
+Bulk/mechanical tasks default to the **economy** tier (claude haiku, codex
+gpt-5.4-mini/low, gemini flash); the answer the user reads (`ask_answer`), session
+capture and source verification default to **quality**. Config gains `task_tiers` +
+`provider_models` overrides; `StaticRouter` pins one engine for tests/overrides;
+tiering stays WITHIN the single configured provider (no cross-provider routing this
+round). Flags smoke-tested live (claude `--model`, codex `-m` +
+`model_reasoning_effort` incl. `xhigh` on gpt-5.5; gemini `-m`, no effort). Savings
+evidence: [dev/research/2026-07-p2-tiering-savings.md](research/2026-07-p2-tiering-savings.md).
+Also fixed en route: engine failures now surface the real CLI error (stdout, e.g. a
+401) instead of a blind exit code. **Remaining P2 work** (separate slices):
+usage-limit detection + graceful fallback + the hard per-call timeout;
+kimi-cli/opencode adapters; anthropic-api effort.
+
 **Work items:**
 - **Subscription-CLI coverage:** keep claude-cli, codex-cli (= ChatGPT), gemini-cli,
   ollama; **add `kimi-cli` and `opencode`** as engine adapters (verify each exposes a

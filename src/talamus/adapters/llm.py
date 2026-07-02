@@ -313,10 +313,11 @@ def build_provider(provider: str, model: str = "") -> LLMProvider:
 # table doesn't cover) falls back to the brain's single configured `llm_model` — this
 # keeps providers with no natural "small vs large" split (e.g. ollama until the user
 # pulls a second model) behaving as they do today for both tiers. Overridable per brain
-# via config.provider_models. Aliases verified/standard as of 2026-07-01 (see the spec).
+# via config.provider_models. Aliases verified/standard as of 2026-07-02 (smoke-tested;
+# codex also accepts model_reasoning_effort=xhigh on gpt-5.5 — see the spec).
 _TIER_MODELS: dict[str, dict[str, str]] = {
     "claude-cli": {"economy": "haiku", "quality": "opus"},
-    "codex-cli": {"economy": "gpt-5-mini", "quality": "gpt-5"},
+    "codex-cli": {"economy": "gpt-5.4-mini", "quality": "gpt-5.5"},
     "gemini-cli": {"economy": "gemini-2.5-flash", "quality": "gemini-2.5-pro"},
     "anthropic-api": {
         "economy": "claude-3-5-haiku-latest",

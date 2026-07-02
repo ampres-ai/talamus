@@ -67,7 +67,7 @@ class LLMAdapterTests(unittest.TestCase):
         provider = build_provider_for_task("codex-cli", TalamusConfig.default(), "quality", "high")
         provider._runner = fake_runner  # type: ignore[attr-defined]
         provider.complete("hi")
-        self.assertIn("gpt-5", captured["args"])
+        self.assertIn("gpt-5.5", captured["args"])
         self.assertIn("model_reasoning_effort=high", " ".join(captured["args"]))
 
     def test_gemini_cli_ignores_unsupported_effort(self) -> None:
