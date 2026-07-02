@@ -55,6 +55,7 @@ talamus search "embedding"
 
 talamus init                    # your own brain (auto-detects your LLM engine)
 talamus ingest report.pdf       # PDF / DOCX / HTML / Markdown / URL -> linked concept-notes
+talamus import-vault ~/vault    # coming from Obsidian/Notion? 1:1 import, zero LLM cost
 talamus ask "how does X work?"  # cited answer
 talamus ui                      # optional native desktop app (pip install talamus[ui])
 ```

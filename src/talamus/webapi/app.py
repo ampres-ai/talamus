@@ -18,6 +18,7 @@ from talamus.routing import EngineRouter, TaskClass
 from talamus.services.ask import ask_brain
 from talamus.services.brains import init_brain, list_brains
 from talamus.services.diagnostics import inspect_diagnostics
+from talamus.services.importer import import_markdown_vault
 from talamus.services.ingestion import ingest_raw_text, preview_ingest, run_ingest
 from talamus.services.library import list_library_notes
 from talamus.services.ontology import (
@@ -218,6 +219,18 @@ def create_app(root: Path) -> FastAPI:
         except EngineNotFound:
             return _NO_ENGINE
         return ingest_raw_text(root, text, router).to_dict()
+
+    @app.post("/api/import/vault")
+    def import_vault_endpoint(payload: dict | None = None) -> dict:
+        """Import a Markdown/Obsidian vault 1:1 (no LLM, no engine needed)."""
+        directory = str((payload or {}).get("directory", "")).strip()
+        if not directory:
+            return {
+                "success": False,
+                "code": "vault_target_missing",
+                "message": "Provide the vault folder path.",
+            }
+        return import_markdown_vault(root, directory).to_dict()
 
     @app.post("/api/scan/preview")
     def scan_preview_endpoint(payload: dict | None = None) -> dict:

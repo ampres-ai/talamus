@@ -35,6 +35,7 @@ from talamus.cli.parser import build_parser
 from talamus.cli.pipeline import (
     _cmd_consolidate,
     _cmd_enrich,
+    _cmd_import_vault,
     _cmd_ingest,
     _cmd_overview,
     _cmd_scan,
@@ -120,6 +121,8 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             return _cmd_export(root, args.file)
         if command == "import":
             return _cmd_import(args.file, root)
+        if command == "import-vault":
+            return _cmd_import_vault(root, args.directory, json_out)
         if command == "ontology":
             return _cmd_ontology_group(args, root, _build_router())
         if command == "jobs":

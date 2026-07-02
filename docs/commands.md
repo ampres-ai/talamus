@@ -32,6 +32,7 @@ options. Most commands accept the [global flags](#global-flags) below.
 | `talamus read "<title>" --as-of T` / `talamus ask "<q>" --as-of T` | The note / the answer as the brain was at time T (accepts `2026`, `2026-01`, `2026-01-15`, full ISO; partial dates = end of period). |
 | `talamus reindex` | Fold hand-edits to the Markdown notes back into the indexes. |
 | `talamus remember --transcript <f> [--diff <f>]` | Capture an agent session into notes. |
+| `talamus import-vault <dir>` | Import a Markdown/Obsidian vault 1:1 — **no LLM call**: titles, tags, aliases and `[[wikilinks]]` preserved, wikilinks become graph edges, idempotent re-runs. A Notion markdown export imports the same way. |
 
 ## Curate & verify
 

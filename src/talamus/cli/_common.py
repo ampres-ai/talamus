@@ -49,7 +49,7 @@ _ALL_COMMANDS = (
     "setup init demo ui status doctor reindex ingest scan consolidate enrich verify ask overview "
     "search read "
     "history timeline recall neighbors relations remember eval ontology jobs review quickstart "
-    "brains where export import completion mcp hook hook-run"
+    "brains where export import import-vault completion mcp hook hook-run"
 )
 
 # Runners that can resume a persisted job, keyed by kind (scan registers below).

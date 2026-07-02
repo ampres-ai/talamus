@@ -147,6 +147,12 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("file")
     importer = sub.add_parser("import", parents=[common], help="import a brain from a zip")
     importer.add_argument("file")
+    vault = sub.add_parser(
+        "import-vault",
+        parents=[common],
+        help="import a Markdown/Obsidian vault 1:1 (no LLM, wikilinks preserved)",
+    )
+    vault.add_argument("directory", help="the vault folder (Obsidian vault or md export)")
     completion = sub.add_parser("completion", help="print a shell completion script")
     completion.add_argument("shell", nargs="?", default="bash", choices=["bash", "zsh"])
     mcp = sub.add_parser("mcp", parents=[common], help="set up the MCP server config (.mcp.json)")

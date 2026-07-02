@@ -181,6 +181,30 @@ def _cmd_ingest(root: Path, target: str, router: Router, json_out: bool, yes: bo
     return 0
 
 
+def _cmd_import_vault(root: Path, directory: str, json_out: bool) -> int:
+    """Import a Markdown/Obsidian vault 1:1 — no LLM, wikilinks preserved (P9)."""
+    from talamus.services.importer import import_markdown_vault
+
+    result = import_markdown_vault(root, directory)
+    if not result.success or result.data is None:
+        print(result.message, file=sys.stderr)
+        return 1
+    if json_out:
+        _print_json(result.data.to_dict())
+        return 0
+    data = result.data
+    print(
+        f"imported {data.notes_written} notes from {data.vault} ({data.skipped} unchanged skipped)"
+    )
+    for rel in data.duplicates:
+        print(f"  ! duplicate title, kept the first: {rel}")
+    for failure in data.failed:
+        print(f"  ! failed {failure['file']}: {failure['error']}")
+    if data.notes_written:
+        print('next: talamus ask "..." — your imported notes are already searchable')
+    return 0
+
+
 def _cmd_consolidate(root: Path, do_apply: bool, router: Router, json_out: bool) -> int:
     if do_apply:
         apply_result = apply_consolidation_groups(root, router)

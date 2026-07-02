@@ -63,6 +63,18 @@ pip install "talamus[ui]"
 talamus ui                      # chat, search, clickable wikilinks, domain browsing
 ```
 
+## Coming from Obsidian or Notion?
+
+Import your existing vault 1:1 — instant, free, no LLM call:
+
+```bash
+talamus import-vault ~/my-vault
+```
+
+Titles, tags, aliases and `[[wikilinks]]` are preserved (links become graph
+edges), and re-running skips unchanged notes. A Notion **markdown export**
+imports the same way. Your notes are searchable immediately.
+
 ## Global vs project brains
 
 By default Talamus uses the nearest **project** brain (a folder with `talamus.json`,
