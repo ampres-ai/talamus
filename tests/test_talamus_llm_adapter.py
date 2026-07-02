@@ -38,6 +38,100 @@ class LLMAdapterTests(unittest.TestCase):
                 _default_runner(["claude", "-p"], "hi")
         self.assertIn("401", str(ctx.exception))
 
+    def _failed_run(self, stdout: str = "", stderr: str = ""):
+        import subprocess
+
+        return subprocess.CompletedProcess(
+            args=["engine"], returncode=1, stdout=stdout, stderr=stderr
+        )
+
+    def test_default_runner_maps_claude_usage_limit_to_limit_reached(self) -> None:
+        from unittest.mock import patch
+
+        from talamus.errors import EngineLimitReached
+
+        fake = self._failed_run(stdout="You've hit your usage limit. Your limit resets at 3pm.")
+        with (
+            patch("talamus.adapters.llm.shutil.which", return_value="claude"),
+            patch("talamus.adapters.llm.subprocess.run", return_value=fake),
+        ):
+            with self.assertRaises(EngineLimitReached) as ctx:
+                _default_runner(["claude", "-p"], "hi")
+        self.assertIn("resets at 3pm", str(ctx.exception))
+
+    def test_default_runner_maps_429_and_quota_to_limit_reached(self) -> None:
+        from unittest.mock import patch
+
+        from talamus.errors import EngineLimitReached
+
+        for detail in (
+            "429 Too Many Requests",
+            "RESOURCE_EXHAUSTED: Quota exceeded for quota metric",
+            "Rate limit reached for gpt-5.5",
+        ):
+            fake = self._failed_run(stderr=detail)
+            with (
+                patch("talamus.adapters.llm.shutil.which", return_value="engine"),
+                patch("talamus.adapters.llm.subprocess.run", return_value=fake),
+            ):
+                with self.assertRaises(EngineLimitReached):
+                    _default_runner(["engine"], "hi")
+
+    def test_limit_reached_is_still_an_engine_failure(self) -> None:
+        # resumable jobs, ask degradation and smartsearch fallback all catch
+        # EngineFailed — the limit error must flow through those same paths
+        from talamus.errors import EngineFailed, EngineLimitReached
+
+        self.assertTrue(issubclass(EngineLimitReached, EngineFailed))
+
+    def test_plain_failure_is_not_misread_as_a_limit(self) -> None:
+        from unittest.mock import patch
+
+        from talamus.errors import EngineFailed, EngineLimitReached
+
+        fake = self._failed_run(stdout="API Error: 401 Invalid authentication credentials")
+        with (
+            patch("talamus.adapters.llm.shutil.which", return_value="claude"),
+            patch("talamus.adapters.llm.subprocess.run", return_value=fake),
+        ):
+            with self.assertRaises(EngineFailed) as ctx:
+                _default_runner(["claude", "-p"], "hi")
+        self.assertNotIsInstance(ctx.exception, EngineLimitReached)
+
+    def test_engine_timeout_is_env_configurable(self) -> None:
+        from unittest.mock import patch
+
+        captured = {}
+
+        def fake_run(args, **kwargs):
+            captured.update(kwargs)
+            import subprocess
+
+            return subprocess.CompletedProcess(args=args, returncode=0, stdout="ok", stderr="")
+
+        with (
+            patch("talamus.adapters.llm.shutil.which", return_value="engine"),
+            patch("talamus.adapters.llm.subprocess.run", side_effect=fake_run),
+            patch.dict(os.environ, {"TALAMUS_ENGINE_TIMEOUT": "42"}),
+        ):
+            _default_runner(["engine"], "hi")
+        self.assertEqual(captured["timeout"], 42)
+
+    def test_poster_maps_http_429_to_limit_reached(self) -> None:
+        import io
+        import urllib.error
+        from unittest.mock import patch
+
+        from talamus.adapters.llm import _default_poster
+        from talamus.errors import EngineLimitReached
+
+        err = urllib.error.HTTPError(
+            "https://api", 429, "Too Many Requests", hdrs=None, fp=io.BytesIO(b"")
+        )
+        with patch("talamus.adapters.llm.urllib.request.urlopen", side_effect=err):
+            with self.assertRaises(EngineLimitReached):
+                _default_poster("https://api", {}, {})
+
     def test_claude_cli_applies_tier_model(self) -> None:
         captured = {}
 

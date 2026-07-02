@@ -34,6 +34,15 @@ class EngineFailed(TalamusError):
     """The LLM engine ran but returned an error."""
 
 
+class EngineLimitReached(EngineFailed):
+    """The engine refused because a usage/rate limit is exhausted.
+
+    Subclasses EngineFailed on purpose: every existing recovery path (resumable
+    job pause, ask degradation, smart-search fallback) already handles
+    EngineFailed — this only makes the message actionable (wait or switch
+    engine) and lets callers that care distinguish the case."""
+
+
 class SourceNotFound(TalamusError):
     """An ingest source file does not exist."""
 

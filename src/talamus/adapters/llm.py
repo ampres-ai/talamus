@@ -7,9 +7,9 @@ import subprocess
 import urllib.error
 import urllib.request
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, NoReturn, Protocol
 
-from talamus.errors import EngineFailed, EngineNotFound
+from talamus.errors import EngineFailed, EngineLimitReached, EngineNotFound
 
 if TYPE_CHECKING:
     from talamus.config import TalamusConfig
@@ -59,10 +59,46 @@ def canonical_provider(provider: str) -> str:
     return _PROVIDER_ALIASES.get(normalized, normalized)
 
 
+# Usage/rate-limit signatures across the supported engines (lowercase substrings).
+# claude-cli: "usage limit", "session limit"; codex: "rate limit", 429;
+# gemini: RESOURCE_EXHAUSTED / "quota"; generic HTTP: 429 / too many requests.
+_LIMIT_SIGNATURES = (
+    "usage limit",
+    "session limit",
+    "rate limit",
+    "resource_exhausted",
+    "quota exceeded",
+    "insufficient_quota",
+    "too many requests",
+    "429",
+)
+
+
+def _engine_timeout() -> int:
+    """Hard per-call timeout in seconds (env TALAMUS_ENGINE_TIMEOUT, default 600).
+
+    Read per call, not at import: covers the gemini-on-Windows hang and slow local
+    models (RS8: ~12.5% of gemma generations > 90 s) without freezing the product."""
+    try:
+        return max(1, int(os.environ.get("TALAMUS_ENGINE_TIMEOUT", "600")))
+    except ValueError:
+        return 600
+
+
+def _raise_engine_failure(engine: str, detail: str) -> NoReturn:
+    if any(sig in detail.lower() for sig in _LIMIT_SIGNATURES):
+        raise EngineLimitReached(
+            f"Usage/rate limit reached on {engine}: {detail} — wait for the reset, "
+            "or switch engine (talamus setup / config llm_provider)."
+        )
+    raise EngineFailed(f"LLM command failed ({engine}): {detail}")
+
+
 def _default_runner(args: list[str], prompt: str) -> str:
     executable = shutil.which(args[0])
     if executable is None:
         raise EngineNotFound(args[0])
+    timeout = _engine_timeout()
     try:
         completed = subprocess.run(
             [executable, *args[1:]],
@@ -70,10 +106,12 @@ def _default_runner(args: list[str], prompt: str) -> str:
             capture_output=True,
             text=True,
             encoding="utf-8",
-            timeout=600,
+            timeout=timeout,
         )
     except subprocess.TimeoutExpired as exc:
-        raise EngineFailed(f"engine timed out: {args[0]}") from exc
+        raise EngineFailed(
+            f"engine timed out after {timeout}s: {args[0]} (tune with TALAMUS_ENGINE_TIMEOUT)"
+        ) from exc
     if completed.returncode != 0:
         # CLI engines (e.g. `claude -p`) often write the real error to stdout and exit
         # non-zero with an empty stderr — surface whichever carries the reason so the
@@ -83,7 +121,7 @@ def _default_runner(args: list[str], prompt: str) -> str:
             or completed.stdout.strip()
             or f"exit code {completed.returncode}"
         )
-        raise EngineFailed(f"LLM command failed ({args[0]}): {detail}")
+        _raise_engine_failure(args[0], detail)
     return completed.stdout.strip()
 
 
@@ -94,6 +132,13 @@ def _default_poster(url: str, headers: dict[str, str], payload: dict) -> dict:
     try:
         with urllib.request.urlopen(request, timeout=120) as response:
             return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        if exc.code == 429:
+            raise EngineLimitReached(
+                f"Usage/rate limit reached on the API ({exc}) — wait for the reset, "
+                "or switch engine."
+            ) from exc
+        raise EngineFailed(f"API request failed: {exc}") from exc
     except urllib.error.URLError as exc:
         raise EngineFailed(f"API request failed: {exc}") from exc
 
