@@ -13,8 +13,8 @@ Run before tagging a release. Nothing ships with a red gate.
 ## Measurement (PRD §17.2)
 
 - [ ] `talamus eval --cases examples/eval-cases-real.json` run and recorded
-- [ ] `talamus eval --scale --sizes 100,1000,10000` meets latency targets (11.1)
-- [ ] Benchmark artifacts updated under `docs/benchmarks/`
+- [ ] `talamus eval --scale` meets latency targets (10k p95 < 100 ms; 100k usable)
+- [ ] Benchmark artifacts updated under `benchmarks/results/` (dated JSON)
 
 ## Claims & docs
 
@@ -30,6 +30,6 @@ Run before tagging a release. Nothing ships with a red gate.
 
 ## Runtime (manual, needs a display)
 
-- [ ] `talamus ui` opens; Chat / Cerca / Note / Review / Ontologia render
-- [ ] `talamus ui --web --port 8550` serves in a browser; narrow width readable
+- [ ] `talamus ui` opens the web workbench; Home / Ask / Graph / Library / Import / Review / Ontology / Brains / System render
+- [ ] the workbench serves in a plain browser too; narrow width readable
 - [ ] MCP handshake with a real client (`talamus mcp install` + `/mcp`)

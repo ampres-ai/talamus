@@ -8,6 +8,26 @@ semantic versioning once it reaches a public release.
 
 Pre-release. The project was renamed **Kortex → Talamus**.
 
+### Engine tiering & v1 hardening (P2/P9/P11, 2026-07-01/02)
+
+- **Per-task model+effort tiering** (`talamus.routing`): every LLM call resolves
+  through an `EngineRouter` by task class (extraction, routing, expansion, answer,
+  verify, enrich, consolidate, naming, session capture) — bulk work runs on the
+  cheap tier (claude haiku / codex gpt-5.4-mini / gemini flash), the answer you
+  read and source verification on the strong tier. Config: `task_tiers` +
+  `provider_models` overrides. Top quality, minimal subscription burn.
+- **Usage-limit detection + hard timeout**: an exhausted engine limit now raises
+  a clear, actionable error (wait or switch engine) and resumable jobs pause
+  instead of crashing; the per-call timeout is configurable via
+  `TALAMUS_ENGINE_TIMEOUT`. Engine failures surface the real CLI error (e.g. a
+  401) instead of a blind exit code.
+- **`talamus import-vault <dir>`**: import a Markdown/Obsidian vault (or a Notion
+  markdown export) 1:1 with **zero LLM cost** — titles, tags, aliases and
+  `[[wikilinks]]` preserved, links become graph edges, idempotent re-runs.
+- **Measured at scale**: search p95 72.6 ms @ 10k notes, p50 624 ms @ 100k notes
+  (sqlite-fts5, 208 MB index); cold `pip install` verified in a clean venv;
+  honest-refusal negatives set expanded 8 → 30.
+
 ### Final-product phase (PRD M0–M11, 2026-06-10/11)
 
 - **Measured baseline**: real 120-case eval-set (`examples/eval-cases-real.json`),

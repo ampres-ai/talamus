@@ -1,0 +1,36 @@
+[
+  {
+    "n_notes": 10000,
+    "search": {
+      "p50_ms": 60.74,
+      "p95_ms": 72.6,
+      "n_samples": 6
+    },
+    "legacy_scan": {
+      "p50_ms": 4451.7,
+      "p95_ms": 5862.66,
+      "n_samples": 18
+    },
+    "index": {
+      "backend": "sqlite-fts5",
+      "bytes": 20348928
+    }
+  },
+  {
+    "n_notes": 100000,
+    "search": {
+      "p50_ms": 624.39,
+      "p95_ms": 694.83,
+      "n_samples": 6
+    },
+    "legacy_scan": {
+      "p50_ms": 50684.31,
+      "p95_ms": 65459.32,
+      "n_samples": 18
+    },
+    "index": {
+      "backend": "sqlite-fts5",
+      "bytes": 207908864
+    }
+  }
+]

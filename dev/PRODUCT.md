@@ -106,12 +106,12 @@ hosted services.
 | Ask hit-rate (right notes read), real corpus | ≥ 0.95 | STATE.md dashboard |
 | `search` plain (instant, free) | ~0.86 lexical ceiling — acceptable for the fast tier | achieved |
 | `search --smart` (Query2doc), curated enriched corpus | ≥ 0.92 | achieved (0.972 book) |
-| Honest refusal on out-of-scope questions | answer-level guard, measured | RS2.6 open |
-| Search latency @ 10k notes | < 100 ms | achieved (~55 ms) |
+| Honest refusal on out-of-scope questions | answer-level guard, measured | achieved (RS8: refusal 1.000 cloud+local vs competitors ≤0.833; negatives set 8→30, 2026-07-02) |
+| Search latency @ 10k notes | < 100 ms | achieved (p95 72.6 ms, re-measured 2026-07-02) |
 | Routing token cost | ~log(N), measured | achieved (12× at 10k) |
-| Scale | 100k notes usable | bench pending |
-| Setup time, zero to first answer | < 10 min | achieved |
-| Works with a small local model (ollama) | full pipeline e2e | pending |
+| Scale | 100k notes usable | achieved (search p50 624 ms / p95 695 ms @ 100k, index 208 MB sqlite-fts5 — benchmarks/results/2026-07-02-scale-100k.json; growth is linear, a future optimization front) |
+| Setup time, zero to first answer | < 10 min | achieved (re-verified live 2026-07-02: setup→scan→cited ask in ~3 min) |
+| Works with a small local model (ollama) | full pipeline e2e | achieved (RS8: talamus-search correctness 0.800 fully local, gemma generator+judge, €0) |
 | Multi-OS | Linux/macOS/Windows CI green | achieved |
 | Quality floors in CI | recall/MRR/hit floors never regress | achieved |
 

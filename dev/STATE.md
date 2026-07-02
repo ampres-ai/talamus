@@ -15,7 +15,8 @@ re-measure what is already here unless the code path changed.
 | direct / direct-en recall | 1.000 / 1.000 (MRR 0.958 / 1.000) | — |
 | vague hit (search) | 0.750 | weakest front |
 | Negative rejection (search level) | 0.000 — answer-level guard works instead | RS2.6 open |
-| Search latency @ 10k | ~55 ms | ✓ |
+| Search latency @ 10k | ~55 ms (p95 72.6 ms re-measured 2026-07-02) | ✓ |
+| Search latency @ 100k | p50 624 ms / p95 695 ms; index 208 MB (2026-07-02) | usable ✓ (bar: PRODUCT §scale) |
 | Routing tokens | 12× cheaper at 10k (tree) | ✓ |
 
 Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.55
@@ -109,14 +110,16 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 11. **RS6 ablation faithfulness is judged vs GOLD docs, not the ask's actual
     context** → artifact (ontology_on richer context scores "less grounded in
     gold"). Fix: judge against trace `items_read`, re-run the ablation.
-12. **Expand the negatives set** (currently 6) so honest-refusal is statistically
-    real — today Talamus 1.000 vs competitors 0.833 is a single-question delta.
+12. RESOLVED (2026-07-02): negatives set expanded 8 -> 30 (IT/EN, incl.
+    adversarial near-misses) in benchmarks/ask_eval/negatives_ci.json; re-run the
+    heavy refusal eval on it when convenient to refresh the numbers.
 13. **Docs-corpus ASK answer-quality eval** pending (two-corpora law for any
     answer-quality claim that ships) — needs a docs brain + eval-set.
 7. RS-GEN: third corpus, different domain, anti-overfitting (this would give
    the second LLM-enriched corpus the enrich findings still lack).
-8. 100k-note bench; UI visual verdict from the maintainer; clean-venv install
-   checklist.
+8. PARTIALLY RESOLVED (2026-07-02): 100k bench done (search p50 624 ms, usable —
+   dashboard row) and the clean-venv cold install verified (pip non-editable ->
+   demo -> search, exit 0). Remaining: the UI visual verdict from the maintainer.
 9. **Chunking quality** (maintainer-flagged): `split_chunks` cuts at paragraph
    boundaries but a concept spanning a chunk boundary can still be split across
    two chunks and lose information. Investigate an overlap window between chunks
