@@ -57,9 +57,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     init.add_argument("--profile", choices=list(PROFILES), default="all")
     sub.add_parser("demo", parents=[common], help="create a small example brain")
-    ui = sub.add_parser("ui", parents=[common], help="launch the workbench (needs the 'ui' extra)")
-    ui.add_argument("--web", action="store_true", help="open in the browser (test mode, F9.1)")
-    ui.add_argument("--port", type=int, default=8550, help="port for --web (default 8550)")
+    ui = sub.add_parser(
+        "ui", parents=[common], help="launch the web workbench (needs the 'ui' extra)"
+    )
+    ui.add_argument("--web", action="store_true", help="open in the browser instead of a window")
+    ui.add_argument("--port", type=int, default=8760, help="port to serve on (default 8760)")
     for name in ("status", "doctor", "reindex"):
         sub.add_parser(name, parents=[common], help=f"{name} the brain")
     sub.add_parser("quickstart", help="print the essential commands")

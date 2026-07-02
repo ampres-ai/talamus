@@ -117,13 +117,20 @@ def _cmd_quickstart() -> int:
     return 0
 
 
-def _cmd_ui(root: Path, web: bool = False, port: int = 8550) -> int:
+def _cmd_ui(root: Path, web: bool = False, port: int = 8760) -> int:
+    """Launch the web workbench (React SPA + FastAPI bridge over services/).
+
+    Native window via pywebview by default; --web opens the browser instead.
+    This replaced the legacy Flet app at parity (P7)."""
     try:
-        from talamus.ui.app import run_app
+        from talamus.webapi.__main__ import main as run_workbench
     except ImportError:
         print("UI needs the 'ui' extra: pip install talamus[ui]", file=sys.stderr)
         return 1
-    run_app(TalamusPaths(root), web=web, port=port)
+    args = ["--root", str(root), "--port", str(port)]
+    if web:
+        args.append("--web")
+    run_workbench(args)
     return 0
 
 
