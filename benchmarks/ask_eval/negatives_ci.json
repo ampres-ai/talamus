@@ -1,10 +1,122 @@
 [
-  {"question": "What is the airspeed of an unladen swallow?", "relevant": []},
-  {"question": "Qual è la ricetta della carbonara perfetta?", "relevant": []},
-  {"question": "Who won the 1998 FIFA World Cup?", "relevant": []},
-  {"question": "Come si cambia una gomma dell'auto?", "relevant": []},
-  {"question": "What is the capital of Mongolia?", "relevant": []},
-  {"question": "Quanto costa un biglietto per la Luna?", "relevant": []},
-  {"question": "How do I bake sourdough bread at home?", "relevant": []},
-  {"question": "Chi ha dipinto la Gioconda?", "relevant": []}
+  {
+    "question": "What is the airspeed of an unladen swallow?",
+    "relevant": []
+  },
+  {
+    "question": "Qual è la ricetta della carbonara perfetta?",
+    "relevant": []
+  },
+  {
+    "question": "Who won the 1998 FIFA World Cup?",
+    "relevant": []
+  },
+  {
+    "question": "Come si cambia una gomma dell'auto?",
+    "relevant": []
+  },
+  {
+    "question": "What is the capital of Mongolia?",
+    "relevant": []
+  },
+  {
+    "question": "Quanto costa un biglietto per la Luna?",
+    "relevant": []
+  },
+  {
+    "question": "How do I bake sourdough bread at home?",
+    "relevant": []
+  },
+  {
+    "question": "Chi ha dipinto la Gioconda?",
+    "relevant": []
+  },
+  {
+    "question": "What did I ask Talamus to summarize in my private notes last Tuesday?",
+    "relevant": []
+  },
+  {
+    "question": "Quando verrà rilasciata la versione di Talamus con sincronizzazione iCloud nativa?",
+    "relevant": []
+  },
+  {
+    "question": "Which appendix of the AI Engineering book reproduces the full PromptBench v2 leaderboard?",
+    "relevant": []
+  },
+  {
+    "question": "Quale comando di Talamus abilita la notarizzazione blockchain delle note importate?",
+    "relevant": []
+  },
+  {
+    "question": "Should I choose a raised-bed garden or hydroponics for my specific apartment balcony?",
+    "relevant": []
+  },
+  {
+    "question": "What are the visa requirements for an Italian citizen moving to New Zealand in 2027?",
+    "relevant": []
+  },
+  {
+    "question": "Qual è il miglior pianoforte digitale sotto i 700 euro da comprare oggi?",
+    "relevant": []
+  },
+  {
+    "question": "How did the authors of the 2025 ColBERT-X paper modify late interaction scoring?",
+    "relevant": []
+  },
+  {
+    "question": "Che cosa ho piantato nel mio orto personale questa primavera?",
+    "relevant": []
+  },
+  {
+    "question": "What dosage of ibuprofen should I take for shoulder pain after exercising?",
+    "relevant": []
+  },
+  {
+    "question": "Quale endpoint REST di Talamus esporta direttamente una vault Obsidian in Notion?",
+    "relevant": []
+  },
+  {
+    "question": "When is the next total solar eclipse visible from Rome after July 2026?",
+    "relevant": []
+  },
+  {
+    "question": "Come si diagnostica la peronospora sulle piante di vite usando solo foto delle foglie?",
+    "relevant": []
+  },
+  {
+    "question": "Which exact GPU did OpenAI use to train GPT-4.5?",
+    "relevant": []
+  },
+  {
+    "question": "Quale capitolo del libro AI Engineering raccomanda FAISS-HNSW con parametro efConstruction=512 per tutti i dataset?",
+    "relevant": []
+  },
+  {
+    "question": "How do I configure Talamus to use Pinecone embeddings for semantic search?",
+    "relevant": []
+  },
+  {
+    "question": "Chi vincerà il Festival di Sanremo del 2027?",
+    "relevant": []
+  },
+  {
+    "question": "What is the warranty policy for my current refrigerator model?",
+    "relevant": []
+  },
+  {
+    "question": "Qual è la quotazione attuale di NVIDIA e conviene comprarla questa settimana?",
+    "relevant": []
+  },
+  {
+    "question": "How can I repair a leaking Shimano hydraulic bicycle brake at home?",
+    "relevant": []
+  },
+  {
+    "question": "Quale versione di MCP supporta Talamus per il controllo remoto di Spotify?",
+    "relevant": []
+  },
+  {
+    "question": "What did my doctor say about my blood test results?",
+    "relevant": []
+  }
 ]
