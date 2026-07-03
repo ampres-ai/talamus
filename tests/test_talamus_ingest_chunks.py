@@ -15,6 +15,7 @@ from pathlib import Path
 from talamus.errors import EngineFailed
 from talamus.ingest import (
     CHUNK_CHARS,
+    CHUNK_OVERLAP,
     estimate_chunks,
     ingest_file,
     ingest_large,
@@ -57,7 +58,7 @@ class SplitChunksTests(unittest.TestCase):
         chunks = split_chunks(text, limit=5_000)
         self.assertGreater(len(chunks), 1)
         for chunk in chunks:
-            self.assertLessEqual(len(chunk), 5_000)
+            self.assertLessEqual(len(chunk), 5_000 + CHUNK_OVERLAP + 2)
         merged = " ".join(chunks)
         for i in range(40):
             self.assertIn(f"Paragrafo {i}.", merged)
@@ -68,9 +69,61 @@ class SplitChunksTests(unittest.TestCase):
 
     def test_giant_single_paragraph_is_hard_split(self) -> None:
         text = "x" * 50_000  # no paragraph boundaries at all
-        chunks = split_chunks(text, limit=20_000)
+        chunks = split_chunks(text, limit=20_000, overlap=0)
         self.assertGreater(len(chunks), 1)
         self.assertEqual(sum(len(c) for c in chunks), 50_000)
+
+    def test_overlap_keeps_boundary_concept_whole(self) -> None:
+        setup = "Setup. " + "a" * 1_900
+        concept = "The boundary concept says alpha beta gamma stay together."
+        explanation = "Explanation. " + "b" * 500
+        after = "After. " + "c" * 1_900
+        text = "\n\n".join([setup, concept, explanation, after])
+        no_overlap = split_chunks(text, limit=2_500, overlap=0)
+        chunks = split_chunks(text, limit=2_500, overlap=700)
+        self.assertGreater(len(chunks), 1)
+        self.assertFalse(any(concept in chunk for chunk in no_overlap[1:]))
+        self.assertTrue(any(concept in chunk for chunk in chunks[1:]))
+
+    def test_overlap_zero_matches_historical_output(self) -> None:
+        text = "\n\n".join(
+            [
+                "P0 " + "a" * 20,
+                "P1 " + "b" * 20,
+                "P2 " + "c" * 20,
+                "P3 " + "d" * 20,
+                "P4 " + "e" * 20,
+            ]
+        )
+        self.assertEqual(
+            split_chunks(text, limit=60, overlap=0),
+            [
+                "P0 " + "a" * 20 + "\n\n" + "P1 " + "b" * 20,
+                "P2 " + "c" * 20 + "\n\n" + "P3 " + "d" * 20,
+                "P4 " + "e" * 20,
+            ],
+        )
+
+    def test_split_is_deterministic_with_overlap(self) -> None:
+        text = "\n\n".join(f"blocco {i}. " + "x" * 500 for i in range(16))
+        self.assertEqual(
+            split_chunks(text, limit=1_800, overlap=650),
+            split_chunks(text, limit=1_800, overlap=650),
+        )
+
+    def test_overlap_does_not_change_chunk_count(self) -> None:
+        text = "\n\n".join(f"paragrafo {i}. " + "x" * 700 for i in range(20))
+        self.assertEqual(
+            len(split_chunks(text, limit=2_000, overlap=0)),
+            len(split_chunks(text, limit=2_000, overlap=500)),
+        )
+
+    def test_giant_single_paragraph_is_hard_split_with_overlap(self) -> None:
+        text = "x" * 50_000
+        chunks = split_chunks(text, limit=20_000, overlap=1_000)
+        self.assertGreater(len(chunks), 1)
+        self.assertEqual(len(split_chunks(text, limit=20_000, overlap=0)), len(chunks))
+        self.assertTrue(all(chunk for chunk in chunks))
 
 
 class EstimateTests(unittest.TestCase):

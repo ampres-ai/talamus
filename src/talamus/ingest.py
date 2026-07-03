@@ -71,12 +71,10 @@ def _compile_package(
 
 
 CHUNK_CHARS = 20_000  # ~5k tokens per extraction call: bigger documents are chunked
+CHUNK_OVERLAP = 1_000  # ~250 tokens of deterministic context from the prior chunk
 
 
-def split_chunks(text: str, limit: int = CHUNK_CHARS) -> list[str]:
-    """Split big documents at paragraph boundaries, each chunk under ``limit``.
-
-    Deterministic: the same text always yields the same chunks (resume relies on it)."""
+def _base_split_chunks(text: str, limit: int) -> list[str]:
     if len(text) <= limit:
         return [text]
     chunks: list[str] = []
@@ -95,6 +93,46 @@ def split_chunks(text: str, limit: int = CHUNK_CHARS) -> list[str]:
     if current and "".join(current).strip():
         chunks.append("".join(current).strip())
     return chunks
+
+
+def _overlap_tail(chunk: str, overlap: int) -> str:
+    if overlap <= 0 or not chunk:
+        return ""
+    paragraphs = chunk.split("\n\n")
+    tail: list[str] = []
+    size = 0
+    for paragraph in reversed(paragraphs):
+        addition = len(paragraph) if not tail else len(paragraph) + 2
+        if not tail and len(paragraph) > overlap:
+            return paragraph[-overlap:]
+        if size + addition > overlap:
+            break
+        tail.append(paragraph)
+        size += addition
+    tail.reverse()
+    return "\n\n".join(tail)
+
+
+def split_chunks(text: str, limit: int = CHUNK_CHARS, overlap: int = CHUNK_OVERLAP) -> list[str]:
+    """Split big documents at paragraph boundaries with deterministic overlap.
+
+    ``limit`` applies to each chunk's own content. Every chunk after the first is
+    prefixed with the tail of the previous base chunk, so its total size may
+    exceed ``limit`` by up to ``overlap + 2`` characters. This headroom is
+    intentional: the limit guards LLM call size and the overlap window preserves
+    boundary concepts for extraction.
+
+    Deterministic: the same text always yields the same chunks (resume relies on it).
+    ``overlap=0`` reproduces the historical chunk output exactly.
+    """
+    chunks = _base_split_chunks(text, limit)
+    if overlap <= 0 or len(chunks) == 1:
+        return chunks
+    overlapped = [chunks[0]]
+    for previous, chunk in zip(chunks, chunks[1:], strict=False):
+        tail = _overlap_tail(previous, overlap)
+        overlapped.append(f"{tail}\n\n{chunk}" if tail else chunk)
+    return overlapped
 
 
 def estimate_chunks(paths: TalamusPaths, file_path: Path) -> dict:
