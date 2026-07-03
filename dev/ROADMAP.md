@@ -249,9 +249,11 @@ round). Flags smoke-tested live (claude `--model`, codex `-m` +
 `model_reasoning_effort` incl. `xhigh` on gpt-5.5; gemini `-m`, no effort). Savings
 evidence: [dev/research/2026-07-p2-tiering-savings.md](research/2026-07-p2-tiering-savings.md).
 Also fixed en route: engine failures now surface the real CLI error (stdout, e.g. a
-401) instead of a blind exit code. **Remaining P2 work** (separate slices):
-usage-limit detection + graceful fallback + the hard per-call timeout;
-kimi-cli/opencode adapters; anthropic-api effort.
+401) instead of a blind exit code. **Remaining P2 work** — mostly CLOSED 2026-07-02:
+usage-limit detection + configurable hard timeout shipped (EngineLimitReached,
+TALAMUS_ENGINE_TIMEOUT); opencode AND antigravity-cli adapters shipped,
+live-verified. Still open: kimi-cli (not installed on the dev machine — flags
+unverifiable, honesty rule) and anthropic-api effort/thinking-budget.
 
 **Work items:**
 - **Subscription-CLI coverage:** keep claude-cli, codex-cli (= ChatGPT), gemini-cli,
