@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
 
     if command == "setup":
         resolved = resolve_init_root(args.root, args.brain, args.use_global)
-        return _cmd_setup(resolved.root, args.engine)
+        return _cmd_setup(resolved.root, args.engine, args.capture)
 
     if command == "init":
         resolved = resolve_init_root(args.root, args.brain, args.use_global)
@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "mcp":
             return _cmd_mcp_install(root)
         if command == "hook":
-            return _cmd_hook(root)
+            return _cmd_hook(root, args.install)
         if command == "hook-run":
             return _cmd_hook_run(root)
         if command == "status":

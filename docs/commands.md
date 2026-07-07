@@ -7,6 +7,7 @@ options. Most commands accept the [global flags](#global-flags) below.
 
 | Command | What it does |
 | --- | --- |
+| `talamus setup [--engine E] [--capture ask\|yes\|no]` | One-command onboarding: brain + engine + MCP + the capture hook (installed only with your consent). |
 | `talamus init [--engine E]` | Create a brain here; auto-detects your LLM engine (override with `--engine`). |
 | `talamus demo` | Create a small example brain to try instantly (no LLM needed). |
 | `talamus status` | Check the brain layout is intact. |
@@ -95,6 +96,7 @@ notes from the owning brain — the federated index is a pointer index, never so
 | --- | --- |
 | `talamus mcp install` | Write/merge `.mcp.json` for Claude Code / Cursor / Desktop. |
 | `talamus hook` | Print the Claude Code `SessionEnd` capture-hook config. |
+| `talamus hook --install` | Write the hook into `.claude/settings.json` (merges, idempotent). |
 | `talamus hook-run` | Run the capture hook (reads the hook JSON on stdin). |
 | `talamus completion [bash\|zsh]` | Print a shell completion script. |
 | `talamus ui` | Launch the native desktop/web app (needs the `ui` extra). |

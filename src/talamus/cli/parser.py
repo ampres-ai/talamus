@@ -50,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
         "setup", parents=[common], help="one-command onboarding: brain + engine + MCP + hook"
     )
     setup.add_argument("--engine", default=None, help="LLM engine (else best detected)")
+    setup.add_argument(
+        "--capture",
+        choices=["ask", "yes", "no"],
+        default="ask",
+        help="session-capture hook consent: ask interactively (default), yes, or no",
+    )
     init = sub.add_parser("init", parents=[common], help="initialize a brain here")
     init.add_argument("--engine", default=None, help="LLM engine (else auto-detected).")
     init.add_argument(
@@ -159,7 +165,14 @@ def build_parser() -> argparse.ArgumentParser:
     completion.add_argument("shell", nargs="?", default="bash", choices=["bash", "zsh"])
     mcp = sub.add_parser("mcp", parents=[common], help="set up the MCP server config (.mcp.json)")
     mcp.add_argument("action", nargs="?", default="install", choices=["install"])
-    sub.add_parser("hook", parents=[common], help="print the Claude Code capture-hook config")
+    hook = sub.add_parser(
+        "hook", parents=[common], help="print or install the Claude Code capture-hook config"
+    )
+    hook.add_argument(
+        "--install",
+        action="store_true",
+        help="write the SessionEnd hook into .claude/settings.json (explicit consent)",
+    )
     sub.add_parser("hook-run", parents=[common], help="run the capture hook (reads stdin)")
 
     ingest = sub.add_parser("ingest", parents=[common], help="add a file, folder, or URL")

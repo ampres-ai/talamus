@@ -382,14 +382,15 @@ smooth, demonstrable experience — the single most important thing for virality
   test asserts the second session's answer cites a note created from the first.
   **Delegate:** partial — you design the arc; codex writes the harness + test.
 
-- **[M2] Make the capture hook consent-first and legible.** *Why: D6.* `talamus
-  setup` must (a) show exactly what the hook captures (transcript + diff), where it
-  is stored (this brain's notes), and the worth-remembering gate; (b) ask once for
-  consent; (c) write the hook only on yes; (d) leave an audit trail
-  (`.talamus/logs/capture.log` already exists — surface it). **Accept:** a test
-  drives setup with consent=yes and consent=no and asserts the hook is written only
-  on yes; the consent copy names the data and destination. **Delegate:** yes, with
-  the exact copy provided by you.
+- **[M2] Make the capture hook consent-first and legible. → DONE (2026-07-07).**
+  `talamus setup` now shows the full consent copy (transcript + git diff, the
+  worth-remembering gate, THIS brain as destination, the `.talamus/logs/capture.log`
+  audit trail), asks once (`--capture ask|yes|no`, default ask; non-interactive or
+  EOF ⇒ no), and writes the hook into `.claude/settings.json` only on yes via
+  `services.integrations.install_capture_hook` (merge-not-clobber, idempotent).
+  `talamus hook --install` is the explicit later-consent path. Hook command now
+  quotes the root (paths with spaces). Tests: `tests/test_talamus_hook_consent.py`
+  covers the acceptance exactly.
 
 - **[M3] Measure and tighten capture quality.** *Why: D2 — the magic must be
   *good*, not just present.* On real sessions, measure how good the extracted notes

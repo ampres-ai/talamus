@@ -28,12 +28,16 @@ from talamus.scan import (
 from talamus.services.backup import export_brain, import_brain_archive
 from talamus.services.diagnostics import inspect_diagnostics
 from talamus.services.engines import choose_default_engine, list_engines
-from talamus.services.integrations import build_hook_snippet, install_mcp_config
+from talamus.services.integrations import (
+    build_hook_snippet,
+    install_capture_hook,
+    install_mcp_config,
+)
 from talamus.services.readiness import ReadinessReport, inspect_readiness
 from talamus.store import reindex
 
 
-def _cmd_setup(root: Path, engine: str | None) -> int:
+def _cmd_setup(root: Path, engine: str | None, capture: str = "ask") -> int:
     """One-command onboarding (Fase R4): the coding-agent subscription you
     already pay for becomes a personal + agentic memory, in minutes."""
     print("Talamus setup\n")
@@ -49,8 +53,16 @@ def _cmd_setup(root: Path, engine: str | None) -> int:
     print("2/4  Connecting your agent (MCP)...")
     _cmd_mcp_install(root)
     print()
-    print("3/4  Session capture hook (to remember the agent's work):")
-    _cmd_hook(root)
+    print("3/4  Session capture (the memory that grows on its own):")
+    _print_capture_consent_copy(root)
+    if _capture_consented(capture):
+        result = install_capture_hook(root)
+        if not result.success:
+            print(result.message, file=sys.stderr)
+            return 1
+        print(f"     {result.message}")
+    else:
+        print("     Skipped. Enable it any time with: talamus hook --install")
     print()
     print("4/4  What there is to learn in this folder (plan, zero cost):")
     plan = build_plan(root, profile="all")
@@ -136,13 +148,50 @@ def _cmd_mcp_install(root: Path) -> int:
     return 0
 
 
-def _cmd_hook(root: Path) -> int:
+def _print_capture_consent_copy(root: Path) -> None:
+    """The D6 consent copy: name the data, the destination, and the audit trail
+    BEFORE asking. Keep it honest and complete — this is the privacy contract."""
+    print("     When an agent session ends, a SessionEnd hook can send Talamus:")
+    print("       - the session transcript")
+    print("       - the git diff of the working tree")
+    print("     Only sessions that pass the worth-remembering gate become notes,")
+    print(f"     stored locally in THIS brain ({root}).")
+    print("     Nothing leaves your machine beyond calls to your configured LLM.")
+    print("     Every capture decision is logged to .talamus/logs/capture.log.")
+    print("     The hook is one SessionEnd entry in .claude/settings.json.")
+
+
+def _capture_consented(capture: str) -> bool:
+    if capture == "yes":
+        return True
+    if capture == "no":
+        return False
+    if not sys.stdin.isatty():
+        print("     (non-interactive run: not installing without consent)")
+        return False
+    try:
+        answer = input("     Install the capture hook? [y/N] ")
+    except EOFError:
+        print("     (no input available: not installing without consent)")
+        return False
+    return answer.strip().lower() in ("y", "yes")
+
+
+def _cmd_hook(root: Path, install: bool = False) -> int:
+    if install:
+        installed = install_capture_hook(root)
+        if not installed.success:
+            print(installed.message, file=sys.stderr)
+            return 1
+        print(installed.message)
+        return 0
     result = build_hook_snippet(root)
     if not result.success or result.data is None:
         print(result.message, file=sys.stderr)
         return 1
     print("Add to your Claude Code settings (.claude/settings.json):")
     print(json.dumps(result.data.settings, indent=2))
+    print("or run: talamus hook --install")
     return 0
 
 

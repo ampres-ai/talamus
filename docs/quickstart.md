@@ -48,8 +48,14 @@ Agents can then `search` / `read_note` / `recall` / `overview` / `neighbors` / `
 against your brain. To capture your work sessions automatically:
 
 ```bash
-talamus hook                    # prints the Claude Code SessionEnd hook to add
+talamus hook --install          # writes the Claude Code SessionEnd hook (asks nothing else)
+talamus hook                    # or just print the snippet to add by hand
 ```
+
+The hook sends Talamus the session transcript and the git diff when a session
+ends; only sessions that pass the worth-remembering gate become notes, and every
+decision is logged to `.talamus/logs/capture.log`. `talamus setup` proposes this
+hook and installs it only if you consent (`--capture yes|no|ask`).
 
 ## 6. Browse like a wiki (Obsidian)
 
