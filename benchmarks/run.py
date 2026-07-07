@@ -122,9 +122,14 @@ def _run_shootout(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Talamus benchmark suite")
-    parser.add_argument("--tier", choices=["ci", "shootout", "corpus"], default="ci")
+    parser.add_argument("--tier", choices=["ci", "shootout", "corpus", "one-screen"], default="ci")
     parser.add_argument("--yes", action="store_true", help="confirm a paid tier")
     parser.add_argument("--out", default="benchmarks/results", help="results directory")
+    parser.add_argument(
+        "--results",
+        default="benchmarks/results",
+        help="committed artifacts directory (the one-screen tier reads, never writes, it)",
+    )
     parser.add_argument("--dataset", default="scifact", help="BEIR dataset for the shootout")
     parser.add_argument("--queries", type=int, default=0, help="cap judged queries (0 = all)")
     parser.add_argument("--engine", default="gemini-cli", help="LLM engine for talamus-smart")
@@ -136,6 +141,10 @@ def main(argv: list[str] | None = None) -> int:
     n_queries = args.queries or None
     if args.tier == "ci":
         return _run_ci(Path(args.out))
+    if args.tier == "one-screen":
+        from benchmarks.one_screen import run_one_screen
+
+        return run_one_screen(Path(args.results), Path(args.out))
     if args.tier == "shootout":
         return _run_shootout(
             args.yes, args.dataset, n_queries, args.engine, args.model, smart=not args.no_smart

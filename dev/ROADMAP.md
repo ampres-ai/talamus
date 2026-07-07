@@ -477,12 +477,16 @@ the developer magic but must not look unfinished at launch.
 
 **Goal:** a single, reproducible, honest proof for the skeptical first commenter.
 
-- **[B1] The one-screen benchmark.** *Why: D7.3.* Assemble: tokens-per-answer
-  (−97.7%), cited & grounded, €0 marginal, cross-language win (book hit 0.971 vs
-  vector-DB 0.743), AND the honest loss (monolingual nDCG vs multilingual-e5, RS7).
-  One command reproduces it; one paragraph explains it. **Accept:**
-  `benchmarks/run.py` produces the table; a doc renders it; every number traces to
-  an artifact. **Delegate:** yes.
+- **[B1] The one-screen benchmark. → DONE (2026-07-07).**
+  `python benchmarks/run.py --tier one-screen` assembles the committed
+  artifacts into the 11-row table (tokens −97.7%, cited 100%, €0, book hit
+  0.971 vs BM25 0.829 vs MiniLM 0.743, THE HONEST LOSS row — multilingual-e5
+  leads nDCG 0.837/MRR 0.857, SciFact post-RS8, judged answers 0.943/0.914,
+  ontology ON/OFF, fully-local 0.800, refusal 1.000, latency) + the honest
+  paragraph. Rendered to `benchmarks/results/one-screen.md` and the user page
+  `docs/benchmarks.md`; a FAST test asserts every source cell points at a real
+  file and the honest-loss row is present. It measures nothing — pure
+  assembler over artifacts, fails loudly if one is missing.
 
 ### Phase C — Code health & docs truth · serves maintainability for the successors
 

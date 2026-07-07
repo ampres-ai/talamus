@@ -15,6 +15,7 @@ nav:
   - Multi-brain: multi-brain.md
   - Ontology Lab: ontology.md
   - Measuring retrieval: evaluation.md
+  - Benchmarks: benchmarks.md
   - For agents: agent-tool-calling.md
   - Architecture: architecture.md
   - Release checklist: release-checklist.md
