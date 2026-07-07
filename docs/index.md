@@ -9,8 +9,9 @@ engine you already use.
 
 It is built on three properties that, together, nothing else gives you:
 
-- **Time** — a bitemporal graph that invalidates instead of deleting *(roadmap)*.
-- **Meaning** — a typed, self-emerging ontology the LLM reasons over *(Level 1 today)*.
+- **Time** — shipped: `ask` / `read` / `history --as-of` plus `timeline`.
+- **Meaning** — shipped: Ontology Lab and global schema (`induce`, `review`,
+  `apply`, `eval`, `stability`, `history`, `export`).
 - **Verifiability** — every note keeps its sources, preserved for verification.
 
 ## Where to go next

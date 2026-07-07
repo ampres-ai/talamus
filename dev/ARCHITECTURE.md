@@ -35,7 +35,7 @@ same change that alters public behavior (see governance in
 Hybrid truth model: Markdown = human-editable truth for prose fields;
 cache JSON = machine truth for provenance/relations/retrieval. `reindex`
 re-reads Markdown, merges human edits into machine records, rebuilds every
-derived index. CACHE_VERSION (in `paths.py`) bumps force a reindex migration.
+derived index. CACHE_VERSION (in `store.py`) bumps force a reindex migration.
 
 ## Data model (`models.py`)
 
@@ -202,8 +202,10 @@ central. `talamus brains list/use/info/rename/delete/register/index`.
 `LLMProvider` protocol = `complete(prompt) -> str`. Adapters: claude-cli
 (`claude -p`), codex-cli (`codex exec` — an AGENT, pinned read-only sandbox,
 prompt on stdin), gemini-cli (headless `-p ""` + stdin — also an agent:
-`--approval-mode plan` read-only + `--skip-trust`), ollama (`ollama run`),
-anthropic-api (key from env or TALAMUS_HOME/credentials.json; env wins).
+`--approval-mode plan` read-only + `--skip-trust`), opencode (`opencode run`,
+read-only plan agent), antigravity-cli (`agy -p ""`), ollama (`ollama run` or
+HTTP `/api/generate` when options/think are needed), anthropic-api (key from env
+or TALAMUS_HOME/credentials.json; env wins).
 Optional model passthrough via config `llm_model` → `-m`. Executables resolved
 with `shutil.which` (Windows shims). All model JSON is parsed defensively
 (strict=False, balanced-object salvage, batch isolation) — enforced by the
@@ -219,10 +221,12 @@ returning the secret. Mutating service calls return `ServiceResult` from
 
 ## Interfaces
 
-The front ends (CLI, MCP, UI, SDK) route through `services/`: typed
-`ServiceResult` contracts are the one seam between the core and every interface,
-so behaviour stays identical across them. CLI and MCP are fully on the seam; the
-UI is mid-migration onto it.
+The front ends (CLI, MCP, UI, SDK) route through `services/` wherever a shared
+contract exists: typed `ServiceResult` contracts are the seam between the core
+and interfaces, so behaviour stays identical across them. MCP uses the seam for
+its tool surface. Most CLI command groups use it too; `brains list/info` still
+read registry/cache details directly and should be treated honestly as remaining
+seam work. The React workbench is current; Flet was retired at parity.
 
 - **Shared services** (`services/`): UI/CLI/SDK-neutral contracts and probes.
   `readiness.py` reports brain/engine/cache/job state for dashboards; the
@@ -265,8 +269,9 @@ UI is mid-migration onto it.
   review_list/apply/reject), all routed through `services/`. Local stdio;
   optional localhost HTTP.
 - **SDK** (`recall.py`): read-side functions for embedding in agent code.
-- **Web workbench** (`webapi/`, optional `ui` extra): FastAPI + React/Vite static
-  workbench launched by `talamus ui`; `ui/physics.py` remains as the pure
+- **Web workbench** (`webapi/` + `webui/`, optional `ui` extra): FastAPI +
+  React/Vite static workbench launched by `talamus ui` in a pywebview window by
+  default, or a browser with `--web`; `ui/physics.py` remains as the pure
   server-side force layout used by `webapi/graph_layout.py`.
 - **Hook** (`scripts/talamus-session-hook.py`): session capture on agent
   session end.

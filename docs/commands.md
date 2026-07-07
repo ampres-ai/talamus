@@ -8,7 +8,7 @@ options. Most commands accept the [global flags](#global-flags) below.
 | Command | What it does |
 | --- | --- |
 | `talamus setup [--engine E] [--capture ask\|yes\|no]` | One-command onboarding: brain + engine + MCP + the capture hook (installed only with your consent). |
-| `talamus init [--engine E]` | Create a brain here; auto-detects your LLM engine (override with `--engine`). |
+| `talamus init [--engine E] [--scan] [--profile docs\|code\|all]` | Create a brain here; auto-detects your LLM engine. `--scan` shows the repo scan plan after init. |
 | `talamus demo` | Create a small example brain to try instantly (no LLM needed). |
 | `talamus status` | Check the brain layout is intact. |
 | `talamus doctor` | Health check: brain path, engine on PATH, cache freshness, note count, overview state. |
@@ -18,9 +18,8 @@ options. Most commands accept the [global flags](#global-flags) below.
 
 | Command | What it does |
 | --- | --- |
-| `talamus ingest <file\|dir\|url>` | Turn a document, folder, or URL into source-grounded concept notes (PDF/DOCX/HTML/Markdown/text). |
-| `talamus scan [dir] [--dry-run\|--yes\|--background]` | Compile an existing repository: plan first (zero cost), then execute as a resumable job. `--profile docs\|code\|all`, respects `.gitignore`, excludes vendor/caches/lockfiles/secret files, **redacts likely secrets** and stops for approval (`--allow-secrets`). Code becomes module/API digests, not prose. |
-| `talamus init --scan` | Initialize here and show the scan plan (dry-run; never spends silently). |
+| `talamus ingest <file\|dir\|url> [--yes]` | Turn a document, folder, or URL into source-grounded concept notes (PDF/DOCX/HTML/Markdown/text). Large multi-chunk ingests estimate first and require `--yes`. |
+| `talamus scan [dir] [--dry-run\|--yes\|--background]` | Compile an existing repository: plan first (zero cost), then execute as a resumable job. `--profile docs\|code\|all`, `--max-files N`, `--include GLOB`, `--exclude GLOB`, respects `.gitignore`, excludes vendor/caches/lockfiles/secret files, **redacts likely secrets** and stops for approval (`--allow-secrets`). Code becomes module/API digests, not prose. |
 | `talamus ask "<question>"` | Cited answer composed from your brain. |
 | `talamus overview [--rebuild]` | Show the hierarchical domain map induced from the graph. |
 | `talamus search "<query>" [--limit N]` | List relevant notes (token-cheap, instant). |
@@ -40,6 +39,7 @@ options. Most commands accept the [global flags](#global-flags) below.
 | Command | What it does |
 | --- | --- |
 | `talamus consolidate [--apply]` | Find (and optionally merge) duplicate concepts, across languages. |
+| `talamus enrich [--yes]` | Add symptom/vocabulary phrasings to `retrieval_text`; estimates first and runs only with `--yes`. |
 | `talamus verify "<title>" [--apply]` | Check a note against its preserved source; optionally apply the correction. |
 | `talamus verify --all \| --stale \| --source S` | Batch: provenance health (missing/changed source, low confidence — no LLM with `--stale`) + content checks; proposed corrections land in the **review queue**, never overwrite silently. |
 | `talamus relations [--prune MIN]` | List typed relations, or prune those below a confidence. |
@@ -77,9 +77,11 @@ notes from the owning brain — the federated index is a pointer index, never so
 | `talamus ontology induce [--min-support N]` | Induce candidate relation types from unexplained surfaces (1 LLM call). |
 | `talamus ontology review` | Candidates with support, definitions and real-source examples. |
 | `talamus ontology apply <id> [--force]` | Promote to active (thresholds: support ≥ 8 on ≥ 3 notes); re-types the concept map. |
-| `talamus ontology reject\|deprecate <id>` | Decisions are recorded, types are never deleted. |
-| `talamus ontology eval --cases <f>` | Retrieval lift: fixed baseline vs active emergent schema. |
-| `talamus ontology stability\|history\|export` | Cluster stability (Jaccard), schema events, full schema JSON. |
+| `talamus ontology reject <id> [--reason R]` | Reject a candidate; the decision is recorded. |
+| `talamus ontology deprecate <id> [--reason R]` | Deprecate an active type; types are never deleted. |
+| `talamus ontology eval --cases <f> [-k N]` | Retrieval lift: fixed baseline vs active emergent schema. |
+| `talamus ontology stability [--runs N]` | Cluster stability (Jaccard) over repeated inductions. |
+| `talamus ontology history\|export` | Schema events, full schema JSON. |
 
 ## Jobs & review
 
@@ -88,7 +90,8 @@ notes from the owning brain — the federated index is a pointer index, never so
 | `talamus jobs [list]` | List long-running jobs (scan/ingest/verify/...). |
 | `talamus jobs status\|logs\|cancel\|resume <id>` | Inspect, cancel (cooperative, never corrupts notes) or resume a job. |
 | `talamus review [list] [--all]` | Pending decisions (corrections, duplicates, ontology candidates, ...). |
-| `talamus review show\|apply\|reject <id> [--reason R]` | Decide an item; rejections stay logged, never deleted. |
+| `talamus review show\|apply <id>` | Inspect or apply an item. |
+| `talamus review reject <id> [--reason R]` | Reject an item; rejections stay logged, never deleted. |
 
 ## Integrations
 
@@ -99,7 +102,7 @@ notes from the owning brain — the federated index is a pointer index, never so
 | `talamus hook --install` | Write the hook into `.claude/settings.json` (merges, idempotent). |
 | `talamus hook-run` | Run the capture hook (reads the hook JSON on stdin). |
 | `talamus completion [bash\|zsh]` | Print a shell completion script. |
-| `talamus ui` | Launch the native desktop/web app (needs the `ui` extra). |
+| `talamus ui [--web] [--port N]` | Launch the local React workbench (needs the `ui` extra): pywebview window by default, browser with `--web`. |
 
 ## Global flags
 
@@ -107,6 +110,7 @@ notes from the owning brain — the federated index is a pointer index, never so
 - `--brain <name>` — use a named global brain under `TALAMUS_HOME`.
 - `--global` — use the default global brain.
 - `--json` — machine-readable output (read commands).
+- `--plain` / `--no-color` — plain output with no ANSI color.
 - `--verbose` — verbose diagnostics to stderr.
 
 See **[Configuration](configuration.md)** for how a brain is resolved when no flag is given.

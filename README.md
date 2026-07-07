@@ -114,8 +114,8 @@ extras (MCP, engines) are optional. See **[architecture](docs/architecture.md)**
 
 ## How it compares (measured)
 
-A real head-to-head against a dense vector-DB RAG pipeline (sentence-transformers
-+ FAISS) and vanilla BM25, same corpus/queries/judgments
+A real head-to-head against a MiniLM dense vector-DB RAG pipeline
+(sentence-transformers + FAISS) and vanilla BM25, same corpus/queries/judgments
 ([details](dev/research/2026-06-rs5-competitive-shootout.md)):
 
 | corpus | metric | Talamus | BM25 | Vector DB |
@@ -125,10 +125,14 @@ A real head-to-head against a dense vector-DB RAG pipeline (sentence-transformer
 | Cross-language + vague (our turf) | recall@10 | **0.886** | 0.771 | 0.700 |
 | Cross-language + vague | hit@10 | **0.971** | 0.829 | 0.743 |
 
-**On the vector DB's home turf we tie it — with zero embedding infrastructure.
-On cross-language and vague queries we win decisively** (the dense model lands
-last). Plus time, meaning and verifiability (100% of notes source-resolvable;
-97.7% fewer tokens than loading the brain) — moats no vector DB has.
+**On the vector DB's home turf we tie MiniLM — with zero embedding
+infrastructure. On cross-language and vague queries we beat that MiniLM
+baseline.** A stronger multilingual dense model changes the honest story: on
+the book corpus multilingual-e5 leads nDCG **0.837** / MRR **0.857**, while
+`talamus-smart` keeps the best hit **0.971** / recall **0.886**. The edge is not
+"always beats dense"; it is zero embedding infra plus time, meaning and
+verifiability (100% of notes source-resolvable; 97.7% fewer tokens than loading
+the brain).
 
 ## Use cases
 

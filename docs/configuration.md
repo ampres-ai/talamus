@@ -36,7 +36,19 @@ Every engine goes through per-task **model+effort tiering** (`task_tiers` and
 | `TALAMUS_HOME` | Where global brains live (default `~/talamus`). |
 | `TALAMUS_CONTEXT_BUDGET` | Max tokens of note context sent to the engine per answer (default `6000`); keeps answer cost flat as the brain grows. |
 | `ANTHROPIC_API_KEY` | API key for the `anthropic-api` engine. |
+| `OLLAMA_HOST` | Ollama HTTP endpoint for local model calls when HTTP options are used (default `http://localhost:11434`). |
+| `TALAMUS_UI_TOKEN` | Advanced: override the random per-launch workbench token. Normally leave unset. |
+| `TALAMUS_MONO_TRIGRAM_SCALE` | Advanced retrieval tuning: trigram scale for monolingual-ASCII corpora (default `0.3`). |
 | `TALAMUS_LOG` | Set (any value) to enable DEBUG logging — same as `--verbose`. |
+
+## Related command flags
+
+- Global output: `--plain` / `--no-color` disables ANSI color; `--json` is for machine-readable read output.
+- Setup/init: `talamus init --profile docs|code|all --scan` initializes a brain and shows a scan plan.
+- Consent gates: `talamus ingest --yes` confirms large multi-chunk ingest; `talamus enrich --yes` confirms enrichment batches.
+- Scan limits: `talamus scan --max-files N --include GLOB --exclude GLOB` shapes the repo plan before any LLM spend.
+- UI: `talamus ui --web --port N` opens the React workbench in a browser on a chosen port.
+- Ontology: `reject` / `deprecate` accept `--reason`; `eval` accepts `-k`; `stability` accepts `--runs`.
 
 ## Which brain is used
 

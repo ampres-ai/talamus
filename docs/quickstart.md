@@ -35,6 +35,10 @@ talamus ask "how does X work?"  # cited answer from your brain
 Talamus runs on what you already have — set it in `talamus.json` (or `TALAMUS_LLM_PROVIDER`):
 
 - `claude-cli` — your Claude subscription (default if `claude` is on PATH)
+- `codex-cli` — your ChatGPT subscription through Codex
+- `gemini-cli` — your Gemini subscription
+- `opencode` — opencode, with whatever providers you configured in it
+- `antigravity-cli` — Google Antigravity (`agy`)
 - `ollama` — a local model (`TALAMUS_LLM_MODEL=llama3`), fully offline
 - `anthropic-api` — the Anthropic API (`ANTHROPIC_API_KEY`)
 
@@ -62,11 +66,15 @@ hook and installs it only if you consent (`--capture yes|no|ask`).
 Open the `notes/` folder as an Obsidian vault: notes cross-link with `[[wikilinks]]`,
 so you can navigate the knowledge by hovering and clicking.
 
-Prefer a dedicated app? Install the UI extra and launch the native desktop/web app:
+Prefer a dedicated app? Install the UI extra and launch the local React web
+workbench. It opens in a pywebview window by default; use `--web` for a browser.
+The workbench has 9 views: Home, Ask, Graph, Library, Import, Ontology, Review,
+Brains, and System.
 
 ```bash
 pip install "talamus[ui]"
-talamus ui                      # chat, search, clickable wikilinks, domain browsing
+talamus ui                      # pywebview window
+talamus ui --web --port 8760    # browser, custom port
 ```
 
 ## Coming from Obsidian or Notion?

@@ -20,7 +20,7 @@ Run before tagging a release. Nothing ships with a red gate.
 
 - [ ] README claims match reality, each labelled shipped / experimental / roadmap
 - [ ] CHANGELOG updated; commands in docs match `talamus --help`
-- [ ] Cache migrations documented (current: v2 — migrate with `talamus reindex`)
+- [ ] Cache migrations documented (current: v5 — migrate with `talamus reindex`)
 
 ## Safety (PRD §17.4)
 

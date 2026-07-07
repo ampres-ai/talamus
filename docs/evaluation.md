@@ -28,6 +28,8 @@ talamus eval --cases cases.json -k 5
 ```
 
 ```text
+Illustrative output:
+
 Valutazione recupero — 2 casi, k=5
   recall@5    0.750
   precision@5 0.300

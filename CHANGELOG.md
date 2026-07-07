@@ -51,14 +51,15 @@ Pre-release. The project was renamed **Kortex → Talamus**.
   (`talamus ontology ...`); research review in `docs/research/`.
 - **Full temporal model**: valid-time claim overlay, robust `--as-of` parsing
   (year/month/date/tz), corrections close+open claims, `talamus timeline`,
-  `ask`/`read --as-of`. Cache v2 (migration: `talamus reindex`).
+  `ask`/`read --as-of`. Cache v5 (migration: `talamus reindex`).
 - **Active verifiability**: `verify --all/--stale/--source`, provenance health,
   corrections proposed to review (never silent overwrites).
 - **Final CLI**: state dashboard on bare `talamus`, JSON coverage, help under
   100 columns, snapshot tests, `--plain/--no-color`.
-- **UI workbench**: 11 views (Home/Chat/Cerca/Note/Domini/Grafo/Timeline/Ingest/
-  Review/Ontologia/Impostazioni) over the SDK, `talamus ui --web --port`,
-  headless smoke tests. *(runtime rendering: verify with `talamus ui`)*
+- **UI workbench**: 9 React views (Home/Ask/Graph/Library/Import/Ontology/
+  Review/Brains/System), launched by `talamus ui` in a pywebview window or by
+  `talamus ui --web --port` in a browser. *(runtime rendering: verify with
+  `talamus ui`)*
 - **MCP finalized**: read tools + history/sources/ontology_status; write tools
   with explicit scopes; `propose_note` routes uncertain knowledge to review;
   capture decisions logged.
@@ -70,16 +71,18 @@ Pre-release. The project was renamed **Kortex → Talamus**.
   global+project brain **scoping** (`--root` / `--brain` / `--global`, `TALAMUS_HOME`),
   `brains`, `where`, `export`/`import`, shell `completion`, and `demo`
   (an instant, LLM-free example brain).
-- **Engines**: pluggable LLM adapters via a `build_provider` factory — `claude-cli`,
-  local **Ollama**, and the **Anthropic API**; selected from config (`llm_provider`,
-  `llm_model`). The CLI and MCP server build the engine from config.
+- **Engines**: pluggable LLM adapters via a `build_provider` factory —
+  `claude-cli`, `codex-cli`, `gemini-cli`, `opencode`, `antigravity-cli`,
+  local **Ollama**, and the **Anthropic API**; selected from config
+  (`llm_provider`, `llm_model`). The CLI and MCP server build the engine from
+  config.
 - **Onboarding**: `talamus mcp install` (writes `.mcp.json`) and `talamus hook` /
   `hook-run` (a robust Claude Code capture hook). 10-minute quickstart.
 - **Quality**: `ruff` + `mypy` + a `dev.py` runner, multi-OS CI, an exception
   hierarchy with actionable messages, logging, config validation, **normalized
   source files written to disk**, cache schema versioning, and a benchmark harness.
-- **Docs**: a 10k-star README, internal architecture doc, a security policy, and
-  this docs site.
+- **Docs**: README, internal architecture doc, a security policy, and this docs
+  site.
 - **Retrieval & meaning**: a hierarchical **domain overview** (`talamus overview`,
   hybrid graph-clusters + LLM naming) with overview-routed `ask`; deterministic
   **reranking** (`rank.py`: graph + BM25 union with an exact-name boost — no more
@@ -93,10 +96,9 @@ Pre-release. The project was renamed **Kortex → Talamus**.
 - **Ingestion**: multi-format `talamus ingest` for files, folders (recursive,
   incremental), and URLs — Markdown/text, **PDF** (`pdf` extra), **DOCX** and **HTML**
   (stdlib), with content-hash skip of unchanged sources.
-- **Interfaces**: a native **Flet desktop/web UI** (`talamus ui`, `ui` extra) — chat,
-  search, note view with clickable wikilinks, and domain browsing, calling the SDK
-  directly (no API); the MCP server gains an **`overview`** tool (cached domain map,
-  no LLM cost).
+- **Interfaces**: a local **React workbench** (`talamus ui`, `ui` extra) served by
+  FastAPI and opened in pywebview by default, with `--web` for a browser; the MCP
+  server gains an **`overview`** tool (cached domain map, no LLM cost).
 - **Polish**: `talamus --version`; `--limit` on `search`/`recall`; **PEP 561**
   `py.typed` so SDK consumers get type hints; folder ingest now **reports failed files**
   instead of dropping them silently; clear messages when the engine returns empty output;
