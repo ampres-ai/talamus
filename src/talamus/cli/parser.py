@@ -163,8 +163,16 @@ def build_parser() -> argparse.ArgumentParser:
     vault.add_argument("directory", help="the vault folder (Obsidian vault or md export)")
     completion = sub.add_parser("completion", help="print a shell completion script")
     completion.add_argument("shell", nargs="?", default="bash", choices=["bash", "zsh"])
-    mcp = sub.add_parser("mcp", parents=[common], help="set up the MCP server config (.mcp.json)")
+    mcp = sub.add_parser(
+        "mcp", parents=[common], help="connect your agents to the brain (MCP server config)"
+    )
     mcp.add_argument("action", nargs="?", default="install", choices=["install"])
+    mcp.add_argument(
+        "--agent",
+        choices=["auto", "claude", "cursor", "codex", "all"],
+        default="auto",
+        help="which agent to configure (auto: Claude Code + whatever else is detected)",
+    )
     hook = sub.add_parser(
         "hook", parents=[common], help="print or install the Claude Code capture-hook config"
     )

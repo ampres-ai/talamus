@@ -97,7 +97,7 @@ notes from the owning brain — the federated index is a pointer index, never so
 
 | Command | What it does |
 | --- | --- |
-| `talamus mcp install` | Write/merge `.mcp.json` for Claude Code / Cursor / Desktop. |
+| `talamus mcp install [--agent auto\|claude\|cursor\|codex\|all]` | Connect your agents in one command: `.mcp.json` (Claude Code), `.cursor/mcp.json` (Cursor), and a global `codex mcp add` registration (codex; the brain resolves from the project codex runs in). Auto detects what you have. |
 | `talamus hook` | Print the Claude Code `SessionEnd` capture-hook config. |
 | `talamus hook --install` | Write the hook into `.claude/settings.json` (merges, idempotent). |
 | `talamus hook-run` | Run the capture hook (reads the hook JSON on stdin). |

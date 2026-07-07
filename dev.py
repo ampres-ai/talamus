@@ -19,7 +19,10 @@ SRC = ROOT / "src"
 
 # Hermetic tests: the global ontology (and anything else under TALAMUS_HOME)
 # must never read from or write to the developer's real home during the gate.
+# CODEX_HOME likewise: mcp-install tests would otherwise register the MCP
+# server into the developer's real ~/.codex/config.toml via the codex CLI.
 _TEST_HOME = tempfile.mkdtemp(prefix="talamus-gate-home-")
+_TEST_CODEX_HOME = tempfile.mkdtemp(prefix="talamus-gate-codex-home-")
 
 
 def _env() -> dict[str, str]:
@@ -27,6 +30,7 @@ def _env() -> dict[str, str]:
     pythonpath = env.get("PYTHONPATH")
     env["PYTHONPATH"] = str(SRC) if not pythonpath else f"{SRC}{os.pathsep}{pythonpath}"
     env["TALAMUS_HOME"] = _TEST_HOME
+    env["CODEX_HOME"] = _TEST_CODEX_HOME
     return env
 
 

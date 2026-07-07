@@ -134,7 +134,7 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "ui":
             return _cmd_ui(root, args.web, args.port)
         if command == "mcp":
-            return _cmd_mcp_install(root)
+            return _cmd_mcp_install(root, args.agent)
         if command == "hook":
             return _cmd_hook(root, args.install)
         if command == "hook-run":

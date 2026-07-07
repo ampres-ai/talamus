@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, TypeVar
@@ -72,8 +74,63 @@ def inspect_integrations(root: str | Path) -> ServiceResult[IntegrationReport]:
 
 
 def install_mcp_config(root: str | Path) -> ServiceResult[McpInstallResult]:
+    """Claude Code reads the project-level `.mcp.json` (Cursor has its own path)."""
     root_path = Path(root)
-    config_path = _mcp_config_path(root_path)
+    return _install_mcp_json(_mcp_config_path(root_path), root_path)
+
+
+def install_mcp_config_cursor(root: str | Path) -> ServiceResult[McpInstallResult]:
+    """Cursor reads `<project>/.cursor/mcp.json` — same shape as `.mcp.json`."""
+    root_path = Path(root)
+    return _install_mcp_json(root_path / ".cursor" / "mcp.json", root_path)
+
+
+def install_mcp_config_codex() -> ServiceResult[McpInstallResult]:
+    """Codex registers MCP servers GLOBALLY via its own CLI (`codex mcp add`).
+
+    Registered without `--root` on purpose: `talamus-mcp` then resolves the
+    brain from the directory codex runs in, so ONE registration serves every
+    project. remove-then-add keeps the call idempotent (add rejects duplicates)."""
+    codex = shutil.which("codex")  # full path: bare "codex" is an npm .cmd shim on Windows
+    if codex is None:
+        return ServiceResult(
+            success=False,
+            message="codex CLI not found on PATH — install codex or skip --agent codex",
+            code="codex_not_found",
+        )
+    try:
+        subprocess.run(  # a stale entry is fine to drop; failure here is not an error
+            [codex, "mcp", "remove", "talamus"], capture_output=True, text=True, timeout=30
+        )
+        added = subprocess.run(
+            [codex, "mcp", "add", "talamus", "--", "talamus-mcp"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (subprocess.SubprocessError, OSError) as exc:
+        return _integration_error(exc)
+    if added.returncode != 0:
+        detail = (added.stderr or added.stdout or "").strip()
+        return ServiceResult(
+            success=False,
+            message=f"codex mcp add failed: {detail}",
+            code="codex_mcp_add_failed",
+        )
+    return ServiceResult(
+        success=True,
+        message="registered talamus with codex (global; the brain resolves per project)",
+        code="mcp_config_installed_codex",
+        data=McpInstallResult(
+            config_path="codex mcp (~/.codex/config.toml)",
+            server_name="talamus",
+            command="talamus-mcp",
+            args=[],
+        ),
+    )
+
+
+def _install_mcp_json(config_path: Path, root_path: Path) -> ServiceResult[McpInstallResult]:
     args = ["--root", str(root_path)]
     try:
         data = _read_json_object(config_path)
@@ -85,6 +142,7 @@ def install_mcp_config(root: str | Path) -> ServiceResult[McpInstallResult]:
             "command": "talamus-mcp",
             "args": args,
         }
+        config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     except (OSError, TypeError, ValueError, AttributeError, json.JSONDecodeError) as exc:
         return _integration_error(exc)

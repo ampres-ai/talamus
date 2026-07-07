@@ -45,8 +45,12 @@ Talamus runs on what you already have — set it in `talamus.json` (or `TALAMUS_
 ## 5. Use it from agents (MCP)
 
 ```bash
-talamus mcp install             # writes .mcp.json for Claude Code / Cursor / Desktop
+talamus mcp install             # one command: Claude Code + Cursor + codex (auto-detected)
 ```
+
+Claude Code reads the project `.mcp.json`, Cursor its `.cursor/mcp.json`,
+and codex gets one global registration (`codex mcp add talamus`) that resolves
+the right brain from whatever project codex runs in.
 
 Agents can then `search` / `read_note` / `recall` / `overview` / `neighbors` / `remember`
 against your brain. To capture your work sessions automatically:

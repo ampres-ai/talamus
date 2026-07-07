@@ -159,8 +159,12 @@ accessibility, absurd performance, magic→virality). Every phase below traces t
 - **The magic is unproven end-to-end** — we have never demonstrated, in one take,
   an agent working on a project and then, in a *fresh* session, recalling and
   citing what it learned. Until that is real and smooth, D2 is a promise, not a fact.
-- **MCP install friction** — not verified frictionless across Claude Code / Cursor /
-  Codex. If a viewer can't reproduce the demo in one command, the wow dies.
+- **MCP install friction → CLOSED (2026-07-07).** `talamus mcp install` (auto
+  mode, also inside setup) now configures Claude Code (`.mcp.json`), Cursor
+  (`.cursor/mcp.json`, when the project uses Cursor) and codex (global
+  `codex mcp add`, brain resolved per project) in one command — codex path
+  verified live on this machine; Cursor writes its documented config format
+  (app not installed here to verify end-to-end).
 - **opencode onboarding** — the engine adapter exists, but setup does not yet guide
   a user to configure/connect opencode (D3 requires this).
 - **Performance is "usable," not "absurd"** — 624 ms @ 100k is fine, not a jaw-drop.

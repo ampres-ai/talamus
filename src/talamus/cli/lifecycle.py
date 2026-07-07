@@ -32,6 +32,8 @@ from talamus.services.integrations import (
     build_hook_snippet,
     install_capture_hook,
     install_mcp_config,
+    install_mcp_config_codex,
+    install_mcp_config_cursor,
 )
 from talamus.services.readiness import ReadinessReport, inspect_readiness
 from talamus.store import reindex
@@ -139,13 +141,47 @@ def _cmd_demo(root: Path) -> int:
     return 0
 
 
-def _cmd_mcp_install(root: Path) -> int:
-    result = install_mcp_config(root)
-    if not result.success:
-        print(result.message, file=sys.stderr)
-        return 1
-    print(result.message)
-    return 0
+def _cmd_mcp_install(root: Path, agent: str = "auto") -> int:
+    """One command, every agent (D7.2). auto = Claude Code always, Cursor when
+    the project has a .cursor dir, codex when its CLI is on PATH. An agent the
+    user names explicitly must succeed; an auto-detected one may just report."""
+    if agent in ("claude", "cursor", "codex"):
+        result = {
+            "claude": lambda: install_mcp_config(root),
+            "cursor": lambda: install_mcp_config_cursor(root),
+            "codex": install_mcp_config_codex,
+        }[agent]()
+        if not result.success:
+            print(result.message, file=sys.stderr)
+            return 1
+        print(result.message)
+        return 0
+    code = 0
+    claude_result = install_mcp_config(root)
+    if not claude_result.success:
+        print(claude_result.message, file=sys.stderr)
+        code = 1
+    else:
+        print(f"Claude Code: {claude_result.message}")
+    if agent == "all" or (root / ".cursor").is_dir():
+        cursor_result = install_mcp_config_cursor(root)
+        if not cursor_result.success:
+            print(cursor_result.message, file=sys.stderr)
+            code = 1
+        else:
+            print(f"Cursor: {cursor_result.message}")
+    if agent == "all" or shutil.which("codex") is not None:
+        codex_result = install_mcp_config_codex()
+        if not codex_result.success:
+            # a MISSING codex is a skip even under "all"; a broken one is an error
+            if codex_result.code == "codex_not_found":
+                print(f"codex: skipped ({codex_result.message})")
+            else:
+                print(codex_result.message, file=sys.stderr)
+                code = 1
+        else:
+            print(f"codex: {codex_result.message}")
+    return code
 
 
 def _print_capture_consent_copy(root: Path) -> None:
