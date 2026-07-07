@@ -19,7 +19,8 @@ re-measure what is already here unless the code path changed.
 | Search latency @ 100k | p50 624 ms / p95 695 ms; index 208 MB (2026-07-02) | usable ✓ (bar: PRODUCT §scale) |
 | Routing tokens | 12× cheaper at 10k (tree) | ✓ |
 
-Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.55
+Docs corpus (129 cases, 2026-07-07: recall@5 0.522 / MRR 0.453 / hit 0.625)
+floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.55
 (`tests/test_talamus_recall_floor.py`).
 
 ## Build history (each row = measured, committed, pushed)
@@ -77,6 +78,7 @@ Docs corpus (120 cases) floors in CI: recall ≥ 0.45, MRR ≥ 0.40, hit ≥ 0.5
 | smart multi-pass exposed (2026-07-07) | `talamus search --smart --passes N` now reaches `expand_query_multi` (RS8's variance-smoothing union was previously shipped but CLI-unreachable); `--passes` without `--smart` is a clear error; `passes=1` stays the cached single-pass path, byte-identical behavior |
 | M1 magic-demo harness (2026-07-07) | The D7.1 recall loop is scripted and self-verifying: `scripts/demo/run_magic.py` (consented setup → real `hook-run` on a realistic transcript → note with session provenance → fresh-session recall must cite it) in `--fake` (CI, deterministic in-process engine, real index/registry paths) and real (subprocess CLI + cited `ask`) modes; `tests/test_talamus_demo_magic.py` covers the arc and the honest below-gate skip. Remaining for D7.1: the recorded real-engine 60s take |
 | C1 code-health (2026-07-07) | Evidence-backed dead-code sweep executed: removed `progress.py`, `RELATION_TYPES`, `REVIEW_STATUSES`, `preview_enrich` (preview = `run_enrich(confirmed=False)`), `detect_engines`, `provenance_report`; the 7 duplicated lenient model-JSON parsers centralized into `talamus/model_json.py` (`json_array`/`json_object`/`balanced_objects`, hostile battery green); readiness reuses `canonical_provider` + `integrations.mcp_installed`; `__version__` 0.1.0→1.0.0 (was lying vs pyproject); `talamus-mcp` argparse description says read/write. Kept: `expand_query_multi` (exposed via `--passes`); webapi seam items deferred to the security workstream |
+| Launch truth (2026-07-07) | Maintainer-ordered truth pass: the 6 Flet-era eval cases dropped from `examples/eval-cases-real.json` (135→129; re-measured on the frozen docs corpus: recall@5 0.512→0.522, MRR 0.458→0.453, hit 0.627→0.625 — floors untouched; the corpus FIXTURE stays frozen, it is the benchmark haystack); PRODUCT.md refreshed to reality (7-engine list ×2, the real 9-view React workbench + inspector moats, unsourced "~3 min" and "~98% vector-DB" claims replaced with measured RS5/RS7 anchors). Branch cleanup: 32 fully-merged branches deleted, `feat/ask-eval` deleted as superseded (its stratified-subset fix lives in main's `ask_eval/run.py`), 3 stale worktrees removed; remaining: `main`, the active security-session branch, this session |
 
 ## Rejected with data — do NOT redo without new evidence
 

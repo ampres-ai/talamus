@@ -16,8 +16,9 @@ you and your AI agents share — powered entirely by the LLM you already have.**
 Every competing memory system buys semantic power with infrastructure:
 embedding models, vector databases, hosted graphs, pay-per-call APIs. Talamus
 buys it with the **one intelligent resource the user already pays for** — a
-coding-agent subscription (~€20/month: Claude, Codex or Gemini CLI) or a free
-local model via ollama. Anyone, including non-technical users, gets:
+coding-agent subscription (~€20/month: the Claude, Codex, Gemini, opencode or
+Antigravity CLIs) or a free local model via ollama. Anyone, including
+non-technical users, gets:
 
 - a **personal second brain**: real Markdown notes, browsable as a wiki
   (Obsidian-compatible), searchable in any language, with every claim traceable
@@ -67,8 +68,9 @@ hosted services.
 ## The complete experience (what "the product" includes)
 
 - **Onboarding**: `talamus setup` → engine auto-detection (any of claude-cli /
-  codex-cli / gemini-cli / ollama / API key), brain init + registration, MCP
-  install, optional repo scan with dry-run consent. Under 10 minutes.
+  codex-cli / gemini-cli / opencode / antigravity-cli / ollama / API key), brain
+  init + registration, MCP install, consent-first capture hook, optional repo
+  scan with dry-run consent. Under 10 minutes.
 - **Ingest**: files (md/txt/pdf/docx/html), URLs, folders (incremental,
   hash-skipped), whole repositories (scan with secret redaction + code
   digests), agent sessions (capture hook with worth-remembering gate), single
@@ -92,10 +94,11 @@ hosted services.
 - **Multi-brain**: Federated Hub with Project-Local Ownership — independent
   project brains + one central; central reads federate, writes stay local by
   default, `--all-brains` is explicit; promote notes project → central.
-- **UI**: local web workbench — chat with as-of, search, notes, domains, physics
-  graph (click node → open note), timeline, ingest with dry-run, review queue,
-  ontology lab, full settings (engine, model, API keys, MCP). Dark, dense,
-  10k-stars-worthy.
+- **UI**: local React web workbench (`talamus ui`, pywebview window or `--web`)
+  — nine views (Home, Ask, Graph, Library, Import, Ontology, Review, Brains,
+  System) around the d3 physics graph as the hero (click node → inspector with
+  the TIME as-of view and one-click VERIFY), import with dry-run consent, brain
+  switching. Dark, dense, 10k-stars-worthy.
 - **For agents**: MCP server (read + write tools), token-cheap CLI commands,
   SDK (`recall.py`), session hook.
 
@@ -110,7 +113,7 @@ hosted services.
 | Search latency @ 10k notes | < 100 ms | achieved (p95 72.6 ms, re-measured 2026-07-02) |
 | Routing token cost | ~log(N), measured | achieved (12× at 10k) |
 | Scale | 100k notes usable | achieved (search p50 624 ms / p95 695 ms @ 100k, index 208 MB sqlite-fts5 — benchmarks/results/2026-07-02-scale-100k.json; growth is linear, a future optimization front) |
-| Setup time, zero to first answer | < 10 min | achieved (re-verified live 2026-07-02: setup→scan→cited ask in ~3 min) |
+| Setup time, zero to first answer | < 10 min | achieved (setup→scan→cited ask re-verified live 2026-07-02, well under the bar) |
 | Works with a small local model (ollama) | full pipeline e2e | achieved (RS8: talamus-search correctness 0.800 fully local, gemma generator+judge, €0) |
 | Multi-OS | Linux/macOS/Windows CI green | achieved |
 | Quality floors in CI | recall/MRR/hit floors never regress | achieved |
@@ -129,11 +132,13 @@ cold `pip install` works on a clean machine.
 
 ## Competitive posture (keep honest)
 
-Vector DBs reach ~98% semantic hit by paying query-time embedding
-infrastructure. Our promise is different and is now demonstrated, not
-promised: parity on the hard vague queries is reached via Query2doc (the
-user's own LLM expands the query — `search --smart` hit 0.972, ask 0.972),
-with ZERO embedding infra, plus time, meaning, verifiability and true local
-ownership that they do not have. Where a gap remains (e.g. an un-enriched
-mechanical brain, where smart search is ~0.78), we say so in STATE.md rather
-than hand-waving.
+Dense vector systems buy semantic hit-rate with query-time embedding
+infrastructure; measured head-to-head (RS5/RS7 in STATE.md), a MiniLM+FAISS
+pipeline ties our plain search on its home turf and a strong multilingual-e5
+leads nDCG/MRR on the book while `talamus-smart` keeps the best hit 0.971 /
+recall 0.886. Our promise is different and demonstrated, not promised: parity
+on the hard vague queries via Query2doc (the user's own LLM expands the query —
+`search --smart` hit 0.972, ask 0.972), with ZERO embedding infra, plus time,
+meaning, verifiability and true local ownership that they do not have. Where a
+gap remains (e5 on monolingual ranking; an un-enriched mechanical brain, where
+smart search is ~0.78), we say so in STATE.md rather than hand-waving.
