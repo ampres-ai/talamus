@@ -280,7 +280,7 @@ def review_reject(item_id: str, reason: str = "") -> str:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="talamus-mcp", description="Read MCP server for a Talamus brain."
+        prog="talamus-mcp", description="Read/write MCP server for a Talamus brain."
     )
     parser.add_argument("--root", default=".", help="The Talamus brain folder.")
     parser.add_argument(

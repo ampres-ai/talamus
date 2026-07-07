@@ -10,6 +10,7 @@ import dataclasses
 import json
 
 from talamus.linking import NoteRegistry
+from talamus.model_json import json_object
 from talamus.models import CanonicalNote
 from talamus.paths import TalamusPaths
 from talamus.routing import Router, TaskClass
@@ -63,12 +64,9 @@ def verify_note(paths: TalamusPaths, title: str, router: Router) -> dict:
         .replace("<BODY>", body)
         .replace("<SOURCE>", source)
     )
-    start, end = raw.find("{"), raw.rfind("}")
-    if start == -1 or end == -1 or end < start:
-        return {"found": True, "checked": True, "ok": True}
     try:
-        parsed = json.loads(raw[start : end + 1])
-    except json.JSONDecodeError:
+        parsed = json_object(raw)
+    except (ValueError, json.JSONDecodeError):
         return {"found": True, "checked": True, "ok": True}
     return {"found": True, "checked": True, **parsed}
 
@@ -164,10 +162,6 @@ def provenance_status(paths: TalamusPaths, note: CanonicalNote) -> dict:
     if status == "ok" and note.confidence < LOW_CONFIDENCE:
         status, detail = "low_confidence", f"extraction confidence {note.confidence}"
     return {"note_id": note.note_id, "title": note.title, "status": status, "detail": detail}
-
-
-def provenance_report(paths: TalamusPaths) -> list[dict]:
-    return [provenance_status(paths, note) for note in load_notes(paths)]
 
 
 def verify_batch(

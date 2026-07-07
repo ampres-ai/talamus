@@ -17,6 +17,7 @@ from __future__ import annotations
 import dataclasses
 import json
 
+from talamus.model_json import json_array
 from talamus.paths import TalamusPaths
 from talamus.routing import Router, TaskClass
 from talamus.store import load_notes, overwrite_note_json, rebuild_indexes
@@ -72,16 +73,12 @@ def enrich_notes(paths: TalamusPaths, router: Router, language: str = "English")
         batch = notes[offset : offset + BATCH_SIZE]
         listing = "\n".join(_note_brief(n) for n in batch)
         raw = llm.complete(_PROMPT.format(language=language, notes=listing))
-        start, end = raw.find("["), raw.rfind("]")
-        if start == -1 or end == -1 or end <= start:
-            failed_batches += 1
-            continue
         try:
-            parsed = json.loads(raw[start : end + 1], strict=False)
-        except json.JSONDecodeError:
+            parsed = json_array(raw)
+        except (ValueError, json.JSONDecodeError):
             failed_batches += 1
             continue
-        for entry in parsed if isinstance(parsed, list) else []:
+        for entry in parsed:
             if not isinstance(entry, dict):
                 continue
             note = by_id.get(str(entry.get("id", "")))

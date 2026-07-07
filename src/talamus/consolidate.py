@@ -11,6 +11,7 @@ import dataclasses
 import json
 
 from talamus.linking import NoteRegistry
+from talamus.model_json import balanced_objects
 from talamus.models import CanonicalNote, Relation
 from talamus.naming import note_filename, note_slug
 from talamus.paths import TalamusPaths
@@ -51,53 +52,13 @@ def _dedup_relations(relations: list[Relation]) -> list[Relation]:
     return out
 
 
-def _balanced_objects(raw: str) -> list[dict]:
-    """Extract the top-level {...} objects one by one, skipping broken ones.
-
-    The models' long answers arrive truncated mid-JSON: the all-or-nothing parse
-    silently dropped ALL groups (measured on the book: 'no duplicate concepts found'
-    with 20+ real groups in the raw answer)."""
-    objects: list[dict] = []
-    depth = 0
-    start = -1
-    in_string = False
-    escape = False
-    for i, ch in enumerate(raw):
-        if escape:
-            escape = False
-            continue
-        if ch == "\\":
-            escape = True
-            continue
-        if ch == '"':
-            in_string = not in_string
-            continue
-        if in_string:
-            continue
-        if ch == "{":
-            if depth == 0:
-                start = i
-            depth += 1
-        elif ch == "}" and depth > 0:
-            depth -= 1
-            if depth == 0 and start != -1:
-                try:
-                    parsed = json.loads(raw[start : i + 1], strict=False)
-                except json.JSONDecodeError:
-                    parsed = None
-                if isinstance(parsed, dict):
-                    objects.append(parsed)
-                start = -1
-    return objects
-
-
 def _detect_groups(notes: list[CanonicalNote], router: Router) -> list[dict]:
     if len(notes) < 2:
         return []
     listing = "\n".join(f"- [{n.note_id}] {n.title}: {n.summary}" for n in notes)
     llm = router.for_task(TaskClass.CONSOLIDATE)
     raw = llm.complete(_PROMPT.replace("__NOTES__", listing))
-    parsed = _balanced_objects(raw)
+    parsed = balanced_objects(raw)
     titles = {n.title for n in notes}
     groups: list[dict] = []
     for group in parsed:

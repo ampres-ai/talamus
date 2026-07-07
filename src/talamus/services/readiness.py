@@ -23,6 +23,7 @@ from talamus.paths import TalamusPaths
 from talamus.registry import Registry, load_registry, talamus_home
 from talamus.review import ReviewQueue
 from talamus.scope import ResolvedBrain, resolve_brain
+from talamus.services.integrations import mcp_installed
 from talamus.store import cache_is_current
 
 
@@ -107,7 +108,7 @@ class ReadinessReport:
 
 def inspect_engines(selected_provider: str, selected_model: str = "") -> list[EngineReadiness]:
     engines: list[EngineReadiness] = []
-    configured_provider = _canonical_provider(selected_provider)
+    configured_provider = canonical_provider(selected_provider)
     for provider in ENGINE_COMMANDS:
         command = engine_command(provider)
         configured = provider == configured_provider
@@ -161,7 +162,7 @@ def inspect_readiness(
     overview = _load_overview_safe(paths)
     overview_domains = len(overview)
     ontology_candidates = _ontology_candidates(paths)
-    selected_provider = _canonical_provider(selected_raw)
+    selected_provider = canonical_provider(selected_raw)
 
     report = ReadinessReport(
         root=str(resolved.root),
@@ -184,7 +185,7 @@ def inspect_readiness(
         overview_built=overview_domains > 0,
         overview_domains=overview_domains,
         ontology_candidates=ontology_candidates,
-        mcp_installed=_mcp_installed(paths.project_root),
+        mcp_installed=mcp_installed(paths.project_root),
         next_actions=[],
     )
     return _with_next_actions(report)
@@ -212,10 +213,6 @@ def _engine_status(
     if executable:
         return True, False, "ready", f"{executable}{model_detail}"
     return False, False, "not_installed", f"Command not found: {command}"
-
-
-def _canonical_provider(provider: str) -> str:
-    return canonical_provider(provider)
 
 
 def _credential_present_safe(name: str) -> bool:
@@ -323,23 +320,6 @@ def _load_registry_safe() -> Registry:
         return load_registry()
     except (OSError, TypeError, ValueError, AttributeError):
         return Registry()
-
-
-def _mcp_installed(root: Path) -> bool:
-    path = root / ".mcp.json"
-    if not path.is_file():
-        return False
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return False
-    if not isinstance(data, dict):
-        return False
-    servers = data.get("mcpServers")
-    if not isinstance(servers, dict):
-        return False
-    talamus = servers.get("talamus")
-    return isinstance(talamus, dict) and talamus.get("command") == "talamus-mcp"
 
 
 def _with_next_actions(report: ReadinessReport) -> ReadinessReport:

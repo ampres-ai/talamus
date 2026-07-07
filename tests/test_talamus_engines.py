@@ -9,7 +9,6 @@ from talamus.adapters.llm import (
     CodexCliProvider,
     GeminiCliProvider,
     build_provider,
-    detect_engines,
     save_credential,
 )
 
@@ -61,17 +60,6 @@ class CliAdapterTests(unittest.TestCase):
         self.assertIsInstance(build_provider("codex-cli"), CodexCliProvider)
         self.assertIsInstance(build_provider("gemini-cli"), GeminiCliProvider)
         self.assertIsInstance(build_provider("codex"), CodexCliProvider)
-
-
-class DetectEnginesTests(unittest.TestCase):
-    def test_api_engine_always_offered(self) -> None:
-        engines = detect_engines()
-        self.assertIn("anthropic-api", engines)
-
-    def test_detects_only_installed_clis(self) -> None:
-        with mock.patch("talamus.adapters.llm.shutil.which", return_value=None):
-            engines = detect_engines()
-        self.assertEqual(engines, ["anthropic-api"])
 
 
 class CredentialStoreTests(unittest.TestCase):

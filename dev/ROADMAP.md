@@ -475,20 +475,24 @@ the developer magic but must not look unfinished at launch.
 **Goal:** the codebase the successor models inherit is clean, dead-code-free, and
 its docs match reality. **This directly serves you, the inheritor.**
 
-- **[C1] Finish the code-health audit and act on it.** *Why: a re-run of the audit
-  that was interrupted.* Re-run the codex code-health audit (prompt in
-  `scratchpad/` history), get the dead-code + clean-code tables, and execute the
-  top-10 cleanups. Known suspects: `services/library.py` wiring, SDK `recall.py`,
-  leftover `ui/` beyond `physics.py`, duplicated JSON-salvage parsers, any
-  `_canonical_provider` copies. **Accept:** dead code removed with its tests; gate
-  green; a short report in `dev/`. **Delegate:** yes — this is codex's sweet spot.
-- **[C2] Docs truth sweep.** README/STATE/PRODUCT/quickstart match behavior: "9
-  views" not 11, the full engine list, `talamus ui` = web workbench, import-vault
-  present. **Accept:** `mkdocs build --strict` clean; a grep for stale claims is
-  empty. **Delegate:** yes.
-- **[C3] Repo hygiene** (mostly done 2026-07-02: `.gitignore` covers `.uidemo/`,
-  `*_server.log`, `webui/node_modules/`). Verify no build artifacts or brains are
-  tracked. **Accept:** `git ls-files` has no junk. **Delegate:** no (quick).
+- **[C1] Finish the code-health audit and act on it. → DONE (2026-07-07).**
+  Evidence-backed audit re-run (suspects verified: `services/library.py`,
+  `recall.py`, `ui/physics.py` all wired; Flet leftovers gone) and the top-10
+  executed: dead code removed (`progress.py`, `RELATION_TYPES`,
+  `REVIEW_STATUSES`, `preview_enrich`, `detect_engines`, `provenance_report`),
+  the 7 duplicated model-JSON salvage parsers centralized into
+  `talamus/model_json.py` (hostile battery green), readiness dedupes
+  `canonical_provider` + `mcp_installed`, `__version__` synced to pyproject
+  (1.0.0), MCP server description tells the truth (read/write). Deliberately
+  kept: `expand_query_multi` (now exposed as `search --smart --passes N`);
+  webapi seam items deferred to the security workstream's owner.
+- **[C2] Docs truth sweep. → DONE (2026-07-07).** Every public claim audited
+  against code/STATE and fixed (TIME/MEANING shipped, 7 engines, React
+  workbench, real MCP tool list in agent-tool-calling, RS7-honest README);
+  `mkdocs build --strict` clean. PRODUCT.md rows (engine list, UI views,
+  unsourced ~3min/~98% numbers) flagged for the maintainer — governance-gated.
+- **[C3] Repo hygiene. → VERIFIED (2026-07-07).** `git ls-files` (358 files)
+  has no build artifacts, logs, caches, or brains.
 
 ### Phase L — Launch mechanics · serves D1
 

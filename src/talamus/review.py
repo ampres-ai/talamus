@@ -25,7 +25,6 @@ REVIEW_KINDS = (
     "low_confidence_note",
     "scan_safety",
 )
-REVIEW_STATUSES = ("pending", "applied", "rejected")
 
 
 def _now() -> str:

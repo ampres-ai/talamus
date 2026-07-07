@@ -58,7 +58,7 @@ def inspect_integrations(root: str | Path) -> ServiceResult[IntegrationReport]:
         report = IntegrationReport(
             root=str(root_path),
             mcp_config_path=str(_mcp_config_path(root_path)),
-            mcp_installed=_mcp_installed(root_path),
+            mcp_installed=mcp_installed(root_path),
             hook_command=_hook_command(root_path),
         )
     except (OSError, TypeError, ValueError, AttributeError, json.JSONDecodeError) as exc:
@@ -209,7 +209,7 @@ def _read_json_object(config_path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def _mcp_installed(root: Path) -> bool:
+def mcp_installed(root: Path) -> bool:
     data = _read_json_object(_mcp_config_path(root))
     servers = data.get("mcpServers")
     if not isinstance(servers, dict):

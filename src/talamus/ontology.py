@@ -7,8 +7,6 @@ from talamus.linking import NoteRegistry
 from talamus.models import CanonicalNote
 from talamus.paths import TalamusPaths
 
-RELATION_TYPES = ("uses", "is-a", "part-of", "contrasts-with", "depends-on", "related")
-
 # Pattern per parole chiave; il primo che combacia vince (l'ordine conta).
 _RELATION_PATTERNS: list[tuple[str, tuple[str, ...]]] = [
     (

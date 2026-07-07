@@ -384,18 +384,6 @@ def save_credential(name: str, value: str) -> None:
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
-def detect_engines() -> list[str]:
-    """The engines actually usable on this machine, in preference order."""
-    available = []
-    for provider, command in ENGINE_COMMANDS.items():
-        if command is None:
-            continue
-        if command and shutil.which(command):
-            available.append(provider)
-    available.append("anthropic-api")  # always offered (needs a key)
-    return available
-
-
 def build_provider(provider: str, model: str = "") -> LLMProvider:
     """Build the LLM provider selected in config (provider name + optional model)."""
     if provider == "claude-cli":

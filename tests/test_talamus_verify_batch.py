@@ -7,7 +7,6 @@ from pathlib import Path
 
 from talamus.correct import (
     apply_proposed_correction,
-    provenance_report,
     provenance_status,
     verify_batch,
 )
@@ -69,12 +68,6 @@ class ProvenanceTests(unittest.TestCase):
             self.assertEqual(
                 provenance_status(paths, by_title["Incerta"])["status"], "low_confidence"
             )
-
-    def test_report_covers_every_note(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            paths = _brain(tmp)
-            report = provenance_report(paths)
-            self.assertEqual(len(report), 4)
 
     def test_real_hash_matches_despite_windows_newlines(self) -> None:
         """Book-run regression: source_hash is computed on the extracted TEXT;

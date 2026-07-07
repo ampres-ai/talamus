@@ -3,29 +3,13 @@ import tempfile
 import unittest
 
 from talamus.routing import StaticRouter
-from talamus.services.enrich import preview_enrich, run_enrich
+from talamus.services.enrich import run_enrich
 from talamus.store import load_notes
 from tests.support import FakeLLMProvider
 from tests.test_talamus_enrich import _brain
 
 
 class TalamusEnrichServiceTests(unittest.TestCase):
-    def test_preview_enrich_estimates_without_writes(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            paths = _brain(tmp, ["Allucinazione"])
-
-            result = preview_enrich(tmp)
-
-            note = load_notes(paths)[0]
-
-        self.assertTrue(result.success, result.message)
-        self.assertEqual("enrich_preview_ready", result.code)
-        self.assertIsNotNone(result.data)
-        assert result.data is not None
-        self.assertEqual(1, result.data.notes)
-        self.assertEqual(1, result.data.est_llm_calls)
-        self.assertNotIn("~sintomi:", note.retrieval_text)
-
     def test_run_enrich_without_confirmation_does_not_call_llm(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp, ["Allucinazione"])

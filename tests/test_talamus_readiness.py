@@ -6,7 +6,6 @@ from pathlib import Path
 from unittest import mock
 
 from talamus.adapters.llm import (
-    detect_engines,
     engine_command,
     save_credential,
     stored_credential_present,
@@ -37,13 +36,6 @@ class EngineMetadataTests(unittest.TestCase):
         legacy_aliases = {"codex", "gemini", "api"}
         self.assertFalse(legacy_aliases & set(ENGINE_COMMANDS))
         self.assertFalse(legacy_aliases & set(ENGINE_LABELS))
-
-    def test_detect_engines_uses_canonical_install_probes_without_alias_duplicates(self) -> None:
-        def which(command: str) -> str | None:
-            return command if command == "gemini" else None
-
-        with mock.patch("talamus.adapters.llm.shutil.which", side_effect=which):
-            self.assertEqual(detect_engines(), ["gemini-cli", "anthropic-api"])
 
     def test_stored_credential_present_returns_bool_without_exposing_secret(self) -> None:
         with tempfile.TemporaryDirectory() as home:

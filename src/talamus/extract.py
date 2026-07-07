@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import json
+from typing import cast
 
+from talamus.model_json import json_array
 from talamus.models import CanonicalNote, ProposedLink, Relation, SourceRef
 from talamus.normalize import NormalizedPackage, NormalizedSection
 from talamus.routing import Router, TaskClass
@@ -62,13 +63,7 @@ TEXT:
 
 
 def _extract_json_array(raw: str) -> list[dict]:
-    start = raw.find("[")
-    end = raw.rfind("]")
-    if start == -1 or end == -1 or end < start:
-        raise ValueError("no JSON array in the model response")
-    # strict=False: flash models emit LITERAL newlines inside strings (3 of 4
-    # chunks failed in the book re-ingest) — accepting them saves the chunk
-    return json.loads(raw[start : end + 1], strict=False)
+    return cast(list[dict], json_array(raw))
 
 
 def _section_source(

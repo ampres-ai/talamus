@@ -30,6 +30,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+from talamus.model_json import json_array
 from talamus.models import CanonicalNote
 from talamus.ontology import build_ontology, load_ontology, neighbors, normalize_relation
 from talamus.paths import TalamusPaths
@@ -312,13 +313,10 @@ def induce_candidates(
     )
     llm = router.for_task(TaskClass.ONTOLOGY_NAMING)
     raw = llm.complete(_NAMING_PROMPT.format(clusters=cluster_text))
-    start, end = raw.find("["), raw.rfind("]")
-    proposals: list = []
-    if start != -1 and end != -1 and end > start:
-        try:
-            proposals = json.loads(raw[start : end + 1])
-        except json.JSONDecodeError:
-            proposals = []
+    try:
+        proposals = json_array(raw)
+    except (ValueError, json.JSONDecodeError):
+        proposals = []
     by_key = {str(p.get("cluster_key", "")): p for p in proposals if isinstance(p, dict)}
     created: list[RelationType] = []
     for key, records in sorted(eligible.items()):

@@ -44,20 +44,6 @@ class EnrichRunResult:
         return asdict(self)
 
 
-def preview_enrich(root: str | Path) -> ServiceResult[EnrichPreview]:
-    root_path = Path(root)
-    try:
-        preview = _preview(root_path)
-    except (OSError, TypeError, ValueError, AttributeError) as exc:
-        return _enrich_error(exc)
-    return ServiceResult(
-        success=True,
-        message="Enrich preview ready",
-        code="enrich_preview_ready",
-        data=preview,
-    )
-
-
 def run_enrich(
     root: str | Path,
     router: Router,

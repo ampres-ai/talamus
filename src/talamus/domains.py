@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 
+from talamus.model_json import json_array
 from talamus.models import CanonicalNote
 from talamus.ontology import load_ontology, neighbors
 from talamus.paths import TalamusPaths
@@ -64,15 +65,10 @@ def _structural_clusters(notes: list[CanonicalNote], ontology: dict) -> list[lis
 
 
 def _parse_json_array(raw: str) -> list:
-    start, end = raw.find("["), raw.rfind("]")
-    if start == -1 or end == -1 or end <= start:
-        return []
     try:
-        # strict=False: tolerate the literal control characters from flash models
-        parsed = json.loads(raw[start : end + 1], strict=False)
-    except json.JSONDecodeError:
+        return json_array(raw)
+    except (ValueError, json.JSONDecodeError):
         return []
-    return parsed if isinstance(parsed, list) else []
 
 
 def _domains_from_llm(
@@ -317,13 +313,7 @@ def build_overview_tree(paths: TalamusPaths, router: Router) -> list[dict]:
     raw = llm.complete(
         _TREE_PROMPT.replace("<DOMAINS>", domain_lines).replace("<LANGUAGE>", language)
     )
-    start, end = raw.find("["), raw.rfind("]")
-    parsed: list = []
-    if start != -1 and end != -1 and end > start:
-        try:
-            parsed = json.loads(raw[start : end + 1])
-        except json.JSONDecodeError:
-            parsed = []
+    parsed = _parse_json_array(raw)
     valid_ids = {str(d["id"]) for d in overview if d.get("id")}
     areas: list[dict] = []
     assigned: set[str] = set()
