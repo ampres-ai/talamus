@@ -191,6 +191,26 @@ class IngestTests(unittest.TestCase):
             self.assertEqual(0, result["notes_written"])
             self.assertEqual([], load_notes(paths))
 
+    def test_ingest_text_name_cannot_escape_the_raw_dir(self) -> None:
+        # a prompt-injected agent via the MCP ingest_text tool passes a traversal name
+        from talamus.naming import note_slug
+
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = TalamusPaths(Path(tmp))
+            paths.ensure_directories()
+            note = json.dumps(
+                [{"title": "X", "retrieval_text": "x", "summary": "s", "confidence": 0.9}]
+            )
+            ingest_text(
+                paths, "text", StaticRouter(FakeLLMProvider([note])), name="../../notes/Pwned"
+            )
+            raw_root = paths.raw.resolve()
+            for f in paths.raw.rglob("*"):
+                if f.is_file():
+                    self.assertEqual(f.resolve().parent, raw_root)  # never escaped the raw dir
+        self.assertNotIn("/", note_slug("../../notes/Pwned"))
+        self.assertNotIn("\\", note_slug("../../notes/Pwned"))
+
 
 if __name__ == "__main__":
     unittest.main()

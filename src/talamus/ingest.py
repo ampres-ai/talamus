@@ -8,6 +8,7 @@ from pathlib import Path
 from talamus.errors import EngineFailed, EngineNotFound
 from talamus.extract import extract_notes
 from talamus.linking import NoteRegistry
+from talamus.naming import note_slug
 from talamus.normalize import NormalizedPackage, normalize_text
 from talamus.paths import TalamusPaths
 from talamus.routing import Router, TaskClass
@@ -320,7 +321,12 @@ def ingest_text(
     code digest)."""
     paths.ensure_directories()
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:8]
-    raw_path = paths.raw / f"{name}-{digest}.md"
+    # `name` may be attacker-controlled (a prompt-injected agent via the MCP
+    # ingest_text tool): slug it so "../../notes/x" cannot escape the raw dir.
+    safe = note_slug(name) or "insight"
+    raw_path = paths.raw / f"{safe}-{digest}.md"
+    if raw_path.resolve().parent != paths.raw.resolve():  # defense in depth
+        raise ValueError("raw path escapes the raw directory")
     raw_path.write_text(text, encoding="utf-8")
     package = normalize_text(raw_path.as_posix(), text)
     written = _compile_package(paths, package, router, preamble=preamble)

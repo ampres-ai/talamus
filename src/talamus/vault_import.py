@@ -28,6 +28,20 @@ _WIKILINK = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
 _SUMMARY_CHARS = 240
 
 
+def _safe_under(root: Path, path: Path) -> bool:
+    """True only if ``path`` is a real (non-symlink) entry whose resolved location
+    stays under ``root`` — the guard against symlink exfiltration from untrusted
+    vaults/repos (an imported/scanned tree could contain ``note.md -> ~/.ssh/id_ed25519``,
+    which would otherwise be read and copied into the brain). Reused by scan.py."""
+    if path.is_symlink():
+        return False
+    try:
+        path.resolve(strict=True).relative_to(root.resolve())
+    except (ValueError, OSError):
+        return False
+    return True
+
+
 def _split_frontmatter(text: str) -> tuple[dict[str, object], str]:
     """Extract a minimal YAML-ish frontmatter (title/tags/aliases) and the body.
 
@@ -151,6 +165,8 @@ def _vault_files(vault: Path) -> list[Path]:
     for path in sorted(vault.rglob("*.md")):
         parts = set(path.relative_to(vault).parts[:-1])
         if parts & _SKIP_DIRS or any(p.startswith(".") for p in parts):
+            continue
+        if not _safe_under(vault, path):  # skip symlinks / anything resolving outside the vault
             continue
         files.append(path)
     return files

@@ -136,6 +136,24 @@ class ExecutePlanTests(unittest.TestCase):
             self.assertEqual(report["state"], "completed")
             self.assertEqual(len(report["failed"]), len(plan.included))
 
+    def test_scan_plan_excludes_a_symlinked_file(self) -> None:
+        import os
+
+        with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as outside:
+            (Path(repo) / "readme.md").write_text("# Real\ncontent", encoding="utf-8")
+            secret = Path(outside) / "secret.md"
+            secret.write_text("SECRET OUTSIDE THE REPO", encoding="utf-8")
+            try:
+                os.symlink(secret, Path(repo) / "evil.md")
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks need privilege on this OS")
+
+            plan = build_plan(Path(repo), profile="docs")
+
+            included = {e["path"] for e in plan.included}
+            self.assertIn("readme.md", included)
+            self.assertNotIn("evil.md", included)  # the symlink was never planned
+
 
 class CliScanTests(unittest.TestCase):
     def test_dry_run_via_cli_costs_nothing(self) -> None:

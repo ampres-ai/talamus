@@ -161,6 +161,34 @@ class VaultImportCliTests(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertEqual("vault_import_failed", result.code)
 
+    def test_import_skips_a_markdown_symlink_pointing_outside_the_vault(self) -> None:
+        import os
+
+        secret = "OPENSSH PRIVATE KEY — must never be imported"
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as outside:
+            paths = TalamusPaths(Path(tmp) / "brain")
+            paths.ensure_directories()
+            vault = Path(tmp) / "vault"
+            vault.mkdir()
+            (vault / "Good.md").write_text("A normal public note.\n", encoding="utf-8")
+            secret_file = Path(outside) / "id_ed25519"
+            secret_file.write_text(secret, encoding="utf-8")
+            try:
+                os.symlink(secret_file, vault / "Leak.md")
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks need privilege on this OS")
+
+            report = import_vault(paths, vault)
+
+            self.assertEqual(report["notes_written"], 1)  # only Good.md
+            titles = {n.title for n in load_notes(paths)}
+            self.assertIn("Good", titles)
+            self.assertNotIn("Leak", titles)
+            rendered = "\n".join(p.read_text("utf-8") for p in paths.notes.glob("*.md"))
+            raw = "\n".join(p.read_text("utf-8") for p in paths.raw.rglob("*") if p.is_file())
+            self.assertNotIn(secret, rendered)
+            self.assertNotIn(secret, raw)  # the target was never read/copied
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -26,6 +26,7 @@ from talamus.jobs import JobRecord, JobStore, run_items
 from talamus.paths import TalamusPaths
 from talamus.redact import find_secrets, is_secret_file, redact
 from talamus.routing import Router
+from talamus.vault_import import _safe_under
 
 DOC_EXTS = {".md", ".markdown", ".rst", ".txt", ".docx", ".pdf", ".html", ".htm"}
 CODE_EXTS = {
@@ -169,10 +170,14 @@ def build_plan(
             if _is_ignored(rel_sub, patterns):
                 plan.excluded.append({"path": f"{rel_sub}/", "reason": ".gitignore"})
                 continue
+            if (Path(dirpath) / d).is_symlink():
+                continue  # never descend into a symlinked dir (exfiltration guard)
             kept_dirs.append(d)
         dirnames[:] = kept_dirs
         for filename in sorted(filenames):
             full = Path(dirpath) / filename
+            if not _safe_under(root, full):  # skip symlinks / files resolving outside the repo
+                continue
             rel = PurePosixPath(full.relative_to(root).as_posix())
             rel_str = str(rel)
             if only_include and not any(fnmatch.fnmatch(rel_str, p) for p in only_include):
