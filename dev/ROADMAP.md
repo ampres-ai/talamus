@@ -204,6 +204,12 @@ features — is explicitly **post-launch**.
 
 ### Phase S — Security hardening · serves D5 (LAUNCH-BLOCKING for critical+high)
 
+> **STATUS 2026-07-02: the launch blockers S1–S4 are DONE and on main.** S1
+> (workbench token + Origin + TrustedHost, `e10f0df`, browser-verified), S2
+> (resolved by S1 — see its note), S3 (symlink-exfiltration guard in vault-import
+> and scan), S4 (MCP `ingest_text` name sanitized) — `eef7d88`. Remaining: the
+> non-blocking S5–S8 (first days after launch) and the `SECURITY.md`.
+
 **Threat model (state it, then defend it).** Talamus is local-first, so the real
 adversaries are: (1) a **malicious website** in the victim's browser reaching the
 no-auth workbench on `127.0.0.1`; (2) **malicious content** we ingest — documents,
