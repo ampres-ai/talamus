@@ -70,10 +70,11 @@ outside the repo; git history holds everything.
   heredocs can mangle backslashes in generated Python — write temp script
   files instead. On other OSes use the native equivalents; never encode
   OS-specific commands into product code or docs.
-- Flet API names differ from common LLM priors (e.g. `ft.Border.all`,
-  `ft.Alignment.CENTER`, `ft.DropdownOption`) — probe before writing UI code.
 - Engine CLIs are agents themselves: codex runs with a read-only sandbox,
   gemini with `--approval-mode plan` — never loosen those flags.
+- Codex writes files via PowerShell can re-encode UTF-8 as cp1252 (mojibake:
+  `—` becomes `â€”`) — after any codex write job, grep the touched files for
+  `â€` before committing.
 
 ## Documentation governance (how to change the canon)
 
