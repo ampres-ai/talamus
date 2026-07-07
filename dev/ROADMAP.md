@@ -372,15 +372,17 @@ launch bar (§ 4) and the launch assets (L3) — do not launch without it.
 **Goal:** make "your agent remembers across sessions, by itself, €0, local" a real,
 smooth, demonstrable experience — the single most important thing for virality.
 
-- **[M1] Prove the end-to-end recall loop.** *Why: D7.1 — the emotion.* Build a
-  scripted, reproducible scenario: (a) `talamus setup` in a fresh project; (b) an
-  agent session that does real work and ends, firing the capture hook; (c) a
-  **new** session where the agent, via MCP `recall`/`ask`, retrieves and cites what
-  the previous session learned. Script it under `scripts/demo/` so it is
-  re-runnable and CI-smoke-able (with a fake engine) and hand-runnable (with a real
-  one). **Accept:** `scripts/demo/run_magic.sh` (or `.py`) runs the whole arc; a
-  test asserts the second session's answer cites a note created from the first.
-  **Delegate:** partial — you design the arc; codex writes the harness + test.
+- **[M1] Prove the end-to-end recall loop. → HARNESS DONE (2026-07-07).**
+  `scripts/demo/run_magic.py` runs the whole arc: consented setup (`--capture
+  yes`) → realistic agent transcript + diff fired through the REAL `hook-run`
+  path (worth-remembering gate, capture.log) → note born with session
+  provenance → fresh-session `recall` that must cite it (self-verifying, exits
+  non-zero otherwise) → closes "Your agent remembered. Locally. €0." Two modes:
+  `--fake` (in-process deterministic engine, CI-smoke, `tests/
+  test_talamus_demo_magic.py` incl. the honest below-gate negative) and real
+  (subprocess CLI + `ask` for the cited answer). **Remaining for D7.1:** run the
+  real-engine take on this machine and record the 60-second video (launch asset
+  L3 — Giovanni's eye on the take).
 
 - **[M2] Make the capture hook consent-first and legible. → DONE (2026-07-07).**
   `talamus setup` now shows the full consent copy (transcript + git diff, the
