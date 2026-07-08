@@ -2,173 +2,97 @@
 
 [![CI](https://github.com/GCrapuzzi/Talamus-Wiki/actions/workflows/ci.yml/badge.svg)](https://github.com/GCrapuzzi/Talamus-Wiki/actions/workflows/ci.yml) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 
-**Local-first memory with time, meaning, and verifiability — for your second brain and your AI agents.**
+**Talamus is a local-first knowledge compiler — a second brain you and your AI agents share.**
 
-Talamus compiles your sources (documents, notes, and agent work sessions) into
-**source-grounded, cross-linked concept notes**, builds a typed **graph as an
-index**, and answers questions **with citations** — all on your machine, on the
-LLM engine you already use.
+**Your agent remembers. Locally. €0.**
 
-<!-- demo GIF goes here: talamus demo → search → read -->
+It turns documents, notes, repos, URLs, and agent sessions into source-grounded Markdown concept notes, then answers from those notes with citations — powered entirely by the LLM you already have.
 
-> Markdown notes you can edit in Obsidian · a graph that routes retrieval ·
-> provenance on every claim · usable from the CLI, the SDK, and MCP.
+<!-- demo GIF placeholder: scripts/demo/run_magic.py end-to-end agent recall -->
 
-## Why Talamus
+## The 60-second story
 
-Most "AI memory" is either a pile of vector chunks (no structure, no provenance)
-or a cloud service (your knowledge leaves your machine). Talamus is built on three
-properties that, **together**, nothing else gives you:
+Copy-pasteable arc, with the reproducible version in [`scripts/demo/run_magic.py`](scripts/demo/run_magic.py):
 
-- **TIME** — a bitemporal model: contradictions *invalidate* old facts instead of
-  deleting them — `talamus timeline`, `ask --as-of 2026-01`. *(shipped: transaction
-  history + valid-time claim overlay)*
-- **MEANING** — a typed, **self-emerging ontology**: free-form relation surfaces
-  the fixed types can't explain are induced into *candidate types*, reviewed,
-  promoted, versioned — and measurably improve retrieval (`talamus ontology`).
-  *(shipped: fixed types + Ontology Lab; experimental: emergent schema at scale)*
-- **VERIFIABILITY** — every note keeps its **sources**; verify single notes or in
-  batch, with proposed corrections going through a review queue (`talamus verify
-  --all`). *(shipped)*
+1. Install the CLI.
 
-Plus a wedge the others don't optimize for: **memory for agents** that need
-current, cited, reasoned truth.
+   ```bash
+   pipx install talamus
+   ```
 
-## Talamus vs the alternatives
+2. Set up the project brain. `talamus setup` initializes the brain, chooses an engine, installs MCP for Claude Code/Cursor/codex, asks once before installing the session-capture hook, and can probe the engine with one tiny live call.
 
-|                                   | Plain RAG | llm_wiki            | Zep / mem0 | **Talamus**       |
-| --------------------------------- | --------- | ------------------- | ---------- | ----------------- |
-| Local-first                       | varies    | ✅                  | ❌ cloud   | ✅                |
-| Human-editable notes (Obsidian)   | ❌        | ✅                  | ❌         | ✅                |
-| Typed ontology for reasoning      | ❌        | ❌ statistical graph | partial    | ✅                |
-| Keeps history / "truth at time T" | ❌        | ❌ overwrites        | partial    | ✅ *(MVP)*        |
-| Provenance + correct-from-source  | ❌        | tracking only       | partial    | ✅                |
-| Agent memory (read + write, MCP)  | ❌        | partial             | ✅         | ✅                |
+   ```bash
+   talamus setup
+   ```
+
+3. Your agent session ends. The consented hook reads the transcript and git diff, applies the worth-remembering gate, writes only useful memory into this brain, and audits the event at `.talamus/logs/capture.log`.
+
+4. A fresh session asks what happened and gets an answer from real notes, with sources.
+
+   ```bash
+   talamus recall "why did we choose FTS5?"
+   talamus ask "why did we choose FTS5?"
+   ```
+
+5. Reproduce the scripted demo without spending LLM calls, or run it with your real engine.
+
+   ```bash
+   python scripts/demo/run_magic.py --fake
+   python scripts/demo/run_magic.py --keep --engine claude-cli
+   ```
+
+## What is different
+
+**TIME**: notes have version history, facts have valid-time windows, and `talamus ask --as-of 2026-01` answers from the brain as it was.
+
+**MEANING**: the ontology is induced from evidence, versioned, promoted by measured rules, and used to cluster and route the brain.
+
+**VERIFIABILITY**: every note carries provenance; `talamus verify` proposes corrections to review, and answers cite the notes they used.
+
+## Measured comparison
+
+The one-screen benchmark is rendered at [`docs/benchmarks.md`](docs/benchmarks.md) and committed at [`benchmarks/results/one-screen.md`](benchmarks/results/one-screen.md). Numbers below are from `dev/STATE.md` and those artifacts.
+
+| corpus | metric | Talamus | BM25 | MiniLM vector DB |
+|---|---:|---:|---:|---:|
+| SciFact, English-only turf | recall@10 | **0.797** | 0.776 | 0.783 |
+| SciFact, English-only turf | nDCG | **0.664** | 0.652 | 0.645 |
+| Book, cross-language + vague | hit@10 | **0.971** | 0.829 | 0.743 |
+| Book, cross-language + vague | recall@10 | **0.929** | 0.771 | 0.700 |
+
+Also measured: **−97.7% tokens** per answer versus loading the brain into context, **100%** source-resolvable answers, refusal **1.000** on out-of-scope questions, search latency p95 **72.6 ms** at 10k notes / p50 **624 ms** at 100k.
+
+The honest part: retrieval quality tracks the LLM you bring. With a strong expansion engine, `talamus-smart` leads a strong multilingual dense model (`multilingual-e5`) on every metric including ranking (nDCG 0.847 vs 0.837); with a weak or free one, e5 leads ranking while Talamus keeps the best hit/recall — and on a slow local engine, plain `search` beats `--smart` outright. Every number traces to a committed artifact; the losses stay on the table.
+
+## Engines
+
+Bring the LLM you already have: `claude-cli`, `codex-cli`, `gemini-cli`, `opencode`, `antigravity-cli`, `ollama`, or `anthropic-api`.
 
 ## Quickstart
 
 ```bash
-pipx install talamus            # or: pip install talamus
-
-talamus demo                    # try a small example brain instantly (no LLM)
-talamus search "embedding"
-
-talamus init                    # your own brain (auto-detects your LLM engine)
-talamus ingest report.pdf       # PDF / DOCX / HTML / Markdown / URL -> linked concept-notes
-talamus import-vault ~/vault    # coming from Obsidian/Notion? 1:1 import, zero LLM cost
-talamus ask "how does X work?"  # cited answer
-talamus ui                      # optional web workbench (pip install talamus[ui])
+pipx install talamus
+talamus setup
+talamus ingest ./notes && talamus ask "what should I remember?"
 ```
 
-Run `talamus` with no arguments for a status panel, or follow the
-**[10-minute quickstart](docs/quickstart.md)**.
+Run `talamus` for the status dashboard, `talamus quickstart` for essential commands, or `talamus ui` for the local React workbench.
 
-## Choose your engine
+## Links
 
-Talamus runs on what you already have — set it in `talamus.json` or `TALAMUS_LLM_PROVIDER`:
+Docs: [quickstart](docs/quickstart.md), [commands](docs/commands.md), [agent tool calling](docs/agent-tool-calling.md), [configuration](docs/configuration.md), [benchmarks](docs/benchmarks.md), [architecture](docs/architecture.md), [evaluation](docs/evaluation.md), [multi-brain](docs/multi-brain.md), [ontology](docs/ontology.md).
 
-- `claude-cli` — your Claude subscription (default if `claude` is on PATH)
-- `codex-cli` — your ChatGPT subscription (Codex is bundled with it)
-- `gemini-cli` — your Gemini subscription
-- `opencode` — opencode, with whatever providers you configured in it
-- `antigravity-cli` — Google Antigravity (`agy`)
-- `ollama` — a local model, fully offline (`TALAMUS_LLM_MODEL=llama3`)
-- `anthropic-api` — the Anthropic API (`ANTHROPIC_API_KEY`)
-
-Every engine gets per-task **model+effort tiering** automatically: bulk work
-(extraction, routing) runs on the cheap tier, the answer you read on the strong
-one — top quality while burning as little of your subscription as possible.
-
-## For agents (MCP)
-
-```bash
-talamus mcp install             # writes .mcp.json for Claude Code / Cursor / Desktop
-talamus hook                    # prints a SessionEnd hook to auto-capture your work
-```
-
-Agents `search` / `read_note` / `recall` / `overview` / `neighbors` to read the brain,
-and `remember` to grow it. The graph is an **index, not the answer** — agents read the
-real notes and cite them.
-
-## Browse it like a wiki
-
-Open `notes/` as an Obsidian vault: notes cross-link with `[[wikilinks]]`, so you
-navigate the knowledge by hovering and clicking. Prefer a dedicated app?
-**`talamus ui`** — the local web workbench (`pip install talamus[ui]`) — gives you
-chat, search, clickable wikilinks, graph navigation, and domain browsing.
-
-## How it works
-
-Sources (Markdown, text, **PDF, DOCX, HTML, URLs**) are normalized and preserved; an
-LLM extracts atomic **concept notes** (with sources, typed relations, and wikilinks);
-Talamus builds rebuildable indexes (graph + BM25 + ontology) and a hierarchical
-**domain overview**. Retrieval routes through the overview, then **reranks** a union of
-graph + BM25 candidates, and fits the context to a **token budget** so answer cost stays
-flat as the brain grows. Answers cite the notes they used, and `talamus eval` measures
-retrieval quality (recall@k / MRR) so changes are judged by numbers, not vibes.
-
-Storage is **hybrid**: `notes/*.md` is the human-editable view (Obsidian-compatible),
-`.talamus/cache/` holds the machine truth (provenance) and the derived indexes;
-`talamus reindex` folds your hand-edits back in. The core is **Python stdlib-only**;
-extras (MCP, engines) are optional. See **[architecture](docs/architecture.md)**.
-
-## How it compares (measured)
-
-A real head-to-head against a MiniLM dense vector-DB RAG pipeline
-(sentence-transformers + FAISS) and vanilla BM25, same corpus/queries/judgments
-([details](dev/research/2026-06-rs5-competitive-shootout.md)):
-
-| corpus | metric | Talamus | BM25 | Vector DB |
-|---|---|---|---|---|
-| BEIR SciFact (English, dense's turf) | recall@10 | 0.776 | 0.776 | 0.783 |
-| BEIR SciFact | hit@10 | 0.793 | 0.797 | 0.793 |
-| Cross-language + vague (our turf) | recall@10 | **0.886** | 0.771 | 0.700 |
-| Cross-language + vague | hit@10 | **0.971** | 0.829 | 0.743 |
-
-**On the vector DB's home turf we tie MiniLM — with zero embedding
-infrastructure. On cross-language and vague queries we beat that MiniLM
-baseline.** A stronger multilingual dense model changes the honest story: on
-the book corpus multilingual-e5 leads nDCG **0.837** / MRR **0.857**, while
-`talamus-smart` keeps the best hit **0.971** / recall **0.886**. The edge is not
-"always beats dense"; it is zero embedding infra plus time, meaning and
-verifiability (100% of notes source-resolvable; 97.7% fewer tokens than loading
-the brain).
-
-## Use cases
-
-- **Second brain** — compile your reading and notes into a connected, cited wiki.
-- **Agent memory** — give your agents a local, structured, verifiable memory they
-  can both read and grow.
-
-## Status & roadmap
-
-**Shipped** (tested, gate-green): the sources → notes → cited-answers loop;
-**per-task engine tiering** (each operation picks the cheapest model that's good
-enough); **multi-brain** with a federated read index (`brains`, `--all-brains`)
-and a **shared emergent ontology** across brains; **repo scan** with dry-run,
-secret redaction and resumable jobs (`scan`, `jobs`); **persistent indexes**
-(sqlite/FTS5 — search p95 at 10.000 notes: **72 ms**, usable at 100k); the
-**Ontology Lab** (emergent relation types: induce → review → promote, with
-measured retrieval lift); the **temporal model** (`timeline`, `ask --as-of`);
-**batch verification** with a review queue; multi-format ingestion
-(PDF/DOCX/HTML/URL) and **Obsidian/Notion vault import** (`import-vault`, no LLM);
-the CLI dashboard; the **MCP server** (read + write tools, including cited `ask`,
-`verify`, and `read_note` as-of); the **React web workbench** (`talamus ui`) with
-the time-travel and verify moats visible in the note inspector.
-
-**Experimental**: emergent-schema quality at large scale (metrics built-in:
-`ontology eval`/`stability`); UI runtime polish.
-
-**Roadmap** ([details](dev/ROADMAP.md)): security hardening + public launch;
-frictionless MCP install across agents; absurd-performance pass; then OCR & more
-formats, optional local embeddings (measured), packaged installers.
+Project: [security](SECURITY.md), [contributing](CONTRIBUTING.md), [roadmap](dev/ROADMAP.md), [state ledger](dev/STATE.md).
 
 ## Development
 
 ```bash
 pip install -e ".[dev,mcp]"
-python dev.py                    # lint + types + tests
+python dev.py
 ```
+
+`python dev.py` runs ruff, format check, mypy, and unittest. Product behavior changes should update user docs in the same change.
 
 ## License
 
