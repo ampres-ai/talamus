@@ -10,6 +10,7 @@ import {
   Brain,
   Gauge,
   Stack,
+  Plugs,
   CaretDown,
   X as XIcon,
   type IconProps,
@@ -28,6 +29,7 @@ const NAV: Nav[] = [
   { id: "ontology", label: "Ontology", Icon: TreeStructure },
   { id: "review", label: "Review", Icon: CheckCircle },
   { id: "brains", label: "Brains", Icon: Brain },
+  { id: "connect", label: "Connect", Icon: Plugs },
   { id: "system", label: "System", Icon: Gauge },
 ];
 

@@ -174,6 +174,64 @@ export type AskResult = {
   sources: AskSource[];
 };
 
+export type EngineReadiness = {
+  provider: string;
+  label: string;
+  command: string;
+  available: boolean;
+  configured: boolean;
+  needs_secret: boolean;
+  status: string;
+  detail: string;
+};
+
+export type Readiness = {
+  root: string;
+  scope: string;
+  source: string;
+  config_exists: boolean;
+  config_error: string;
+  selected_engine: string;
+  selected_model: string;
+  engines: EngineReadiness[];
+};
+
+export type IntegrationReport = {
+  root: string;
+  mcp_config_path: string;
+  mcp_installed: boolean;
+  hook_command: string;
+  cursor_installed: boolean;
+  codex_on_path: boolean;
+  hook_installed: boolean;
+};
+
+export type McpInstallReport = {
+  agent: string;
+  results: Record<string, ServiceResult<Record<string, unknown>>>;
+};
+
+export type HookInstallReport = {
+  settings_path: string;
+  command: string;
+  installed: boolean;
+  already_installed: boolean;
+};
+
+export type EngineProbeResult = {
+  engine: string;
+  verified: boolean;
+  answer?: string;
+  error?: string;
+  hint: string;
+  limit_reached: boolean;
+};
+
+export type EngineSettings = {
+  llm_provider: string;
+  llm_model: string;
+  language: string;
+};
 // The per-launch workbench token, injected into index.html by the server. It is
 // sent on every /api call so a cross-origin page (which cannot read this token)
 // cannot drive the local API. See dev/ROADMAP.md Phase S1.
@@ -197,7 +255,7 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
 }
 
 export const api = {
-  readiness: () => get<ServiceResult<Record<string, unknown>>>("/api/readiness"),
+  readiness: () => get<ServiceResult<Readiness>>("/api/readiness"),
   library: () => get<ServiceResult<{ notes: NoteSummary[] }>>("/api/library"),
   graph: () => get<ServiceResult<GraphData>>("/api/graph"),
   note: (title: string, asOf = "") =>
@@ -215,6 +273,14 @@ export const api = {
     post<ServiceResult<ReviewItem>>(`/api/review/${encodeURIComponent(id)}/reject`, { reason }),
   ask: (question: string) => post<ServiceResult<AskResult>>("/api/ask", { question }),
   diagnostics: () => get<ServiceResult<Diagnostics>>("/api/diagnostics"),
+  integrations: () => get<ServiceResult<IntegrationReport>>("/api/integrations"),
+  connectAgent: (agent: string) =>
+    post<ServiceResult<McpInstallReport>>("/api/integrations/mcp", { agent }),
+  installHook: () => post<ServiceResult<HookInstallReport>>("/api/integrations/hook"),
+  probeEngine: (engine: string) =>
+    post<ServiceResult<EngineProbeResult>>("/api/engines/probe", { engine }),
+  updateEngineSettings: (provider: string) =>
+    post<ServiceResult<EngineSettings>>("/api/engines/settings", { provider }),
   brains: () => get<ServiceResult<BrainList>>("/api/brains"),
   getActive: () => get<ServiceResult<ActiveBrain>>("/api/active"),
   setActiveBrain: (body: { name?: string; path?: string }) =>
