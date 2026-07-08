@@ -28,7 +28,7 @@ from talamus.scan import (
 )
 from talamus.services.backup import export_brain, import_brain_archive
 from talamus.services.diagnostics import inspect_diagnostics
-from talamus.services.engines import choose_default_engine, list_engines
+from talamus.services.engines import choose_default_engine, engine_hint, list_engines
 from talamus.services.integrations import (
     build_hook_snippet,
     install_capture_hook,
@@ -38,19 +38,6 @@ from talamus.services.integrations import (
 )
 from talamus.services.readiness import ReadinessReport, inspect_readiness
 from talamus.store import reindex
-
-_ENGINE_HINTS = {
-    "opencode": (
-        "connect a provider first: run `opencode auth login`, pick a provider and model\n"
-        "     (free tiers exist), then re-run: talamus setup --engine opencode --verify-engine"
-    ),
-    "ollama": "is the ollama service running and a model pulled? try `ollama pull llama3.2`",
-    "claude-cli": "run `claude` once to log in, then retry",
-    "codex-cli": "run `codex` once to log in, then retry",
-    "gemini-cli": "run `gemini` once to authenticate, then retry",
-    "antigravity-cli": "run `agy` once to authenticate, then retry",
-    "anthropic-api": "set ANTHROPIC_API_KEY, or save a key from the workbench Settings",
-}
 
 
 def _should_verify_engine(verify: bool | None, router: Router | None) -> bool:
@@ -74,7 +61,7 @@ def _verify_engine(root: Path, chosen: str, router: Router | None) -> None:
         llm = (router or _router_for(root)).for_task(TaskClass.QUERY_EXPANSION)
         answer = llm.complete("Reply with exactly: ok")
     except (EngineFailed, EngineNotFound, EngineLimitReached) as exc:
-        hint = _ENGINE_HINTS.get(chosen, "run `talamus doctor` for a full diagnosis")
+        hint = engine_hint(chosen)  # the hints map lives in services.engines (shared with the UI)
         print(f"     engine '{chosen}' NOT verified: {exc}", file=sys.stderr)
         print(f"     fix: {hint}", file=sys.stderr)
         return

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, TypeVar
@@ -18,6 +19,9 @@ class IntegrationReport:
     mcp_config_path: str
     mcp_installed: bool
     hook_command: str
+    cursor_installed: bool
+    codex_on_path: bool
+    hook_installed: bool
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -62,6 +66,9 @@ def inspect_integrations(root: str | Path) -> ServiceResult[IntegrationReport]:
             mcp_config_path=str(_mcp_config_path(root_path)),
             mcp_installed=mcp_installed(root_path),
             hook_command=_hook_command(root_path),
+            cursor_installed=cursor_installed(root_path),
+            codex_on_path=shutil.which("codex") is not None,
+            hook_installed=hook_installed(root_path),
         )
     except (OSError, TypeError, ValueError, AttributeError, json.JSONDecodeError) as exc:
         return _integration_error(exc)
@@ -127,6 +134,58 @@ def install_mcp_config_codex() -> ServiceResult[McpInstallResult]:
             command="talamus-mcp",
             args=[],
         ),
+    )
+
+
+_MCP_AGENTS = ("auto", "claude", "cursor", "codex", "all")
+
+
+def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResult[dict[str, Any]]:
+    """One call, every agent (D7.2, the UI side of `talamus mcp install`):
+    claude always, cursor when named or the project has `.cursor/`, codex when
+    named or its CLI is on PATH. A MISSING codex is a skip under auto/all
+    (reported per-agent, not fatal) but an error when the user asked for codex
+    explicitly — the same contract as the CLI."""
+    root_path = Path(root)
+    choice = (agent or "auto").strip().lower()
+    if choice not in _MCP_AGENTS:
+        return ServiceResult(
+            success=False,
+            message=f"Unknown agent {agent!r} — use auto, claude, cursor, codex or all",
+            code="mcp_agent_unknown",
+        )
+    installs: list[tuple[str, Callable[[], ServiceResult[McpInstallResult]]]] = []
+    if choice in ("auto", "claude", "all"):
+        installs.append(("claude", lambda: install_mcp_config(root_path)))
+    if choice in ("cursor", "all") or (choice == "auto" and (root_path / ".cursor").is_dir()):
+        installs.append(("cursor", lambda: install_mcp_config_cursor(root_path)))
+    if choice in ("codex", "all") or (choice == "auto" and shutil.which("codex") is not None):
+        installs.append(("codex", install_mcp_config_codex))
+    results: dict[str, ServiceResult[McpInstallResult]] = {}
+    for name, run in installs:
+        results[name] = run()
+    failed = [
+        name
+        for name, result in results.items()
+        if not result.success and not (choice != "codex" and result.code == "codex_not_found")
+    ]
+    installed = [name for name, result in results.items() if result.success]
+    data = {
+        "agent": choice,
+        "results": {name: result.to_dict() for name, result in results.items()},
+    }
+    if failed:
+        return ServiceResult(
+            success=False,
+            message=f"MCP install failed for: {', '.join(failed)}",
+            code="mcp_agents_failed",
+            data=data,
+        )
+    return ServiceResult(
+        success=True,
+        message=f"MCP configured for: {', '.join(installed) or 'no agent detected'}",
+        code="mcp_agents_installed",
+        data=data,
     )
 
 
@@ -268,8 +327,23 @@ def _read_json_object(config_path: Path) -> dict[str, Any]:
 
 
 def mcp_installed(root: Path) -> bool:
-    data = _read_json_object(_mcp_config_path(root))
-    servers = data.get("mcpServers")
+    return _mcp_json_has_talamus(_mcp_config_path(root))
+
+
+def cursor_installed(root: Path) -> bool:
+    """Cursor's `.cursor/mcp.json` carries the talamus server (same shape as `.mcp.json`)."""
+    return _mcp_json_has_talamus(root / ".cursor" / "mcp.json")
+
+
+def hook_installed(root: Path) -> bool:
+    """The SessionEnd capture hook is present in `<root>/.claude/settings.json`."""
+    hooks = _read_json_object(_claude_settings_path(root)).get("hooks")
+    session_end = hooks.get("SessionEnd") if isinstance(hooks, dict) else None
+    return isinstance(session_end, list) and _capture_hook_present(session_end)
+
+
+def _mcp_json_has_talamus(config_path: Path) -> bool:
+    servers = _read_json_object(config_path).get("mcpServers")
     if not isinstance(servers, dict):
         return False
     talamus = servers.get("talamus")

@@ -2,11 +2,15 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from talamus.services.integrations import (
     build_hook_snippet,
     inspect_integrations,
+    install_capture_hook,
     install_mcp_config,
+    install_mcp_config_cursor,
+    install_mcp_for_agent,
 )
 
 
@@ -54,7 +58,8 @@ class TalamusIntegrationServiceTests(unittest.TestCase):
 
     def test_inspect_integrations_reports_absent_mcp_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            result = inspect_integrations(Path(tmp))
+            with mock.patch("talamus.services.integrations.shutil.which", return_value=None):
+                result = inspect_integrations(Path(tmp))
 
         self.assertTrue(result.success, result.message)
         report = result.data
@@ -62,6 +67,42 @@ class TalamusIntegrationServiceTests(unittest.TestCase):
         assert report is not None
         self.assertFalse(report.mcp_installed)
         self.assertTrue(report.mcp_config_path.endswith(".mcp.json"))
+        self.assertFalse(report.cursor_installed)
+        self.assertFalse(report.codex_on_path)
+        self.assertFalse(report.hook_installed)
+
+    def test_inspect_integrations_reports_cursor_codex_and_hook(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            install_mcp_config_cursor(root)
+            install_capture_hook(root)
+            with mock.patch("talamus.services.integrations.shutil.which", return_value="codex"):
+                result = inspect_integrations(root)
+
+        self.assertTrue(result.success, result.message)
+        report = result.data
+        assert report is not None
+        self.assertTrue(report.cursor_installed)
+        self.assertTrue(report.codex_on_path)
+        self.assertTrue(report.hook_installed)
+
+    def test_install_mcp_for_agent_all_skips_a_missing_codex(self) -> None:
+        # under auto/all a MISSING codex is a skip (reported, not fatal) — the
+        # same contract as `talamus mcp install`; explicit codex must fail loudly
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with mock.patch("talamus.services.integrations.shutil.which", return_value=None):
+                all_result = install_mcp_for_agent(root, "all")
+                explicit = install_mcp_for_agent(root, "codex")
+
+        self.assertTrue(all_result.success, all_result.message)
+        assert all_result.data is not None
+        results = all_result.data["results"]
+        self.assertTrue(results["claude"]["success"])
+        self.assertTrue(results["cursor"]["success"])
+        self.assertFalse(results["codex"]["success"])
+        self.assertEqual("codex_not_found", results["codex"]["code"])
+        self.assertFalse(explicit.success)
 
 
 if __name__ == "__main__":

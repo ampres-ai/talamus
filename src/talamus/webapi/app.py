@@ -21,8 +21,14 @@ from talamus.routing import EngineRouter, TaskClass
 from talamus.services.ask import ask_brain
 from talamus.services.brains import init_brain, list_brains
 from talamus.services.diagnostics import inspect_diagnostics
+from talamus.services.engines import probe_engine
 from talamus.services.importer import import_markdown_vault
 from talamus.services.ingestion import ingest_raw_text, preview_ingest, run_ingest
+from talamus.services.integrations import (
+    inspect_integrations,
+    install_capture_hook,
+    install_mcp_for_agent,
+)
 from talamus.services.library import list_library_notes
 from talamus.services.ontology import (
     apply_ontology_candidate,
@@ -178,6 +184,33 @@ def create_app(root: Path) -> FastAPI:
     @app.get("/api/diagnostics")
     def diagnostics() -> dict:
         return inspect_diagnostics(root).to_dict()
+
+    @app.get("/api/integrations")
+    def integrations() -> dict:
+        """MCP + capture-hook status of the active brain (claude/cursor/codex)."""
+        return inspect_integrations(root).to_dict()
+
+    @app.post("/api/integrations/mcp")
+    def integrations_mcp(payload: dict | None = None) -> dict:
+        """Connect agents via MCP: {"agent": "auto|claude|cursor|codex|all"} —
+        per-agent results in data.results (S1 middleware guards this POST)."""
+        agent = str((payload or {}).get("agent", "auto"))
+        return install_mcp_for_agent(root, agent).to_dict()
+
+    @app.post("/api/integrations/hook")
+    def integrations_hook() -> dict:
+        """Install the SessionEnd capture hook. Consent is the UI's job (D6): the
+        workbench shows the privacy-contract copy and calls this only after the
+        user said yes — the endpoint just installs (merge + idempotent)."""
+        return install_capture_hook(root).to_dict()
+
+    @app.post("/api/engines/probe")
+    def engines_probe(payload: dict | None = None) -> dict:
+        """One tiny live completion for {"engine": "<provider>"}: verified/error,
+        the shared per-engine hint, and limit_reached — the honest on-demand
+        quota check (an exhausted limit surfaces the moment it bites)."""
+        engine = str((payload or {}).get("engine", ""))
+        return probe_engine(root, engine).to_dict()
 
     @app.get("/api/brains")
     def brains() -> dict:
