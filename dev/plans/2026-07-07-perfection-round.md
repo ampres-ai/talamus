@@ -20,7 +20,12 @@ The one-screen artifacts date 2026-06-15/17 (pre-RS8-refactor code). Re-run:
 - SKIPPED with reason: 100k scale re-run (index code path untouched since
   2026-07-02 measurement; CACHE_VERSION unchanged)
 
-## F2 — The ontology level-jump (awaiting Giovanni's ruling between)
+## F2 — The ontology level-jump (RULED 2026-07-07: A + B + C, all three)
+
+Execution order: B first (the substance, measured), A on top of B (the
+insights UI/MCP exposes include what inference found), C last (cross-brain).
+
+## The three options (context)
 
 A. **Visible moat**: ontology insights surfaced in UI + MCP (surprising
    links, coverage gaps, domain map as interactive navigation). Low risk,
