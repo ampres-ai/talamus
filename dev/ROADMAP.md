@@ -456,6 +456,19 @@ the developer magic but must not look unfinished at launch.
 - **[U2] The moats are already visible** (as-of + verify in the inspector, done
   2026-07-02) — extend to ontology insights (surprising links, gaps) and the token
   cost per answer. **Accept:** each moat has a visible, demoable surface.
+- **[F2-B] Ontology inference layer — closure, not scoring. → SHIPPED (2026-07-08,
+  spec order 1).** Relation-type properties (inverse_of/transitive/symmetric) are
+  induced purely structurally from corpus witnesses (≥8 support pairs, ≥3 distinct
+  notes; transitive only when the corpus itself witnesses A→C) and go through the
+  existing candidate → review → promote lifecycle (`talamus ontology infer`, kind
+  `property`, versioned schema events). Promoted properties produce derived edges
+  with full provenance ({inferred, rule, via, schema_version}) in
+  `.talamus/cache/ontology_inferred.json` — deterministic, cycle-safe, transitive
+  depth cap 2, rebuilt on reindex, never written into notes. `neighbors`
+  (CLI `--no-inferred`, MCP, graph service) marks them with the rule. Zero LLM
+  calls; scoring untouched. **Remaining (spec order 2–3):** the U2 insights surface
+  reads these edges; the ask-context flag stays OFF until the two-corpora ablation
+  wins. Spec: `dev/specs/2026-07-08-ontology-inference-design.md`.
 - **[U3] Command palette (⌘K) + keyboard flow** for the developer who lives on the
   keyboard. **Accept:** every primary action reachable without the mouse. **Delegate:** yes.
 

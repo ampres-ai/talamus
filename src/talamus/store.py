@@ -174,12 +174,14 @@ def write_note(paths: TalamusPaths, note: CanonicalNote) -> None:
 
 def rebuild_indexes(paths: TalamusPaths) -> None:
     from talamus.indexes import build_search_index
-    from talamus.ontology_lab import active_surface_map
+    from talamus.ontology_lab import active_surface_map, rebuild_inferred_ontology
 
     notes = load_notes(paths)
     paths.cache.mkdir(parents=True, exist_ok=True)
     save_graph(paths.graph_file, build_graph(notes))
-    save_ontology(paths.ontology_file, build_ontology(notes, active_surface_map(paths)))
+    ontology = build_ontology(notes, active_surface_map(paths))
+    save_ontology(paths.ontology_file, ontology)
+    rebuild_inferred_ontology(paths, ontology)
     index = BM25Index()
     for note in notes:
         haystack = " ".join(

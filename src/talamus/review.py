@@ -21,6 +21,7 @@ REVIEW_KINDS = (
     "duplicate_concept",
     "correction",
     "ontology_candidate",
+    "property",
     "stale_source",
     "low_confidence_note",
     "scan_safety",

@@ -165,18 +165,24 @@ def overview() -> str:
 
 
 @server.tool()
-def neighbors(concept: str) -> str:
-    """Show the concepts connected to a concept in the brain (the map/ontology),
-    with the relation type."""
-    result = list_graph_neighbors(_root, concept)
+def neighbors(concept: str, include_inferred: bool = True) -> str:
+    """Show concepts connected to a concept in the brain, with relation types.
+
+    include_inferred=False hides derived ontology-inference edges.
+    """
+    result = list_graph_neighbors(_root, concept, include_inferred=include_inferred)
     if not result.success or result.data is None:
         return result.message
     if not result.data:
         return "No connected concept."
-    return "\n".join(
-        f"{'->' if item.direction == 'out' else '<-'} [{item.relation}] {item.title}"
-        for item in result.data
-    )
+    lines: list[str] = []
+    for item in result.data:
+        arrow = "->" if item.direction == "out" else "<-"
+        suffix = ""
+        if item.inferred:
+            suffix = f" (inferred: {item.rule} via {'; '.join(item.via)})"
+        lines.append(f"{arrow} [{item.relation}] {item.title}{suffix}")
+    return "\n".join(lines)
 
 
 @server.tool()

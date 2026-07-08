@@ -49,6 +49,26 @@ class OntologyRelationType:
 
 
 @dataclass(frozen=True)
+class OntologyPropertyCandidate:
+    id: str
+    kind: str
+    property: str
+    type_id: str
+    value: str
+    witnesses: list[dict[str, Any]]
+    examples: list[str]
+    support: int
+    distinct_notes: int
+    confidence: float
+    status: str
+    valid_from: str
+    valid_to: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class OntologyDecision:
     type_id: str
     action: str
@@ -96,15 +116,20 @@ def get_ontology_status(root: str | Path) -> ServiceResult[OntologyStatusReport]
 
 def list_ontology_candidates(
     root: str | Path, status: str = "candidate"
-) -> ServiceResult[list[OntologyRelationType]]:
+) -> ServiceResult[list[OntologyRelationType | OntologyPropertyCandidate]]:
     paths = TalamusPaths(Path(root))
     try:
         schema = load_schema(paths)
-        items = [
+        items: list[OntologyRelationType | OntologyPropertyCandidate] = [
             _relation_type(rel_type)
             for rel_type in schema.relation_types
             if rel_type.status == status
         ]
+        items.extend(
+            _property_candidate(candidate)
+            for candidate in schema.property_candidates
+            if candidate.status == status
+        )
     except (OSError, TypeError, ValueError, AttributeError) as exc:
         return _ontology_error(exc)
     return ServiceResult(
@@ -190,6 +215,24 @@ def _relation_type(rel_type: Any) -> OntologyRelationType:
         status=str(rel_type.status),
         valid_from=str(rel_type.valid_from),
         valid_to=str(rel_type.valid_to),
+    )
+
+
+def _property_candidate(candidate: Any) -> OntologyPropertyCandidate:
+    return OntologyPropertyCandidate(
+        id=str(candidate.id),
+        kind=str(candidate.kind),
+        property=str(candidate.property),
+        type_id=str(candidate.type_id),
+        value=str(candidate.value),
+        witnesses=[dict(witness) for witness in candidate.witnesses],
+        examples=list(candidate.examples),
+        support=int(candidate.support),
+        distinct_notes=int(candidate.distinct_notes),
+        confidence=float(candidate.confidence),
+        status=str(candidate.status),
+        valid_from=str(candidate.valid_from),
+        valid_to=str(candidate.valid_to),
     )
 
 

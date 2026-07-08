@@ -127,7 +127,12 @@ def build_parser() -> argparse.ArgumentParser:
         "induce", parents=[common], help="induce candidate relation types from the corpus"
     )
     o_induce.add_argument("--min-support", type=int, default=3, help="evidence per candidate")
-    onto_sub.add_parser("review", parents=[common], help="list candidate types with evidence")
+    onto_sub.add_parser(
+        "infer", parents=[common], help="infer relation property candidates from active types"
+    )
+    onto_sub.add_parser(
+        "review", parents=[common], help="list candidate types/properties with evidence"
+    )
     o_apply = onto_sub.add_parser("apply", parents=[common], help="promote a candidate to active")
     o_apply.add_argument("type_id")
     o_apply.add_argument("--force", action="store_true", help="override promotion thresholds")
@@ -291,6 +296,9 @@ def build_parser() -> argparse.ArgumentParser:
     ev.add_argument("--sizes", default=None, help="comma-separated note counts for --scale")
     neighbors = sub.add_parser("neighbors", parents=[common], help="show a concept's connections")
     neighbors.add_argument("concept")
+    neighbors.add_argument(
+        "--no-inferred", action="store_true", help="hide derived ontology-inference edges"
+    )
     relations = sub.add_parser("relations", parents=[common], help="list/prune typed relations")
     relations.add_argument(
         "--prune", type=float, default=None, metavar="MIN", help="drop below MIN"

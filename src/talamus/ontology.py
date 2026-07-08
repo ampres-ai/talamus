@@ -2,16 +2,17 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from talamus.linking import NoteRegistry
 from talamus.models import CanonicalNote
 from talamus.paths import TalamusPaths
 
-# Pattern per parole chiave; il primo che combacia vince (l'ordine conta).
+# Keyword patterns; first match wins, so order matters.
 _RELATION_PATTERNS: list[tuple[str, tuple[str, ...]]] = [
     (
         "is-a",
-        ("is-a", "is a", "isa", "tipo di", "è un", "e un", "sottotipo", "kind of", "subclass"),
+        ("is-a", "is a", "isa", "tipo di", "\u00e8 un", "e un", "sottotipo", "kind of", "subclass"),
     ),
     ("part-of", ("part-of", "part of", "parte di", "fa parte", "componente di")),
     (
@@ -24,10 +25,11 @@ _RELATION_PATTERNS: list[tuple[str, tuple[str, ...]]] = [
 
 
 def normalize_relation(rel: str, emergent_surfaces: dict[str, str] | None = None) -> str:
-    """Map a raw relation surface to a type. ``emergent_surfaces`` (surface key ->
-    type name, from the Ontology Lab's ACTIVE schema) is consulted before falling
-    back to ``related`` — promoted emergent types reclaim what the fixed patterns
-    would flatten away."""
+    """Map a raw relation surface to a canonical type.
+
+    ``emergent_surfaces`` maps surface keys to active ontology-lab type names.
+    It is consulted after the fixed patterns and before the fallback ``related``.
+    """
     low = rel.strip().lower()
     if not low:
         return "related"
@@ -49,16 +51,13 @@ def _key(value: str) -> str:
 
 def build_ontology(
     notes: list[CanonicalNote], emergent_surfaces: dict[str, str] | None = None
-) -> dict:
-    """Mappa concettuale: le note sono i concetti; i bersagli sono risolti al titolo canonico.
-
-    ``emergent_surfaces`` re-tipizza con lo schema emergente ATTIVO le superfici che
-    altrimenti finirebbero in ``related`` (Ontology Lab, F5.10)."""
+) -> dict[str, Any]:
+    """Build the derived concept map from canonical notes."""
     registry = NoteRegistry.from_notes(notes)
-    concepts: dict[str, dict] = {
+    concepts: dict[str, dict[str, Any]] = {
         note.title: {"aliases": list(note.aliases), "tags": list(note.tags)} for note in notes
     }
-    edges: list[dict] = []
+    edges: list[dict[str, Any]] = []
     seen: set[tuple[str, str, str]] = set()
     for note in notes:
         targets: list[tuple[str, str]] = [
@@ -78,26 +77,82 @@ def build_ontology(
     return {"concepts": concepts, "edges": edges}
 
 
-def neighbors(ontology: dict, concept_title: str) -> list[dict]:
-    """Vicini tipizzati di un concetto, in entrambe le direzioni."""
+def neighbors(
+    ontology: dict[str, Any],
+    concept_title: str,
+    inferred_ontology: dict[str, Any] | None = None,
+    *,
+    include_inferred: bool = True,
+) -> list[dict[str, Any]]:
+    """Typed neighbors of a concept in both directions.
+
+    Explicit edges keep the historical shape. Inferred edges add provenance fields
+    so callers can mark them and explain the rule that created them.
+    """
     key = _key(concept_title)
-    out: list[dict] = []
+    out: list[dict[str, Any]] = []
     for edge in ontology.get("edges", []):
-        if _key(edge["source"]) == key:
+        if _key(str(edge["source"])) == key:
             out.append({"title": edge["target"], "relation": edge["type"], "direction": "out"})
-        elif _key(edge["target"]) == key:
+        elif _key(str(edge["target"])) == key:
             out.append({"title": edge["source"], "relation": edge["type"], "direction": "in"})
+    if include_inferred and inferred_ontology:
+        for edge in inferred_ontology.get("edges", []):
+            relation = str(edge.get("relation") or edge.get("type") or "")
+            if _key(str(edge.get("source", ""))) == key:
+                out.append(_inferred_neighbor(edge, str(edge.get("target", "")), relation, "out"))
+            elif _key(str(edge.get("target", ""))) == key:
+                out.append(_inferred_neighbor(edge, str(edge.get("source", "")), relation, "in"))
     return out
 
 
-def save_ontology(path: Path, ontology: dict) -> None:
+def _inferred_neighbor(
+    edge: dict[str, Any], title: str, relation: str, direction: str
+) -> dict[str, Any]:
+    return {
+        "title": title,
+        "relation": relation,
+        "direction": direction,
+        "inferred": True,
+        "rule": str(edge.get("rule", "")),
+        "via": list(edge.get("via", [])),
+        "schema_version": int(edge.get("schema_version", 0)),
+    }
+
+
+def save_ontology(path: Path, ontology: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(ontology, indent=2, ensure_ascii=False, sort_keys=True), encoding="utf-8"
     )
 
 
-def load_ontology(paths: TalamusPaths) -> dict:
+def load_ontology(paths: TalamusPaths) -> dict[str, Any]:
     if not paths.ontology_file.is_file():
         return {"concepts": {}, "edges": []}
     return json.loads(paths.ontology_file.read_text(encoding="utf-8"))
+
+
+def inferred_ontology_path(paths: TalamusPaths) -> Path:
+    return paths.cache / "ontology_inferred.json"
+
+
+def load_inferred_ontology(paths: TalamusPaths) -> dict[str, Any]:
+    path = inferred_ontology_path(paths)
+    if not path.is_file():
+        return {"schema_version": 0, "edges": []}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        return {"schema_version": 0, "edges": []}
+    edges = data.get("edges", [])
+    if not isinstance(edges, list):
+        edges = []
+    return {"schema_version": int(data.get("schema_version", 0)), "edges": edges}
+
+
+def save_inferred_ontology(paths: TalamusPaths, inferred: dict[str, Any]) -> None:
+    path = inferred_ontology_path(paths)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(inferred, indent=2, ensure_ascii=False, sort_keys=True), encoding="utf-8"
+    )

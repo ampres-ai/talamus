@@ -3,7 +3,7 @@ from __future__ import annotations
 from talamus.ask import build_context_bundle
 from talamus.graph import load_graph
 from talamus.naming import note_filename
-from talamus.ontology import load_ontology, neighbors
+from talamus.ontology import load_inferred_ontology, load_ontology, neighbors
 from talamus.paths import TalamusPaths
 from talamus.rank import rerank_candidates
 from talamus.search import BM25Index
@@ -50,9 +50,12 @@ def read_note_text(paths: TalamusPaths, title: str) -> str | None:
     return None
 
 
-def concept_neighbors(paths: TalamusPaths, concept: str) -> list[dict]:
-    """Typed neighbors of a concept in the map (ontology): to navigate the connections."""
-    return neighbors(load_ontology(paths), concept)
+def concept_neighbors(
+    paths: TalamusPaths, concept: str, *, include_inferred: bool = True
+) -> list[dict]:
+    """Typed neighbors of a concept in the map (ontology): to navigate connections."""
+    inferred = load_inferred_ontology(paths) if include_inferred else None
+    return neighbors(load_ontology(paths), concept, inferred, include_inferred=include_inferred)
 
 
 def recall_context(paths: TalamusPaths, question: str, limit: int = 5) -> str:

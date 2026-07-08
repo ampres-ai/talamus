@@ -298,8 +298,10 @@ def _cmd_recall(
     return 0
 
 
-def _cmd_neighbors(root: Path, concept: str, json_out: bool) -> int:
-    result = list_graph_neighbors(root, concept)
+def _cmd_neighbors(
+    root: Path, concept: str, json_out: bool, *, include_inferred: bool = True
+) -> int:
+    result = list_graph_neighbors(root, concept, include_inferred=include_inferred)
     if not result.success or result.data is None:
         print(result.message, file=sys.stderr)
         return 1
@@ -312,7 +314,11 @@ def _cmd_neighbors(root: Path, concept: str, json_out: bool) -> int:
         return 0
     for item in items:
         arrow = "->" if item["direction"] == "out" else "<-"
-        print(f"{arrow} [{item['relation']}] {item['title']}")
+        suffix = ""
+        if item.get("inferred"):
+            via = "; ".join(str(ref) for ref in item.get("via", []))
+            suffix = f" (inferred: {item.get('rule', '')} via {via})"
+        print(f"{arrow} [{item['relation']}] {item['title']}{suffix}")
     return 0
 
 

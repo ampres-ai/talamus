@@ -61,8 +61,12 @@ class GraphNeighbor:
     title: str
     relation: str
     direction: str
+    inferred: bool = False
+    rule: str = ""
+    via: list[str] = field(default_factory=list)
+    schema_version: int = 0
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -88,9 +92,13 @@ def get_graph_snapshot(root: str | Path) -> ServiceResult[GraphSnapshot]:
     )
 
 
-def list_graph_neighbors(root: str | Path, concept: str) -> ServiceResult[list[GraphNeighbor]]:
+def list_graph_neighbors(
+    root: str | Path, concept: str, *, include_inferred: bool = True
+) -> ServiceResult[list[GraphNeighbor]]:
     try:
-        items = concept_neighbors(TalamusPaths(Path(root)), concept)
+        items = concept_neighbors(
+            TalamusPaths(Path(root)), concept, include_inferred=include_inferred
+        )
     except (OSError, TypeError, ValueError, AttributeError) as exc:
         return _graph_error(exc)
     return ServiceResult(
@@ -102,6 +110,10 @@ def list_graph_neighbors(root: str | Path, concept: str) -> ServiceResult[list[G
                 title=str(item.get("title", "")),
                 relation=str(item.get("relation", "")),
                 direction=str(item.get("direction", "")),
+                inferred=bool(item.get("inferred", False)),
+                rule=str(item.get("rule", "")),
+                via=[str(ref) for ref in item.get("via", [])],
+                schema_version=int(item.get("schema_version", 0)),
             )
             for item in items
         ],

@@ -179,7 +179,9 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
                 return 1
             return _cmd_eval(root, args.cases, args.k, json_out, args.category)
         if command == "neighbors":
-            return _cmd_neighbors(root, args.concept, json_out)
+            return _cmd_neighbors(
+                root, args.concept, json_out, include_inferred=not args.no_inferred
+            )
         if command == "relations":
             return _cmd_relations(root, args.prune, json_out)
         if command == "scan":

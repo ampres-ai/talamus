@@ -12,6 +12,7 @@ from talamus.federation import build_federated_index, federation_status
 from talamus.jobs import JobStore
 from talamus.ontology_lab import (
     induce_candidates,
+    infer_property_candidates,
     ontology_eval,
     stability,
 )
@@ -33,6 +34,7 @@ from talamus.services.brains import (
 )
 from talamus.services.jobs import cancel_job, get_job, list_jobs, read_job_log
 from talamus.services.ontology import (
+    OntologyPropertyCandidate,
     apply_ontology_candidate,
     deprecate_ontology_type,
     export_ontology_schema,
@@ -84,6 +86,20 @@ def _cmd_ontology_group(args: argparse.Namespace, root: Path, router: Router) ->
             print(f"  - {candidate.id}  support={candidate.support}  «{candidate.definition}»")
         print("review with `talamus ontology review`, promote with `talamus ontology apply ID`")
         return 0
+    if cmd == "infer":
+        proposed = infer_property_candidates(paths)
+        if json_out:
+            _print_json([candidate.to_dict() for candidate in proposed])
+            return 0
+        if not proposed:
+            print("no new property candidate (insufficient structural witnesses)")
+            return 0
+        print(f"{len(proposed)} property candidates inferred:")
+        for prop in proposed:
+            value = f" -> {prop.value}" if prop.value else ""
+            print(f"  - {prop.id}  {prop.property} {prop.type_id}{value}  support={prop.support}")
+        print("review with `talamus ontology review`, promote with `talamus ontology apply ID`")
+        return 0
     if cmd == "review":
         pending_result = list_ontology_candidates(root)
         if not pending_result.success or pending_result.data is None:
@@ -96,9 +112,17 @@ def _cmd_ontology_group(args: argparse.Namespace, root: Path, router: Router) ->
         if not pending:
             print("no candidates pending")
         for rel_type in pending:
-            print(f"- {rel_type.id}  support={rel_type.support} note={rel_type.distinct_notes}")
-            if rel_type.definition:
-                print(f"    {rel_type.definition}")
+            if isinstance(rel_type, OntologyPropertyCandidate):
+                value = f" -> {rel_type.value}" if rel_type.value else ""
+                print(
+                    f"- {rel_type.id}  [property] {rel_type.property} "
+                    f"{rel_type.type_id}{value}  support={rel_type.support} "
+                    f"note={rel_type.distinct_notes}"
+                )
+            else:
+                print(f"- {rel_type.id}  support={rel_type.support} note={rel_type.distinct_notes}")
+                if rel_type.definition:
+                    print(f"    {rel_type.definition}")
             for example in rel_type.examples[:2]:
                 print(f"    e.g. {example}")
         return 0
