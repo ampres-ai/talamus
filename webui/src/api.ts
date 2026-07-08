@@ -227,11 +227,12 @@ export type EngineProbeResult = {
   limit_reached: boolean;
 };
 
-export type EngineSettings = {
-  llm_provider: string;
-  llm_model: string;
-  language: string;
-};
+export let pendingAskQuery: string | null = null;
+
+export function setPendingAskQuery(query: string | null) {
+  pendingAskQuery = query && query.trim() ? query.trim() : null;
+}
+
 // The per-launch workbench token, injected into index.html by the server. It is
 // sent on every /api call so a cross-origin page (which cannot read this token)
 // cannot drive the local API. See dev/ROADMAP.md Phase S1.
@@ -279,8 +280,6 @@ export const api = {
   installHook: () => post<ServiceResult<HookInstallReport>>("/api/integrations/hook"),
   probeEngine: (engine: string) =>
     post<ServiceResult<EngineProbeResult>>("/api/engines/probe", { engine }),
-  updateEngineSettings: (provider: string) =>
-    post<ServiceResult<EngineSettings>>("/api/engines/settings", { provider }),
   brains: () => get<ServiceResult<BrainList>>("/api/brains"),
   getActive: () => get<ServiceResult<ActiveBrain>>("/api/active"),
   setActiveBrain: (body: { name?: string; path?: string }) =>

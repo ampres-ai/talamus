@@ -1,4 +1,4 @@
-import { useState, ReactNode, ComponentType } from "react";
+import { useEffect, useState, ReactNode, ComponentType } from "react";
 import {
   House,
   Sparkle,
@@ -15,7 +15,7 @@ import {
   X as XIcon,
   type IconProps,
 } from "@phosphor-icons/react";
-import { ActiveBrain } from "../api";
+import { ActiveBrain, setPendingAskQuery } from "../api";
 
 type Icon = ComponentType<IconProps>;
 type Nav = { id: string; label: string; Icon: Icon };
@@ -51,6 +51,20 @@ export function Shell({
     setActive(id);
     setOpenTabs((t) => (t.includes(id) ? t : [...t, id]));
   };
+
+  useEffect(() => {
+    const onNavigate = (event: Event) => {
+      const detail = (event as CustomEvent<{ view?: string; query?: string }>).detail ?? {};
+      const target = typeof detail.view === "string" ? detail.view : "";
+      if (!meta(target) || !views[target]) return;
+      if (typeof detail.query === "string" && detail.query.trim()) {
+        setPendingAskQuery(detail.query);
+      }
+      open(target);
+    };
+    window.addEventListener("talamus:navigate", onNavigate);
+    return () => window.removeEventListener("talamus:navigate", onNavigate);
+  });
   const close = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setOpenTabs((t) => {

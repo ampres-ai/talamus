@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { ClockCounterClockwise, Info, SealCheck, SealWarning, X } from "@phosphor-icons/react";
 import { api, VerifyResult } from "../api";
+import { Markdown } from "../markdown";
 
 // split YAML frontmatter (metadata) from the note body
 function splitNote(md: string): { meta: string; body: string } {
@@ -78,6 +79,8 @@ export function Inspector({ title, onClose }: { title: string; onClose: () => vo
 
   const parsed = md ? splitNote(md) : null;
   const hasMeta = !!parsed?.meta;
+  const verdictError = verdict && "error" in verdict ? verdict.error : null;
+  const verifyVerdict = verdict && !("error" in verdict) ? verdict : null;
 
   const panelStyle = {
     margin: "0 0 14px",
@@ -139,19 +142,19 @@ export function Inspector({ title, onClose }: { title: string; onClose: () => vo
 
       <div style={{ flex: 1, overflow: "auto", padding: 14, minHeight: 0 }}>
         {verifying ? (
-          <div style={{ ...panelStyle, color: "var(--muted)" }}>Verifying against the source…</div>
-        ) : verdict && "error" in verdict ? (
-          <div style={{ ...panelStyle, color: "var(--muted)" }}>{verdict.error}</div>
-        ) : verdict ? (
+          <div style={{ ...panelStyle, color: "var(--muted)" }}>Verifying against the source...</div>
+        ) : verdictError ? (
+          <div style={{ ...panelStyle, color: "var(--muted)" }}>{verdictError}</div>
+        ) : verifyVerdict ? (
           <div style={{ ...panelStyle, color: "var(--text)" }}>
-            {!verdict.found ? (
+            {!verifyVerdict.found ? (
               "Note not found."
-            ) : !verdict.checked ? (
+            ) : !verifyVerdict.checked ? (
               <span style={{ color: "var(--muted)" }}>
                 <SealWarning size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-                Source unavailable — verification skipped (provenance may be stale).
+                Source unavailable - verification skipped (provenance may be stale).
               </span>
-            ) : verdict.ok ? (
+            ) : verifyVerdict.ok ? (
               <span style={{ color: "var(--ok, #4caf82)" }}>
                 <SealCheck size={14} weight="fill" style={{ verticalAlign: "-2px", marginRight: 6 }} />
                 Still faithful to its source.
@@ -159,8 +162,8 @@ export function Inspector({ title, onClose }: { title: string; onClose: () => vo
             ) : (
               <span>
                 <SealWarning size={14} weight="fill" style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--warn, #e3b341)" }} />
-                Mismatch with its source — proposed correction:{" "}
-                <em>{verdict.summary || verdict.body || "see the review queue"}</em>
+                Mismatch with its source - proposed correction:{" "}
+                <em>{verifyVerdict.summary || verifyVerdict.body || "see the review queue"}</em>
               </span>
             )}
           </div>
@@ -173,7 +176,7 @@ export function Inspector({ title, onClose }: { title: string; onClose: () => vo
                 value={asOfInput}
                 onChange={(e) => setAsOfInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && loadAsOf(asOfInput)}
-                placeholder="as of… (2026-01 or 2026-01-15)"
+                placeholder="as of... (2026-01 or 2026-01-15)"
                 style={{
                   flex: 1,
                   padding: "6px 9px",
@@ -195,28 +198,16 @@ export function Inspector({ title, onClose }: { title: string; onClose: () => vo
             </div>
             {asOfView ? (
               <div style={{ marginTop: 10, color: "var(--muted)" }}>
-                {asOfView.text === null ? "Reading the history…" : `[as of ${asOfView.when}]`}
+                {asOfView.text === null ? "Reading the history..." : `[as of ${asOfView.when}]`}
               </div>
             ) : null}
           </div>
         ) : null}
 
         {asOfView && asOfView.text !== null ? (
-          <pre
-            style={{
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              fontFamily: "inherit",
-              fontSize: 13.5,
-              lineHeight: 1.65,
-              margin: 0,
-              color: "var(--text)",
-            }}
-          >
-            {asOfView.text}
-          </pre>
+          <Markdown text={asOfView.text} />
         ) : md === null && !missing ? (
-          <div style={{ color: "var(--muted)" }}>Loading…</div>
+          <div style={{ color: "var(--muted)" }}>Loading...</div>
         ) : missing ? (
           <div style={{ color: "var(--muted)" }}>Note not found.</div>
         ) : (
@@ -240,22 +231,15 @@ export function Inspector({ title, onClose }: { title: string; onClose: () => vo
                 {parsed!.meta}
               </pre>
             ) : null}
-            <pre
-              style={{
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                fontFamily: "inherit",
-                fontSize: 13.5,
-                lineHeight: 1.65,
-                margin: 0,
-                color: "var(--text)",
-              }}
-            >
-              {parsed!.body || "(no content)"}
-            </pre>
+            <Markdown text={parsed!.body || "(no content)"} />
           </>
         )}
       </div>
     </div>
   );
 }
+
+
+
+
+

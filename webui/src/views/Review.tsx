@@ -1,108 +1,26 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { api, ReviewItem } from "../api";
-
-const LANES: Record<string, string> = {
-  correction: "Source fidelity",
-  stale_source: "Source freshness",
-  low_confidence_note: "Confidence",
-  ontology_candidate: "Ontology",
-  duplicate_concept: "Ontology",
-  scan_safety: "Manual decision",
-};
+import { Markdown } from "../markdown";
 
 const KIND_HELP: Record<string, string> = {
-  correction: "A note disagrees with its source — apply to write the reviewed fix.",
-  stale_source: "A source changed since it was read — apply to refresh it.",
-  low_confidence_note: "An agent proposed an uncertain note — it never lands unreviewed.",
-  ontology_candidate: "A new relation type emerged — promote it into the schema.",
-  duplicate_concept: "Two concepts may be the same — decide whether to merge.",
-  scan_safety: "An import looked risky — confirm before it enters the brain.",
+  correction: "The note appears to disagree with its preserved source.",
+  stale_source: "The saved source changed or could not be checked cleanly.",
+  low_confidence_note: "An agent proposed this note, but it needs a human decision first.",
+  ontology_candidate: "A relation type emerged from the brain and needs promotion or rejection.",
+  property: "A relation property was inferred from repeated evidence and needs review.",
+  duplicate_concept: "Two concepts may be the same and need a merge decision.",
+  scan_safety: "An import or scan looked risky and needs confirmation.",
 };
 
-const kindLabel = (kind: string) => kind.replace(/[_-]/g, " ");
-const lane = (kind: string) => LANES[kind] ?? "Manual decision";
-
-function fmtDate(iso: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString();
-}
-
-function Section({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        color: "var(--accent-2)",
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: 0.8,
-        textTransform: "uppercase",
-        marginBottom: 6,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function Pill({ text, tone = "warn" }: { text: string; tone?: "warn" | "accent" }) {
-  const c = tone === "accent" ? "var(--accent-2)" : "var(--warn)";
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        fontSize: 12,
-        color: c,
-        background: tone === "accent" ? "rgba(79,195,247,0.12)" : "rgba(255,183,77,0.13)",
-        border: `1px solid ${tone === "accent" ? "rgba(79,195,247,0.35)" : "rgba(255,183,77,0.35)"}`,
-        borderRadius: 999,
-        padding: "2px 10px",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {text}
-    </span>
-  );
-}
-
-function Evidence({ detail, onOpenNote }: { detail: Record<string, unknown>; onOpenNote?: (t: string) => void }) {
-  const entries = Object.entries(detail).filter(
-    ([, v]) => v !== "" && v != null && !(Array.isArray(v) && v.length === 0),
-  );
-  if (entries.length === 0)
-    return <div style={{ color: "var(--muted)", fontSize: 13 }}>No evidence detail recorded.</div>;
-  return (
-    <div style={{ display: "grid", gap: 4 }}>
-      {entries.map(([k, v]) => {
-        const note = (k === "title" || k === "note") && typeof v === "string" ? v : null;
-        return (
-          <div key={k} style={{ fontSize: 13, color: "var(--text)" }}>
-            <span style={{ color: "var(--muted)" }}>{k}: </span>
-            {note && onOpenNote ? (
-              <button
-                onClick={() => onOpenNote(note)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  color: "var(--accent-2)",
-                  cursor: "pointer",
-                  font: "inherit",
-                  fontSize: 13,
-                  textDecoration: "underline",
-                }}
-              >
-                {note}
-              </button>
-            ) : (
-              <span>{String(v)}</span>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+const WORDS: Record<string, string> = {
+  correction: "correction",
+  stale_source: "stale source warning",
+  low_confidence_note: "proposed note",
+  ontology_candidate: "ontology candidate",
+  property: "ontology property",
+  duplicate_concept: "duplicate concept decision",
+  scan_safety: "scan safety decision",
+};
 
 const panel: React.CSSProperties = {
   background: "var(--surface)",
@@ -111,39 +29,92 @@ const panel: React.CSSProperties = {
   padding: 16,
 };
 
-function Guardrail() {
+function kindLabel(kind: string): string {
+  return WORDS[kind] ?? kind.replace(/[_-]/g, " ");
+}
+
+function fmtDate(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString();
+}
+
+function textField(detail: Record<string, unknown>, names: string[]): string {
+  for (const name of names) {
+    const value = detail[name];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function noteTitle(item: ReviewItem): string {
+  const fromDetail = textField(item.detail, ["title", "note", "note_title"]);
+  if (fromDetail) return fromDetail;
+  return item.title.split(":")[0]?.trim() || item.title;
+}
+
+function titleLine(item: ReviewItem): string {
+  if (item.kind === "correction") return `Proposed correction to ${noteTitle(item)}`;
+  return `Proposed ${kindLabel(item.kind)}`;
+}
+
+function whyLine(item: ReviewItem): string {
+  const detailWhy = textField(item.detail, ["reason", "source", "detail", "status", "message"]);
+  if (detailWhy) return detailWhy;
+  return KIND_HELP[item.kind] ?? "This item needs a human decision before Talamus changes the brain.";
+}
+
+function detailValue(value: unknown): string {
+  if (Array.isArray(value)) return value.map((v) => String(v)).join(", ");
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function proposedMarkdown(item: ReviewItem): string {
+  const detail = item.detail;
+  const summary = textField(detail, ["summary"]);
+  const body = textField(detail, ["body", "text", "content", "proposal", "definition"]);
+  if (summary || body) {
+    return [summary ? `### Summary\n${summary}` : "", body ? `### Proposed content\n${body}` : ""]
+      .filter(Boolean)
+      .join("\n\n");
+  }
+  const entries = Object.entries(detail).filter(
+    ([, value]) => value !== "" && value != null && !(Array.isArray(value) && value.length === 0),
+  );
+  if (entries.length === 0) return "No proposed content was recorded for this item.";
+  return entries.map(([key, value]) => `- **${key.replace(/[_-]/g, " ")}**: ${detailValue(value)}`).join("\n");
+}
+
+function Badge({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ ...panel, borderLeft: "3px solid var(--accent)", marginBottom: 16 }}>
-      <Section>Review guardrail</Section>
-      <div style={{ fontWeight: 500, marginBottom: 4 }}>Proposed changes are never auto-applied.</div>
-      <div style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.55 }}>
-        Apply writes the reviewed change to the brain; Reject records your decision. Rejections stay
-        logged — Talamus keeps every correction explicit and traceable.
-      </div>
-    </div>
+    <span
+      style={{
+        display: "inline-block",
+        fontSize: 12,
+        color: "var(--warn)",
+        background: "rgba(255,183,77,0.13)",
+        border: "1px solid rgba(255,183,77,0.35)",
+        borderRadius: 999,
+        padding: "2px 10px",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
   );
 }
 
-function DecisionQueue({ items }: { items: ReviewItem[] }) {
-  const counts = new Map<string, number>();
-  const lanes: string[] = [];
-  for (const it of items) {
-    const label = kindLabel(it.kind);
-    counts.set(label, (counts.get(label) ?? 0) + 1);
-    const l = lane(it.kind);
-    if (!lanes.includes(l)) lanes.push(l);
-  }
+function Guardrail() {
   return (
-    <div style={{ ...panel, marginBottom: 16 }}>
-      <Section>Decision queue</Section>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {[...counts.entries()]
-          .sort((a, b) => a[0].localeCompare(b[0]))
-          .map(([label, n]) => (
-            <Pill key={label} text={`${n} ${label}`} />
-          ))}
+    <div style={{ ...panel, borderLeft: "3px solid var(--accent)", marginBottom: 16 }}>
+      <div style={{ color: "var(--accent-2)", fontSize: 11, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 6 }}>
+        Review guardrail
       </div>
-      <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 10 }}>{lanes.join(" · ")}</div>
+      <div style={{ fontWeight: 500, marginBottom: 4 }}>Proposed changes are never auto-applied.</div>
+      <div style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.55 }}>
+        Approve writes the reviewed change when that item type supports it. Reject records your decision and keeps the trail explicit.
+      </div>
     </div>
   );
 }
@@ -151,61 +122,108 @@ function DecisionQueue({ items }: { items: ReviewItem[] }) {
 function EmptyState() {
   return (
     <div style={{ ...panel, textAlign: "center", padding: "40px 24px" }}>
-      <div style={{ fontSize: 28, marginBottom: 8 }}>✓</div>
-      <div style={{ fontWeight: 500, marginBottom: 6 }}>Queue is empty — no decisions pending.</div>
+      <div style={{ fontWeight: 500, marginBottom: 6 }}>Queue is empty. No decisions pending.</div>
       <div style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>
-        This is where Talamus pauses for you. Items land here when a note disagrees with its source,
-        a source goes stale, an agent proposes an uncertain note, or a new ontology relation emerges —
-        nothing changes the brain until you approve it.
+        This is where Talamus pauses before changing the brain. Corrections, uncertain notes, stale sources, and ontology proposals wait here for you.
       </div>
     </div>
   );
 }
 
-function Card({
+function ReviewCard({
   item,
   busy,
-  onApply,
+  onApprove,
   onReject,
   onOpenNote,
 }: {
   item: ReviewItem;
   busy: boolean;
-  onApply: () => void;
-  onReject: () => void;
-  onOpenNote?: (t: string) => void;
+  onApprove: () => void;
+  onReject: (reason: string) => void;
+  onOpenNote?: (title: string) => void;
 }) {
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const note = noteTitle(item);
+
+  const reject = () => {
+    if (!rejectOpen) {
+      setRejectOpen(true);
+      return;
+    }
+    onReject(reason);
+  };
+
   return (
-    <div style={{ ...panel, borderLeft: "2px solid var(--warn)", marginBottom: 10 }}>
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontWeight: 500 }}>{item.title}</div>
-          <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>
-            {kindLabel(item.kind)} · {item.item_id}
+    <article style={{ ...panel, borderLeft: "2px solid var(--warn)", marginBottom: 10 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, lineHeight: 1.35 }}>{titleLine(item)}</div>
+          <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 3 }}>
+            {kindLabel(item.kind)} - {item.item_id}
           </div>
         </div>
-        <Pill text={item.status} />
+        <Badge>{item.status}</Badge>
       </div>
-      <div style={{ color: "var(--muted)", fontSize: 12.5, margin: "8px 0 10px" }}>
-        {KIND_HELP[item.kind] ?? "Review this proposed change before it enters the brain."}
+
+      <div style={{ color: "var(--text)", fontSize: 13, lineHeight: 1.55, margin: "12px 0" }}>
+        <span style={{ color: "var(--muted)" }}>Why: </span>
+        {whyLine(item)}
       </div>
-      <div style={{ marginBottom: 10 }}>
-        <Section>Evidence</Section>
-        <Evidence detail={item.detail} onOpenNote={onOpenNote} />
+
+      <div style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", padding: 12 }}>
+        <Markdown text={proposedMarkdown(item)} />
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <button className="btn btn-primary" onClick={onApply} disabled={busy}>
-          Apply
+
+      <footer style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+        <div style={{ color: "var(--muted)", fontSize: 12, marginRight: "auto" }}>
+          {item.created_at ? `Created ${fmtDate(item.created_at)}` : null}
+          {onOpenNote && item.kind === "correction" ? (
+            <button
+              onClick={() => onOpenNote(note)}
+              style={{
+                marginLeft: item.created_at ? 10 : 0,
+                background: "none",
+                border: "none",
+                padding: 0,
+                color: "var(--accent-2)",
+                cursor: "pointer",
+                font: "inherit",
+                fontSize: 12,
+                textDecoration: "underline",
+              }}
+            >
+              Open note
+            </button>
+          ) : null}
+        </div>
+        {rejectOpen ? (
+          <input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onReject(reason)}
+            placeholder="Optional rejection reason"
+            style={{
+              width: 220,
+              maxWidth: "100%",
+              padding: "7px 9px",
+              fontSize: 12.5,
+              color: "var(--text)",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--r-sm)",
+            }}
+          />
+        ) : null}
+        <button className="btn btn-primary" onClick={onApprove} disabled={busy}>
+          Approve
         </button>
-        <button className="btn btn-ghost" onClick={onReject} disabled={busy}>
+        <button className="btn btn-ghost" onClick={reject} disabled={busy}>
           Reject
         </button>
-        <span style={{ flex: 1 }} />
-        {item.created_at ? (
-          <span style={{ color: "var(--muted)", fontSize: 12 }}>Created {fmtDate(item.created_at)}</span>
-        ) : null}
-      </div>
-    </div>
+      </footer>
+    </article>
   );
 }
 
@@ -242,51 +260,37 @@ export function Review({ onOpenNote }: { onOpenNote?: (title: string) => void })
     <div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
         <h2 style={{ margin: 0 }}>Review</h2>
-        {items !== null ? (
-          <span style={{ color: "var(--muted)", fontSize: 14 }}>
-            {pending.length} pending
-          </span>
-        ) : null}
+        {items !== null ? <span style={{ color: "var(--muted)", fontSize: 14 }}>{pending.length} pending</span> : null}
       </div>
       <div style={{ color: "var(--muted)", fontSize: 13, margin: "6px 0 16px" }}>
-        The human checkpoint — where uncertain changes wait for your decision.
+        Human-readable decisions before Talamus changes the brain.
       </div>
 
       <Guardrail />
 
       {error ? (
-        <div
-          style={{
-            ...panel,
-            borderColor: "var(--danger)",
-            color: "var(--danger)",
-            fontSize: 13,
-            marginBottom: 12,
-          }}
-        >
+        <div style={{ ...panel, borderColor: "var(--danger)", color: "var(--danger)", fontSize: 13, marginBottom: 12 }}>
           {error}
         </div>
       ) : null}
 
       {items === null ? (
-        <div style={{ color: "var(--muted)" }}>Loading…</div>
+        <div style={{ color: "var(--muted)" }}>Loading...</div>
       ) : pending.length === 0 ? (
         <EmptyState />
       ) : (
-        <>
-          <DecisionQueue items={pending} />
-          {pending.map((item) => (
-            <Card
-              key={item.item_id}
-              item={item}
-              busy={busy === item.item_id}
-              onApply={() => act(item.item_id, () => api.applyReview(item.item_id))}
-              onReject={() => act(item.item_id, () => api.rejectReview(item.item_id))}
-              onOpenNote={onOpenNote}
-            />
-          ))}
-        </>
+        pending.map((item) => (
+          <ReviewCard
+            key={item.item_id}
+            item={item}
+            busy={busy === item.item_id}
+            onApprove={() => act(item.item_id, () => api.applyReview(item.item_id))}
+            onReject={(reason) => act(item.item_id, () => api.rejectReview(item.item_id, reason))}
+            onOpenNote={onOpenNote}
+          />
+        ))
       )}
     </div>
   );
 }
+
