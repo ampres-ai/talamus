@@ -53,6 +53,18 @@ class AskServiceTests(unittest.TestCase):
         self.assertGreater(result.data.context_tokens, 0)  # the token cost is surfaced
         self.assertTrue(result.data.route)
 
+    def test_answer_exposes_a_readable_trace(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            result = ask_brain(root, "how does reranking work?", router=StaticRouter(_FakeLLM()))
+        assert result.data is not None
+        trace = result.data.trace
+        self.assertIsInstance(trace, dict)
+        # the notes actually read into the answer's context are surfaced
+        self.assertIn("items_read", trace)
+        self.assertTrue(trace["items_read"])
+
     def test_as_of_answers_from_the_past_and_marks_the_route(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

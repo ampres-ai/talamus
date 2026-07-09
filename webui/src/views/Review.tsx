@@ -160,8 +160,11 @@ function ReviewCard({
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 600, lineHeight: 1.35 }}>{titleLine(item)}</div>
-          <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 3 }}>
-            {kindLabel(item.kind)} - {item.item_id}
+          <div
+            style={{ color: "var(--muted)", fontSize: 12, marginTop: 3 }}
+            title={item.item_id}
+          >
+            {kindLabel(item.kind)}
           </div>
         </div>
         <Badge>{item.status}</Badge>

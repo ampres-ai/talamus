@@ -20,7 +20,7 @@ from talamus.registry import load_registry, register_brain, select_brain
 from talamus.routing import EngineRouter, TaskClass
 from talamus.services.ask import ask_brain
 from talamus.services.brains import init_brain, list_brains
-from talamus.services.diagnostics import inspect_diagnostics
+from talamus.services.diagnostics import inspect_diagnostics, reindex_brain
 from talamus.services.engines import probe_engine, update_engine_settings
 from talamus.services.importer import import_markdown_vault
 from talamus.services.ingestion import ingest_raw_text, preview_ingest, run_ingest
@@ -186,6 +186,12 @@ def create_app(root: Path) -> FastAPI:
     @app.get("/api/diagnostics")
     def diagnostics() -> dict:
         return inspect_diagnostics(root).to_dict()
+
+    @app.post("/api/reindex")
+    def reindex_endpoint() -> dict:
+        """Rebuild the derived cache from the Markdown truth (UI parity for
+        `talamus reindex`) — the fix for a stale cache, offered from Home."""
+        return reindex_brain(root).to_dict()
 
     @app.get("/api/integrations")
     def integrations() -> dict:

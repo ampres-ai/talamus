@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api, AskResult, AskSource } from "../api";
+import { api, AskResult, AskSource, AskTrace } from "../api";
 
 const EXAMPLES = [
   "How does reranking work?",
@@ -87,6 +87,59 @@ function Sources({
   );
 }
 
+function Trace({ trace }: { trace?: AskTrace }) {
+  const [open, setOpen] = useState(false);
+  if (!trace) return null;
+  const domains = trace.domains_chosen ?? [];
+  const items = trace.items_read ?? [];
+  const expanded = trace.expanded_query ?? "";
+  if (!domains.length && !items.length && !expanded) return null;
+  return (
+    <div style={{ marginTop: 14, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          color: "var(--muted)",
+          cursor: "pointer",
+          font: "inherit",
+          fontSize: 12,
+        }}
+      >
+        {open ? "▾" : "▸"} How this answer was found
+      </button>
+      {open ? (
+        <div style={{ marginTop: 8, display: "grid", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+          {expanded ? (
+            <div>
+              <span style={{ color: "var(--faint)" }}>expanded query </span>
+              <span style={{ color: "var(--text)" }}>{expanded}</span>
+            </div>
+          ) : null}
+          {domains.length ? (
+            <div>
+              <span style={{ color: "var(--faint)" }}>
+                routed through {trace.routing_levels === 2 ? "areas → domains" : "domains"}{" "}
+              </span>
+              <span style={{ color: "var(--text)" }}>{domains.join(", ")}</span>
+            </div>
+          ) : null}
+          {items.length ? (
+            <div>
+              <span style={{ color: "var(--faint)" }}>read {items.length} notes into context </span>
+              <span style={{ color: "var(--text)" }}>
+                {items.map((p) => p.split(/[/\\]/).pop()?.replace(/\.md$/, "")).join(" · ")}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Answer({ res, onOpenNote }: { res: AskResult; onOpenNote?: (t: string) => void }) {
   if (res.answered) {
     return (
@@ -126,6 +179,7 @@ function Answer({ res, onOpenNote }: { res: AskResult; onOpenNote?: (t: string) 
           {proseOf(res.answer)}
         </div>
         <Sources sources={res.sources} heading="Cited from your brain" onOpenNote={onOpenNote} />
+        <Trace trace={res.trace} />
       </div>
     );
   }

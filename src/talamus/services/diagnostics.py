@@ -12,7 +12,7 @@ from talamus.errors import TalamusError
 from talamus.indexes import backend_info
 from talamus.paths import TalamusPaths
 from talamus.services.result import ServiceResult
-from talamus.store import cache_is_current
+from talamus.store import cache_is_current, reindex
 
 
 @dataclass(frozen=True)
@@ -68,6 +68,28 @@ class DiagnosticsReport:
             "cache_current": self.cache_current,
             "checks": [check.to_dict() for check in self.checks],
         }
+
+
+def reindex_brain(root: str | Path) -> ServiceResult[dict[str, Any]]:
+    """Rebuild the derived cache from the Markdown truth (UI parity for
+    `talamus reindex`): re-reads notes and indexes, preserving provenance. The
+    graph/index/overview are all derived, so this is always safe to run."""
+    paths = TalamusPaths(Path(root))
+    try:
+        result = reindex(paths)
+    except (OSError, ValueError, TalamusError) as exc:
+        return ServiceResult(
+            success=False,
+            message=f"Reindex failed: {exc}",
+            code="reindex_failed",
+        )
+    count = int(result.get("reindexed", 0)) if isinstance(result, dict) else 0
+    return ServiceResult(
+        success=True,
+        message=f"Reindexed {count} notes — the cache is current.",
+        code="reindexed",
+        data={"reindexed": count},
+    )
 
 
 def inspect_diagnostics(root: str | Path) -> ServiceResult[DiagnosticsReport]:

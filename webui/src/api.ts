@@ -163,6 +163,13 @@ export type OntologyType = {
 
 export type AskSource = { title: string; summary: string };
 
+export type AskTrace = {
+  expanded_query?: string;
+  domains_chosen?: string[];
+  routing_levels?: number;
+  items_read?: string[];
+};
+
 export type AskResult = {
   question: string;
   answer: string;
@@ -172,6 +179,7 @@ export type AskResult = {
   context_tokens: number;
   notice: string;
   as_of?: string;
+  trace?: AskTrace;
   sources: AskSource[];
 };
 
@@ -276,6 +284,7 @@ export const api = {
   ask: (question: string, as_of?: string) =>
     post<ServiceResult<AskResult>>("/api/ask", as_of ? { question, as_of } : { question }),
   diagnostics: () => get<ServiceResult<Diagnostics>>("/api/diagnostics"),
+  reindex: () => post<ServiceResult<{ reindexed: number }>>("/api/reindex"),
   integrations: () => get<ServiceResult<IntegrationReport>>("/api/integrations"),
   connectAgent: (agent: string) =>
     post<ServiceResult<McpInstallReport>>("/api/integrations/mcp", { agent }),

@@ -250,13 +250,32 @@ function ActionCard({ action }: { action: Action }) {
 export function Home() {
   const [d, setD] = useState<Readiness | null>(null);
   const [q, setQ] = useState("");
+  const [reindexing, setReindexing] = useState(false);
+  const [reindexNote, setReindexNote] = useState("");
 
-  useEffect(() => {
+  const load = () =>
     api
       .readiness()
       .then((r) => setD((r.data ?? {}) as Readiness))
       .catch(() => setD({}));
+
+  useEffect(() => {
+    void load();
   }, []);
+
+  const runReindex = async () => {
+    setReindexing(true);
+    setReindexNote("");
+    try {
+      const r = await api.reindex();
+      setReindexNote(r.message ?? (r.success ? "Cache rebuilt." : "Reindex failed."));
+      if (r.success) await load();
+    } catch {
+      setReindexNote("Could not reach the brain to reindex.");
+    } finally {
+      setReindexing(false);
+    }
+  };
 
   if (!d) return <div style={{ color: "var(--muted)" }}>Loading...</div>;
 
@@ -338,6 +357,29 @@ export function Home() {
         <Stat label="Index backend" value={asText(d.index_backend, "none")} />
         <Stat label="Cache" value={d.cache_current ? "ok" : "stale"} tone={d.cache_current ? "var(--ok)" : "var(--warn)"} />
       </section>
+
+      {!d.cache_current ? (
+        <section
+          style={{
+            ...panel,
+            padding: "12px 14px",
+            marginBottom: 24,
+            borderLeft: "3px solid var(--warn)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ color: "var(--muted)", fontSize: 13, flex: 1, minWidth: 200 }}>
+            {reindexNote ||
+              "The derived cache is stale — rebuild it from your Markdown notes to bring search and the graph up to date."}
+          </span>
+          <button className="btn btn-primary" onClick={() => void runReindex()} disabled={reindexing}>
+            {reindexing ? "Reindexing…" : "Reindex now"}
+          </button>
+        </section>
+      ) : null}
 
       <section style={{ ...panel, padding: 16, borderLeft: "3px solid var(--accent)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 11 }}>

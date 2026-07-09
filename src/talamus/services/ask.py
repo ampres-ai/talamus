@@ -43,12 +43,28 @@ class AskResult:
     context_tokens: int  # context size fed to the engine when answered
     notice: str  # human note shown when the answer was skipped/degraded
     as_of: str = ""  # the time-travel instant when the answer came from the past
+    trace: dict[str, Any] = field(default_factory=dict)  # how the answer was found (--trace)
     sources: list[AskSource] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["sources"] = [source.to_dict() for source in self.sources]
         return payload
+
+
+# The trace keys worth showing a human in the UI's "how this was found" panel —
+# the query the LLM expanded the question into, the domains it routed through,
+# and the exact notes read into the context. Internal/noisy keys are dropped.
+_TRACE_PUBLIC_KEYS = (
+    "expanded_query",
+    "domains_chosen",
+    "routing_levels",
+    "items_read",
+)
+
+
+def _public_trace(trace: dict[str, Any]) -> dict[str, Any]:
+    return {key: trace[key] for key in _TRACE_PUBLIC_KEYS if key in trace}
 
 
 def ask_brain(
@@ -111,6 +127,7 @@ def ask_brain(
             route=str(trace.get("route", "")),
             context_tokens=int(trace.get("context_tokens", 0)),
             notice="",
+            trace=_public_trace(trace),
             sources=sources,
         ),
     )
@@ -200,6 +217,7 @@ def _ask_as_of(
             context_tokens=int(trace.get("context_tokens", 0)),
             notice="",
             as_of=as_of,
+            trace=_public_trace(trace),
             sources=sources,
         ),
     )

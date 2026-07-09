@@ -261,6 +261,23 @@ class WebApiParityTests(unittest.TestCase):
             )
             self.assertEqual(rejected.status_code, 403)
 
+    def test_reindex_post_rebuilds_cache_and_requires_token(self) -> None:
+        from talamus.demo import create_demo_brain
+        from talamus.paths import TalamusPaths
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            ok = self._client(root).post("/api/reindex")
+            self.assertEqual(ok.status_code, 200)
+            body = ok.json()
+            self.assertTrue(body["success"], body)
+            self.assertEqual("reindexed", body["code"])
+            self.assertGreaterEqual(body["data"]["reindexed"], 0)
+
+            rejected = self._bare_client(root).post("/api/reindex")
+            self.assertEqual(rejected.status_code, 403)
+
 
 if __name__ == "__main__":
     unittest.main()
