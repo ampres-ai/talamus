@@ -171,6 +171,7 @@ export type AskResult = {
   route: string;
   context_tokens: number;
   notice: string;
+  as_of?: string;
   sources: AskSource[];
 };
 
@@ -272,7 +273,8 @@ export const api = {
     post<ServiceResult<ReviewItem>>(`/api/review/${encodeURIComponent(id)}/apply`),
   rejectReview: (id: string, reason = "") =>
     post<ServiceResult<ReviewItem>>(`/api/review/${encodeURIComponent(id)}/reject`, { reason }),
-  ask: (question: string) => post<ServiceResult<AskResult>>("/api/ask", { question }),
+  ask: (question: string, as_of?: string) =>
+    post<ServiceResult<AskResult>>("/api/ask", as_of ? { question, as_of } : { question }),
   diagnostics: () => get<ServiceResult<Diagnostics>>("/api/diagnostics"),
   integrations: () => get<ServiceResult<IntegrationReport>>("/api/integrations"),
   connectAgent: (agent: string) =>

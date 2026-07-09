@@ -165,8 +165,10 @@ def create_app(root: Path) -> FastAPI:
 
     @app.post("/api/ask")
     def ask(payload: dict | None = None) -> dict:
-        question = str((payload or {}).get("question", ""))
-        return ask_brain(root, question).to_dict()
+        data = payload or {}
+        question = str(data.get("question", ""))
+        as_of = str(data.get("as_of", "")).strip() or None
+        return ask_brain(root, question, as_of=as_of).to_dict()
 
     @app.get("/api/review")
     def review(status: str = "pending") -> dict:

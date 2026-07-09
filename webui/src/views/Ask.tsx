@@ -91,11 +91,27 @@ function Answer({ res, onOpenNote }: { res: AskResult; onOpenNote?: (t: string) 
   if (res.answered) {
     return (
       <div style={{ ...panel, borderLeft: "3px solid var(--accent)" }}>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 12 }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>
           <Meta label="engine" value={res.engine || "—"} />
           {res.route ? <Meta label="route" value={res.route} /> : null}
           {res.context_tokens ? (
-            <Meta label="context" value={`${res.context_tokens} tokens`} />
+            <Meta label="cost" value={`${res.context_tokens.toLocaleString()} tokens`} />
+          ) : null}
+          {res.as_of ? (
+            <span
+              style={{
+                background: "var(--accent-soft)",
+                border: "1px solid var(--accent-line)",
+                color: "var(--accent-1)",
+                fontSize: 11,
+                fontWeight: 600,
+                borderRadius: 999,
+                padding: "2px 10px",
+              }}
+              title="Answered from the brain as it was at this time"
+            >
+              as of {res.as_of}
+            </span>
           ) : null}
         </div>
         <div
@@ -127,6 +143,7 @@ function Answer({ res, onOpenNote }: { res: AskResult; onOpenNote?: (t: string) 
 
 export function Ask({ onOpenNote }: { onOpenNote?: (title: string) => void }) {
   const [q, setQ] = useState("");
+  const [asOf, setAsOf] = useState("");
   const [loading, setLoading] = useState(false);
   const [res, setRes] = useState<AskResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +155,7 @@ export function Ask({ onOpenNote }: { onOpenNote?: (title: string) => void }) {
     setError(null);
     setRes(null);
     try {
-      const r = await api.ask(text);
+      const r = await api.ask(text, asOf.trim() || undefined);
       if (r.data) setRes(r.data);
       else setError(r.message ?? "Ask a question first.");
     } catch {
@@ -187,11 +204,31 @@ export function Ask({ onOpenNote }: { onOpenNote?: (title: string) => void }) {
             lineHeight: 1.6,
           }}
         />
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
           <button className="btn btn-primary" onClick={() => ask()} disabled={loading || !q.trim()}>
             {loading ? "Thinking…" : "Ask"}
           </button>
           <span style={{ color: "var(--muted)", fontSize: 12 }}>Enter to ask · Shift+Enter for a new line</span>
+          <span style={{ flex: 1 }} />
+          <label style={{ color: "var(--muted)", fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+            as of
+            <input
+              value={asOf}
+              onChange={(e) => setAsOf(e.target.value)}
+              placeholder="now"
+              title="Answer from the brain as it was at a past date (e.g. 2026-01)"
+              style={{
+                width: 96,
+                background: "var(--bg)",
+                color: "var(--text)",
+                border: "1px solid var(--border)",
+                borderRadius: 6,
+                padding: "4px 8px",
+                font: "inherit",
+                fontSize: 12.5,
+              }}
+            />
+          </label>
         </div>
       </div>
 

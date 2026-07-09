@@ -84,6 +84,48 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* form fields: one consistent focus treatment everywhere (Ask, Import, Connect,
+   Brains use inline-styled inputs — this lifts them all at once) */
+input,
+textarea,
+select {
+  transition:
+    border-color 0.16s var(--ease),
+    box-shadow 0.16s var(--ease);
+}
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--faint);
+}
+
+/* themed scrollbars — the default light scrollbar is the tell of a cheap dark UI */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-2) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border: 2px solid var(--bg);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--faint);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* uppercase section label */
 .eyebrow {
   color: var(--accent-2);
