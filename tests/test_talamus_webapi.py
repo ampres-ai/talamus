@@ -188,7 +188,9 @@ class WebApiParityTests(unittest.TestCase):
         self.assertFalse(data["verified"])
         self.assertTrue(data["limit_reached"])
         self.assertIn("usage limit", data["error"])
-        self.assertIn("claude", data["hint"])
+        # a hit limit must NOT get the login hint — it points at the reset/switch
+        self.assertIn("limit", data["hint"].lower())
+        self.assertNotIn("log in", data["hint"].lower())
 
     def test_engine_probe_post_reports_failure_with_hint(self) -> None:
         from talamus.errors import EngineFailed
@@ -231,6 +233,33 @@ class WebApiParityTests(unittest.TestCase):
             )
 
         self.assertEqual(resp.status_code, 403)
+
+    def test_engine_select_post_switches_the_active_engine(self) -> None:
+        from talamus.config import load_config
+        from talamus.paths import TalamusPaths
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._probe_config(root)  # starts on claude-cli
+            resp = self._client(root).post("/api/engines/select", json={"engine": "codex-cli"})
+            saved = load_config(TalamusPaths(root).config_path).llm_provider
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["success"], resp.json())
+        self.assertEqual("codex-cli", saved)
+
+    def test_engine_select_post_rejects_unsupported_and_requires_token(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._probe_config(root)
+            bad = self._client(root).post("/api/engines/select", json={"engine": "flurble"})
+            self.assertFalse(bad.json()["success"])
+            self.assertEqual("unsupported_provider", bad.json()["code"])
+
+            rejected = self._bare_client(root).post(
+                "/api/engines/select", json={"engine": "codex-cli"}
+            )
+            self.assertEqual(rejected.status_code, 403)
 
 
 if __name__ == "__main__":

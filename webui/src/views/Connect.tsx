@@ -111,14 +111,18 @@ function EngineRow({
   engine,
   active,
   probing,
+  selecting,
   result,
   onProbe,
+  onSelect,
 }: {
   engine: EngineReadiness;
   active: boolean;
   probing: boolean;
+  selecting: boolean;
   result?: ServiceResult<EngineProbeResult>;
   onProbe: () => void;
+  onSelect: () => void;
 }) {
   const tone = active ? "var(--accent)" : engine.available ? "var(--ok)" : "var(--muted)";
   return (
@@ -140,6 +144,17 @@ function EngineRow({
         <Badge>{engine.status}</Badge>
         {engine.needs_secret ? <Badge tone="var(--warn)">needs secret</Badge> : null}
         <span style={{ flex: 1 }} />
+        {!active ? (
+          <button
+            className="btn btn-primary"
+            onClick={onSelect}
+            disabled={selecting || !engine.available}
+            style={{ fontSize: 12 }}
+            title={engine.available ? "Make this the active engine" : "Engine not available"}
+          >
+            {selecting ? "Switching..." : "Use this engine"}
+          </button>
+        ) : null}
         <button className="btn" onClick={onProbe} disabled={probing} style={{ fontSize: 12 }}>
           {probing ? "Probing..." : "Probe"}
         </button>
@@ -193,6 +208,7 @@ export function Connect() {
   const [agentError, setAgentError] = useState<ErrorInfo | null>(null);
   const [probeResults, setProbeResults] = useState<Record<string, ServiceResult<EngineProbeResult>>>({});
   const [probing, setProbing] = useState<string | null>(null);
+  const [selecting, setSelecting] = useState<string | null>(null);
   const [busyAgent, setBusyAgent] = useState<string | null>(null);
   const [hookResult, setHookResult] = useState<ResultLine | null>(null);
 
@@ -247,6 +263,20 @@ export function Connect() {
       setEngineError({ path: "/api/engines/probe", message: messageFromError(error, "Could not probe engine.") });
     } finally {
       setProbing(null);
+    }
+  };
+
+  const selectEngine = async (provider: string) => {
+    setSelecting(provider);
+    setEngineError(null);
+    try {
+      const result = await api.selectEngine(provider);
+      if (result.success) await loadEngines();
+      else setEngineError({ path: "/api/engines/select", message: result.message ?? "Could not switch engine." });
+    } catch (error) {
+      setEngineError({ path: "/api/engines/select", message: messageFromError(error, "Could not switch engine.") });
+    } finally {
+      setSelecting(null);
     }
   };
 
@@ -309,10 +339,12 @@ export function Connect() {
                 <EngineRow
                   key={engine.provider}
                   engine={engine}
-                  active={engine.configured || engine.provider === readiness.selected_engine}
+                  active={engine.provider === readiness.selected_engine}
                   probing={probing === engine.provider}
+                  selecting={selecting === engine.provider}
                   result={probeResults[engine.provider]}
                   onProbe={() => void probeEngine(engine.provider)}
+                  onSelect={() => void selectEngine(engine.provider)}
                 />
               ))
             : null}

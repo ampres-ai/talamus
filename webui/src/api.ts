@@ -280,6 +280,8 @@ export const api = {
   installHook: () => post<ServiceResult<HookInstallReport>>("/api/integrations/hook"),
   probeEngine: (engine: string) =>
     post<ServiceResult<EngineProbeResult>>("/api/engines/probe", { engine }),
+  selectEngine: (engine: string) =>
+    post<ServiceResult<Record<string, string>>>("/api/engines/select", { engine }),
   brains: () => get<ServiceResult<BrainList>>("/api/brains"),
   getActive: () => get<ServiceResult<ActiveBrain>>("/api/active"),
   setActiveBrain: (body: { name?: string; path?: string }) =>

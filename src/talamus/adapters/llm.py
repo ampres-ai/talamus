@@ -67,11 +67,14 @@ def canonical_provider(provider: str) -> str:
 
 
 # Usage/rate-limit signatures across the supported engines (lowercase substrings).
-# claude-cli: "usage limit", "session limit"; codex: "rate limit", 429;
-# gemini: RESOURCE_EXHAUSTED / "quota"; generic HTTP: 429 / too many requests.
+# claude-cli: "usage limit", "session limit", "out of usage credits" (2026 phrasing);
+# codex: "rate limit", 429; gemini: RESOURCE_EXHAUSTED / "quota";
+# generic HTTP: 429 / too many requests.
 _LIMIT_SIGNATURES = (
     "usage limit",
     "session limit",
+    "usage credits",
+    "out of credits",
     "rate limit",
     "resource_exhausted",
     "quota exceeded",

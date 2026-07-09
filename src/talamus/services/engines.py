@@ -144,11 +144,14 @@ def probe_engine(root: str | Path, engine: str = "") -> ServiceResult[dict[str, 
     try:
         answer = build_provider(provider, model).complete(_PROBE_PROMPT)
     except EngineLimitReached as exc:
+        # a hit limit is NOT a login/config problem — the generic hint would
+        # mislead ("run claude to log in"); point at the reset / another engine.
+        limit_hint = "usage/rate limit hit — wait for the reset above, or switch engine in Connect"
         return ServiceResult(
             success=False,
             message=f"engine '{provider}' NOT verified: {exc}",
             code="engine_limit_reached",
-            data=_probe_failure(provider, exc, hint, limit_reached=True),
+            data=_probe_failure(provider, exc, limit_hint, limit_reached=True),
         )
     except (EngineFailed, EngineNotFound) as exc:
         return ServiceResult(

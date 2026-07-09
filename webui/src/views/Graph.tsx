@@ -169,6 +169,14 @@ export function Graph({ onOpenNote }: { onOpenNote?: (title: string) => void }) 
       draw();
     });
 
+    // Paint immediately even if requestAnimationFrame is throttled (hidden or
+    // background tab, low-power mode): d3's tick loop is RAF-driven and would
+    // otherwise leave the canvas blank until the tab is focused. Settle the
+    // layout synchronously and draw one frame; the RAF ticks still animate it
+    // when the page is visible.
+    for (let i = 0; i < 90; i++) sim.tick();
+    draw();
+
     const worldAt = (sx: number, sy: number) => ({
       x: (sx - tx()) / view.current.scale,
       y: (sy - ty()) / view.current.scale,

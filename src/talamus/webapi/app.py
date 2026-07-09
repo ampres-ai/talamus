@@ -21,7 +21,7 @@ from talamus.routing import EngineRouter, TaskClass
 from talamus.services.ask import ask_brain
 from talamus.services.brains import init_brain, list_brains
 from talamus.services.diagnostics import inspect_diagnostics
-from talamus.services.engines import probe_engine
+from talamus.services.engines import probe_engine, update_engine_settings
 from talamus.services.importer import import_markdown_vault
 from talamus.services.ingestion import ingest_raw_text, preview_ingest, run_ingest
 from talamus.services.integrations import (
@@ -211,6 +211,21 @@ def create_app(root: Path) -> FastAPI:
         quota check (an exhausted limit surfaces the moment it bites)."""
         engine = str((payload or {}).get("engine", ""))
         return probe_engine(root, engine).to_dict()
+
+    @app.post("/api/engines/select")
+    def engines_select(payload: dict | None = None) -> dict:
+        """Switch the active engine for this brain: {"engine": "<provider>",
+        "model"?: "<model>"}. Writes talamus.json — the CLI and every future
+        LLM call for this brain then use it. UI parity for `talamus setup
+        --engine`."""
+        data = payload or {}
+        provider = str(data.get("engine", "")).strip() or None
+        model = data.get("model")
+        return update_engine_settings(
+            root,
+            provider=provider,
+            model=str(model) if model is not None else None,
+        ).to_dict()
 
     @app.get("/api/brains")
     def brains() -> dict:

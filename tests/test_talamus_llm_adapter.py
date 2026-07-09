@@ -59,6 +59,23 @@ class LLMAdapterTests(unittest.TestCase):
                 _default_runner(["claude", "-p"], "hi")
         self.assertIn("resets at 3pm", str(ctx.exception))
 
+    def test_default_runner_maps_out_of_credits_to_limit_reached(self) -> None:
+        # the current claude-cli phrasing (2026): "out of usage credits · resets ..."
+        from unittest.mock import patch
+
+        from talamus.errors import EngineLimitReached
+
+        fake = self._failed_run(
+            stdout="You're out of usage credits · resets Jul 14, 1am (Europe/Rome)"
+        )
+        with (
+            patch("talamus.adapters.llm.shutil.which", return_value="claude"),
+            patch("talamus.adapters.llm.subprocess.run", return_value=fake),
+        ):
+            with self.assertRaises(EngineLimitReached) as ctx:
+                _default_runner(["claude", "-p"], "hi")
+        self.assertIn("resets Jul 14", str(ctx.exception))
+
     def test_default_runner_maps_429_and_quota_to_limit_reached(self) -> None:
         from unittest.mock import patch
 
