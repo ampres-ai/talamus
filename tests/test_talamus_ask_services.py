@@ -42,6 +42,48 @@ class AskServiceTests(unittest.TestCase):
         self.assertEqual("Fake Engine", result.data.engine)
         self.assertTrue(result.data.sources)
 
+    def test_answer_exposes_route_and_token_cost(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            result = ask_brain(root, "how does reranking work?", router=StaticRouter(_FakeLLM()))
+        self.assertTrue(result.success)
+        assert result.data is not None
+        self.assertTrue(result.data.answered)
+        self.assertGreater(result.data.context_tokens, 0)  # the token cost is surfaced
+        self.assertTrue(result.data.route)
+
+    def test_as_of_answers_from_the_past_and_marks_the_route(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            result = ask_brain(
+                root,
+                "what is retrieval augmented generation?",
+                router=StaticRouter(_FakeLLM()),
+                as_of="2030",  # far future: every demo note exists by then
+            )
+        self.assertTrue(result.success, result.message)
+        assert result.data is not None
+        self.assertTrue(result.data.answered)
+        self.assertEqual("as-of", result.data.route)
+        self.assertEqual("2030", result.data.as_of)
+
+    def test_as_of_before_any_note_reports_empty_past(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            create_demo_brain(TalamusPaths(root))
+            result = ask_brain(
+                root,
+                "what is retrieval augmented generation?",
+                router=StaticRouter(_FakeLLM()),
+                as_of="1990",  # before the brain existed
+            )
+        self.assertTrue(result.success)
+        assert result.data is not None
+        self.assertFalse(result.data.answered)
+        self.assertIn("1990", result.data.notice)
+
     def test_no_engine_degrades_to_relevant_notes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
