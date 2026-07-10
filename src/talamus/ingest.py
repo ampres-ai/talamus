@@ -309,6 +309,82 @@ def remember_session(paths: TalamusPaths, transcript: str, diff: str, router: Ro
     return {"skipped": False, "notes_written": written}
 
 
+def _pending_dir(paths: TalamusPaths) -> Path:
+    return paths.talamus_dir / "pending"
+
+
+def pending_captures(paths: TalamusPaths) -> list[Path]:
+    """Captures saved after an engine failure, waiting for a retry (oldest first)."""
+    pending = _pending_dir(paths)
+    if not pending.is_dir():
+        return []
+    return sorted(pending.glob("capture-*.json"))
+
+
+def save_pending_capture(paths: TalamusPaths, transcript: str, diff: str, error: str) -> Path:
+    """Persist a session the engine could not compile, so no capture is ever lost.
+    The digest-based name makes a re-fired hook idempotent (same session, one file)."""
+    import time
+
+    digest = hashlib.sha256((transcript + "\n" + diff).encode("utf-8")).hexdigest()[:8]
+    pending = _pending_dir(paths)
+    pending.mkdir(parents=True, exist_ok=True)
+    path = pending / f"capture-{digest}.json"
+    path.write_text(
+        json.dumps(
+            {
+                "created": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "error": error,
+                "transcript": transcript,
+                "diff": diff,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def remember_session_safe(paths: TalamusPaths, transcript: str, diff: str, router: Router) -> dict:
+    """`remember_session` that never loses a session to engine trouble.
+
+    On EngineFailed (including an exhausted usage limit) or EngineNotFound the
+    transcript+diff are saved under `.talamus/pending/` and the failure is
+    audited in capture.log; `retry_pending_captures` (CLI: `talamus hook
+    --retry`) replays them until they succeed."""
+    try:
+        return remember_session(paths, transcript, diff, router)
+    except (EngineFailed, EngineNotFound) as exc:
+        saved = save_pending_capture(paths, transcript, diff, str(exc))
+        _log_capture(paths, "failed", f"engine error — saved for retry ({saved.name}): {exc}")
+        return {
+            "skipped": False,
+            "notes_written": 0,
+            "failed": True,
+            "pending": saved.as_posix(),
+            "error": str(exc),
+        }
+
+
+def retry_pending_captures(paths: TalamusPaths, router: Router) -> dict:
+    """Replay every pending capture. Successes are compiled into notes and
+    cleared; failures stay pending (retry until success). Returns
+    {retried, remaining, errors}."""
+    retried = 0
+    errors: list[str] = []
+    for path in pending_captures(paths):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        try:
+            remember_session(paths, record.get("transcript", ""), record.get("diff", ""), router)
+        except (EngineFailed, EngineNotFound) as exc:
+            errors.append(f"{path.name}: {exc}")
+            continue
+        path.unlink()
+        retried += 1
+    return {"retried": retried, "remaining": len(pending_captures(paths)), "errors": errors}
+
+
 def ingest_text(
     paths: TalamusPaths,
     text: str,

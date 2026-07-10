@@ -104,7 +104,7 @@ class EvalReport:
     def format_table(self) -> str:
         answerable = self.n_cases - self.n_negative
         lines = [
-            f"Valutazione recupero — {self.n_cases} casi ({answerable} rispondibili), k={self.k}",
+            f"Retrieval evaluation — {self.n_cases} cases ({answerable} answerable), k={self.k}",
             f"  recall@{self.k}    {self.recall_at_k:.3f}",
             f"  precision@{self.k} {self.precision_at_k:.3f}",
             f"  MRR          {self.mrr:.3f}",
@@ -112,7 +112,7 @@ class EvalReport:
         ]
         if self.n_negative:
             lines.append(
-                f"  negativi     {self.n_negative} casi, rifiuto {self.negative_rejection:.3f}"
+                f"  negatives    {self.n_negative} cases, rejection {self.negative_rejection:.3f}"
             )
         for name in sorted(self.categories):
             stats = self.categories[name]
@@ -124,7 +124,7 @@ class EvalReport:
             )
         misses = [c for c in self.cases if not c.negative and not c.hit]
         if misses:
-            lines.append(f"  mancati ({len(misses)}):")
+            lines.append(f"  missed ({len(misses)}):")
             lines.extend(f"    - {c.question}" for c in misses)
         return "\n".join(lines)
 

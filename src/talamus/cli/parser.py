@@ -199,6 +199,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="write the SessionEnd hook into .claude/settings.json (explicit consent)",
     )
+    hook.add_argument(
+        "--retry",
+        action="store_true",
+        help="replay captured sessions the engine failed on (kept until they succeed)",
+    )
     sub.add_parser("hook-run", parents=[common], help="run the capture hook (reads stdin)")
 
     ingest = sub.add_parser("ingest", parents=[common], help="add a file, folder, or URL")

@@ -64,9 +64,9 @@ class ExtractionPromptTests(unittest.TestCase):
         self.assertIn("ENGLISH verbs", prompt)  # canonical relation surfaces
 
     def test_symptom_vocabulary_directive_present(self) -> None:
-        """Il ponte semantico per le domande vaghe si paga all'ingest —
-        il retrieval_text deve contenere le frasi-sintomo con cui un utente
-        porrebbe il problema senza conoscerne il nome."""
+        """The semantic bridge for vague questions is paid at ingest —
+        retrieval_text must carry the symptom phrasings a user would use to
+        describe the problem without knowing its name."""
         prompt = self._prompt_for("Italian")
         self.assertIn("SYMPTOM PHRASINGS", prompt)
         self.assertIn("WITHOUT knowing its name", prompt)

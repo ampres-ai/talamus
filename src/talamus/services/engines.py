@@ -30,7 +30,7 @@ ENGINE_HINTS: dict[str, str] = {
     "ollama": "is the ollama service running and a model pulled? try `ollama pull llama3.2`",
     "claude-cli": "run `claude` once to log in, then retry",
     "codex-cli": "run `codex` once to log in, then retry",
-    "gemini-cli": "run `gemini` once to authenticate, then retry",
+    "gemini-cli": "the gemini CLI is deprecated by Google — switch to antigravity-cli (agy)",
     "antigravity-cli": "run `agy` once to authenticate, then retry",
     "anthropic-api": "set ANTHROPIC_API_KEY, or save a key from the workbench Settings",
 }

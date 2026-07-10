@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -19,23 +20,26 @@ class LLMProvider(Protocol):
     def complete(self, prompt: str) -> str: ...
 
 
+# Dict order = auto-pick priority in choose_default_engine. gemini-cli sits last:
+# Google deprecated the standalone CLI in favor of Antigravity (agy), so a machine
+# with both must prefer agy; the adapter stays for installs that still use it.
 ENGINE_COMMANDS: dict[str, str | None] = {
     "claude-cli": "claude",
     "codex-cli": "codex",
-    "gemini-cli": "gemini",
-    "opencode": "opencode",
     "antigravity-cli": "agy",
+    "opencode": "opencode",
     "ollama": "ollama",
+    "gemini-cli": "gemini",
     "anthropic-api": None,
 }
 
 ENGINE_LABELS: dict[str, str] = {
     "claude-cli": "Claude CLI",
     "codex-cli": "Codex CLI",
-    "gemini-cli": "Gemini CLI",
-    "opencode": "opencode",
     "antigravity-cli": "Antigravity CLI",
+    "opencode": "opencode",
     "ollama": "Ollama",
+    "gemini-cli": "Gemini CLI (deprecated)",
     "anthropic-api": "Anthropic API",
 }
 
@@ -394,6 +398,13 @@ def build_provider(provider: str, model: str = "") -> LLMProvider:
     if provider in ("codex-cli", "codex"):
         return CodexCliProvider(model)
     if provider in ("gemini-cli", "gemini"):
+        # Google discontinued the standalone gemini CLI in favor of Antigravity.
+        # Keep the adapter for installs that still have the binary, but say so.
+        print(
+            "warning: the gemini CLI is deprecated by Google — switch this brain to"
+            " 'antigravity-cli' (agy): talamus setup --engine antigravity-cli",
+            file=sys.stderr,
+        )
         return GeminiCliProvider(model)
     if provider in ("opencode", "opencode-cli"):
         return OpencodeCliProvider(model)

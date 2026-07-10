@@ -204,9 +204,10 @@ a pointer index (derived); central reads federate into search/ask
 ## Engines (`adapters/llm.py`, `routing.py`)
 
 `LLMProvider` protocol = `complete(prompt) -> str`. Adapters: claude-cli,
-codex-cli (pinned to a read-only sandbox), gemini-cli (read-only plan mode),
-opencode (read-only plan agent), antigravity-cli, ollama (CLI or HTTP), and
-anthropic-api (key from env or the machine credential store; env wins).
+codex-cli (pinned to a read-only sandbox), antigravity-cli, opencode
+(read-only plan agent), ollama (CLI or HTTP), anthropic-api (key from env or
+the machine credential store; env wins), and the deprecated gemini-cli
+(kept for old installs; Talamus warns and points at antigravity-cli).
 Model passthrough via config `llm_model`. Executables are resolved with
 `shutil.which` (Windows shims included). All model JSON is parsed defensively
 (lenient parsing, balanced-object salvage, batch isolation) — enforced by the

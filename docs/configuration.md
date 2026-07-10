@@ -18,15 +18,37 @@ Created by `talamus init` in the brain directory. Fields:
 
 - `claude-cli` — your Claude subscription (default if `claude` is on PATH).
 - `codex-cli` (or `codex`) — your ChatGPT subscription (Codex is bundled with it).
-- `gemini-cli` (or `gemini`) — your Gemini subscription.
+- `antigravity-cli` (or `agy`) — Google Antigravity, your Gemini subscription.
 - `opencode` — opencode, with whatever providers you configured in it.
-- `antigravity-cli` (or `agy`) — Google Antigravity.
 - `ollama` — a local model, fully offline. Set `llm_model` (e.g. `llama3`).
 - `anthropic-api` (or `api`) — the Anthropic API. Needs `ANTHROPIC_API_KEY`.
+- `gemini-cli` (or `gemini`) — **deprecated**: Google replaced the standalone
+  gemini CLI with Antigravity. The adapter still works if you have the old
+  binary, but Talamus warns and you should switch to `antigravity-cli`.
 
 Every engine goes through per-task **model+effort tiering** (`task_tiers` and
 `provider_models` in `talamus.json` override the cost-minimizing defaults);
 `TALAMUS_ENGINE_TIMEOUT` caps a single engine call in seconds (default 600).
+
+## Language support (honest status)
+
+Talamus is built to be language-agnostic, and the parts that involve the LLM
+already are. The built-in search index has known limits. What works today:
+
+- **Note prose: any language.** Set `language` (or let the locale decide) and
+  the LLM writes notes in your language — German, Chinese, anything it speaks.
+- **Cross-language retrieval: any language, via the machine layer.** Every
+  note also carries an English canonical alias and bilingual retrieval text
+  written by the LLM at ingest, and `ask` / `search --smart` translate your
+  question into the corpus vocabulary. This bridge is the LLM's work, so it
+  is not tied to any hardcoded language list.
+- **Plain `search`: best for Latin-script languages.** The lexical index
+  stems Italian and English suffixes, and the character-trigram channel
+  covers Latin scripts (accents included) — German, French, Spanish work
+  well. Non-Latin scripts (Chinese, Japanese, Russian, Arabic...) currently
+  produce no index tokens: on those corpora use `ask` or `search --smart`,
+  which work through the LLM bridge. Unicode-aware tokenization is on the
+  [roadmap](https://github.com/GCrapuzzi/Talamus-Wiki/blob/main/ROADMAP.md).
 
 ## Environment variables
 

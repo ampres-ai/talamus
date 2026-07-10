@@ -16,7 +16,7 @@ from talamus.cli._common import (
 )
 from talamus.config import TalamusConfig, load_config, save_config
 from talamus.demo import create_demo_brain
-from talamus.ingest import remember_session
+from talamus.ingest import pending_captures, remember_session_safe, retry_pending_captures
 from talamus.paths import TalamusPaths
 from talamus.registry import (
     register_brain,
@@ -284,8 +284,31 @@ def _cmd_hook_run(root: Path) -> int:
         ).stdout
     except (subprocess.SubprocessError, OSError):
         diff = ""
-    remember_session(TalamusPaths(root), transcript, diff, _router_for(root))
+    # Never lose a session and never crash the host agent's hook: an engine
+    # failure (e.g. an exhausted usage limit) parks the capture for retry.
+    result = remember_session_safe(TalamusPaths(root), transcript, diff, _router_for(root))
+    if result.get("failed"):
+        print(
+            f"talamus: capture saved for retry ({result.get('error', 'engine failed')}) — "
+            "run: talamus hook --retry",
+            file=sys.stderr,
+        )
     return 0
+
+
+def _cmd_hook_retry(root: Path) -> int:
+    """Replay captures parked by engine failures; keep the ones that fail again."""
+    paths = TalamusPaths(root)
+    pending = pending_captures(paths)
+    if not pending:
+        print("no captures waiting for retry")
+        return 0
+    print(f"retrying {len(pending)} capture(s)...")
+    result = retry_pending_captures(paths, _router_for(root))
+    for error in result["errors"]:
+        print(f"  still failing: {error}", file=sys.stderr)
+    print(f"retried {result['retried']}, remaining {result['remaining']}")
+    return 0 if result["remaining"] == 0 else 1
 
 
 def _cmd_status(

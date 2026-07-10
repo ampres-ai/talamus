@@ -30,12 +30,11 @@ talamus eval --cases cases.json -k 5
 ```text
 Illustrative output:
 
-Valutazione recupero — 2 casi, k=5
+Retrieval evaluation — 2 cases (2 answerable), k=5
   recall@5    0.750
   precision@5 0.300
   MRR         0.833
   hit-rate    1.000
-  mancati (0):
 ```
 
 Add `--json` for the full per-case breakdown (handy for scripts and CI).

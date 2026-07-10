@@ -65,7 +65,7 @@ The honest part: retrieval quality tracks the LLM you bring. With a strong expan
 
 ## Engines
 
-Bring the LLM you already have: `claude-cli`, `codex-cli`, `gemini-cli`, `opencode`, `antigravity-cli`, `ollama`, or `anthropic-api`.
+Bring the LLM you already have: `claude-cli`, `codex-cli`, `antigravity-cli` (agy), `opencode`, `ollama`, or `anthropic-api`.
 
 ## Quickstart
 

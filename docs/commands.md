@@ -3,6 +3,29 @@
 Run `talamus` with no arguments for a status panel, or `talamus <command> -h` for
 options. Most commands accept the [global flags](#global-flags) below.
 
+## Four ways to query your brain — and what each one costs
+
+New to Talamus? These four commands look similar but do different jobs. The
+price that matters is **LLM calls** (they consume your subscription or your
+local model's time) and **tokens** (the amount of text sent to the LLM — what
+subscriptions actually meter).
+
+| Command | What you get | LLM calls | Speed | Use it when |
+| --- | --- | --- | --- | --- |
+| `search "q"` | a ranked list of matching notes | **0** | instant | you know roughly what you're looking for |
+| `search "q" --smart` | the same list, but the LLM rewrites your query first (cached) | 1 the first time, 0 on repeats | ~seconds once | you only remember the *idea*, not the words |
+| `recall "q"` | the full text of the relevant notes, raw | **0** | instant | you are an **agent** and want material to reason over |
+| `ask "q"` | a written answer **with citations** and honest "I don't know" | 3–4 | ~seconds | you want an answer, not a reading list |
+
+How much does an `ask` cost in tokens? Ask it: `talamus ask "q" --trace` prints
+the exact context tokens sent (the workbench shows it as *cost* on every
+answer). Measured on a real 212-note brain, a targeted answer reads ~2,600
+tokens of context — **~98% less** than the alternative of pasting the whole
+knowledge base into a chat (~113,500 tokens, growing with every note you add,
+until it no longer fits at all). That is the point of a brain: the same LLM you
+already use, but pointed at exactly the right three pages — with sources —
+instead of the whole shelf or (worse) its own memory of the training data.
+
 ## Setup & health
 
 | Command | What it does |
@@ -100,6 +123,7 @@ notes from the owning brain — the federated index is a pointer index, never so
 | `talamus mcp install [--agent auto\|claude\|cursor\|codex\|all]` | Connect your agents in one command: `.mcp.json` (Claude Code), `.cursor/mcp.json` (Cursor), and a global `codex mcp add` registration (codex; the brain resolves from the project codex runs in). Auto detects what you have. |
 | `talamus hook` | Print the Claude Code `SessionEnd` capture-hook config. |
 | `talamus hook --install` | Write the hook into `.claude/settings.json` (merges, idempotent). |
+| `talamus hook --retry` | Replay captured sessions the engine failed on (a hit usage limit parks the capture under `.talamus/pending/` instead of losing it; entries stay until they succeed — `doctor` reminds you). |
 | `talamus hook-run` | Run the capture hook (reads the hook JSON on stdin). |
 | `talamus completion [bash\|zsh]` | Print a shell completion script. |
 | `talamus ui [--web] [--port N]` | Launch the local React workbench (needs the `ui` extra): pywebview window by default, browser with `--web`. |

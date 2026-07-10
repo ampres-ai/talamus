@@ -36,11 +36,13 @@ Talamus runs on what you already have — set it in `talamus.json` (or `TALAMUS_
 
 - `claude-cli` — your Claude subscription (default if `claude` is on PATH)
 - `codex-cli` — your ChatGPT subscription through Codex
-- `gemini-cli` — your Gemini subscription
+- `antigravity-cli` — Google Antigravity (`agy`), your Gemini subscription
 - `opencode` — opencode, with whatever providers you configured in it
-- `antigravity-cli` — Google Antigravity (`agy`)
 - `ollama` — a local model (`TALAMUS_LLM_MODEL=llama3`), fully offline
 - `anthropic-api` — the Anthropic API (`ANTHROPIC_API_KEY`)
+
+(The old standalone `gemini-cli` still works if you have it installed, but
+Google has deprecated it — use `antigravity-cli` instead.)
 
 ## 5. Use it from agents (MCP)
 
@@ -64,6 +66,11 @@ The hook sends Talamus the session transcript and the git diff when a session
 ends; only sessions that pass the worth-remembering gate become notes, and every
 decision is logged to `.talamus/logs/capture.log`. `talamus setup` proposes this
 hook and installs it only if you consent (`--capture yes|no|ask`).
+
+A session is never lost to engine trouble: if your LLM hits its usage limit
+during a capture, the session is parked locally and `talamus hook --retry`
+replays it once the limit resets (`talamus doctor` reminds you when captures
+are waiting).
 
 ## 6. Browse like a wiki (Obsidian)
 

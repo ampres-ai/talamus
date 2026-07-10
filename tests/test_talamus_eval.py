@@ -96,7 +96,7 @@ class EvalHarnessOverBrainTests(unittest.TestCase):
             cases = [EvalCase("argomento del tutto assente", ["Inesistente"])]
             report = evaluate(cases, search_retriever(paths), k=5)
             self.assertEqual(report.hit_rate, 0.0)
-            self.assertIn("mancati", report.format_table())
+            self.assertIn("missed", report.format_table())
 
 
 class LoadCasesTests(unittest.TestCase):

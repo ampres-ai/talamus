@@ -165,6 +165,7 @@ def _report(
         _index_check(index),
         _overview_check(overview),
         _cache_check(cache_current),
+        *_pending_captures_check(paths),
     ]
     return DiagnosticsReport(
         root=str(paths.project_root.resolve()),
@@ -185,6 +186,25 @@ def _report(
         cache_current=cache_current,
         checks=checks,
     )
+
+
+def _pending_captures_check(paths: TalamusPaths) -> list[DiagnosticCheck]:
+    """Captured sessions the engine failed to compile (e.g. a hit usage limit)
+    wait under .talamus/pending/ — surface them so they are never forgotten."""
+    from talamus.ingest import pending_captures
+
+    pending = pending_captures(paths)
+    if not pending:
+        return []
+    return [
+        DiagnosticCheck(
+            "captures",
+            "Captures",
+            "warning",
+            f"{len(pending)} captured session(s) waiting for retry — run: talamus hook --retry",
+            str(pending[0].parent),
+        )
+    ]
 
 
 def _layout_checks(paths: TalamusPaths) -> list[DiagnosticCheck]:

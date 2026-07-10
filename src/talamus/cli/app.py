@@ -22,6 +22,7 @@ from talamus.cli.lifecycle import (
     _cmd_doctor,
     _cmd_export,
     _cmd_hook,
+    _cmd_hook_retry,
     _cmd_hook_run,
     _cmd_import,
     _cmd_init,
@@ -142,6 +143,8 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "mcp":
             return _cmd_mcp_install(root, args.agent)
         if command == "hook":
+            if args.retry:
+                return _cmd_hook_retry(root)
             return _cmd_hook(root, args.install)
         if command == "hook-run":
             return _cmd_hook_run(root)

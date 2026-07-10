@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Hook Claude Code (SessionEnd/Stop): deposita la sessione di lavoro in Talamus.
+"""Claude Code hook (SessionEnd/Stop): deposit the work session into Talamus.
 
-Da registrare in Claude Code su un evento di fine sessione. Legge da stdin il JSON
-dell'hook (con `transcript_path` e `cwd`), cattura `git diff`, e chiama
-`talamus remember`. È **non invasivo**: se `TALAMUS_ROOT` non è impostato o non c'è un
-transcript, non fa nulla. Imposta `TALAMUS_ROOT` alla cartella del tuo brain.
+Register it in Claude Code on a session-end event. It reads the hook JSON from
+stdin (with `transcript_path` and `cwd`), captures `git diff`, and calls
+`talamus remember`. It is **non-invasive**: when `TALAMUS_ROOT` is unset or no
+transcript exists, it does nothing. Point `TALAMUS_ROOT` at your brain folder.
 """
 
 from __future__ import annotations
