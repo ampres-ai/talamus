@@ -8,8 +8,6 @@
 
 It turns documents, notes, repos, URLs, and agent sessions into source-grounded Markdown concept notes, then answers from those notes with citations — powered entirely by the LLM you already have.
 
-<!-- demo GIF placeholder: scripts/demo/run_magic.py end-to-end agent recall -->
-
 ## The 60-second story
 
 Copy-pasteable arc, with the reproducible version in [`scripts/demo/run_magic.py`](scripts/demo/run_magic.py):
@@ -52,7 +50,7 @@ Copy-pasteable arc, with the reproducible version in [`scripts/demo/run_magic.py
 
 ## Measured comparison
 
-The one-screen benchmark is rendered at [`docs/benchmarks.md`](docs/benchmarks.md) and committed at [`benchmarks/results/one-screen.md`](benchmarks/results/one-screen.md). Numbers below are from `dev/STATE.md` and those artifacts.
+The one-screen benchmark is rendered at [`docs/benchmarks.md`](docs/benchmarks.md) and committed at [`benchmarks/results/one-screen.md`](benchmarks/results/one-screen.md). Every number below traces to a committed artifact under [`benchmarks/results/`](benchmarks/results/).
 
 | corpus | metric | Talamus | BM25 | MiniLM vector DB |
 |---|---:|---:|---:|---:|
@@ -81,9 +79,9 @@ Run `talamus` for the status dashboard, `talamus quickstart` for essential comma
 
 ## Links
 
-Docs: [quickstart](docs/quickstart.md), [commands](docs/commands.md), [agent tool calling](docs/agent-tool-calling.md), [configuration](docs/configuration.md), [benchmarks](docs/benchmarks.md), [architecture](docs/architecture.md), [evaluation](docs/evaluation.md), [multi-brain](docs/multi-brain.md), [ontology](docs/ontology.md).
+Docs: [quickstart](docs/quickstart.md), [commands](docs/commands.md), [agent tool calling](docs/agent-tool-calling.md), [configuration](docs/configuration.md), [benchmarks](docs/benchmarks.md), [architecture](docs/architecture.md), [design principles](docs/design-principles.md), [evaluation](docs/evaluation.md), [multi-brain](docs/multi-brain.md), [ontology](docs/ontology.md).
 
-Project: [security](SECURITY.md), [contributing](CONTRIBUTING.md), [roadmap](dev/ROADMAP.md), [state ledger](dev/STATE.md).
+Project: [security](SECURITY.md), [contributing](CONTRIBUTING.md), [roadmap](ROADMAP.md), [changelog](CHANGELOG.md).
 
 ## Development
 

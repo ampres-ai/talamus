@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--queries", type=int, default=12, help="cap (0 = all)")
     parser.add_argument("--gen-engine", default="gemini-cli")
     parser.add_argument("--gen-model", default="gemini-3.1-flash-lite")
-    # Judge default: local gemma4:e4b. RS6 calibration measured ~1s/call with a
+    # Judge default: local gemma4:e4b. Calibration measured ~1s/call with a
     # one-word output cap (num_predict) -> local-primary is viable AND free, and
     # it is a DIFFERENT family from the gemini generator (no self-flattery).
     # Pass --cross-judge-engine codex-cli to also measure inter-judge agreement.

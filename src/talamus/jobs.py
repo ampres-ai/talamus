@@ -1,4 +1,4 @@
-"""Persistent job store — long operations survive crashes and resume (PRD 15.3).
+"""Persistent job store — long operations survive crashes and resume.
 
 A job is persisted *before* the first expensive call (11.3): the JSON record under
 ``.talamus/cache/jobs/`` holds the plan (payload), the progress (which items are

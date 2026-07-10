@@ -65,8 +65,7 @@ These are real and scheduled for the first releases after launch:
   exposed to your network or the internet.
 - **No remote endpoint yet.** Exposing the brain to browser-based LLMs would
   require a remote endpoint; that is deliberately **out of scope** and, when
-  built, will be **authenticated and read-only** (see the out-of-scope list in
-  `dev/PRODUCT.md`).
+  built, will be **authenticated and read-only** (see [ROADMAP.md](ROADMAP.md)).
 - **Engine CLIs run sandboxed.** codex runs with a read-only sandbox, gemini in
   plan mode — Talamus never loosens those flags.
 - **Secrets.** Prefer environment variables for engine credentials; they are

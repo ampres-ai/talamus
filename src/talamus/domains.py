@@ -296,7 +296,7 @@ def tree_path(paths: TalamusPaths):
 
 
 def build_overview_tree(paths: TalamusPaths, router: Router) -> list[dict]:
-    """Second overview level (Fase R5): macro-areas over the domains, so routing
+    """Second overview level: macro-areas over the domains, so routing
     cost stays ~log(N) instead of growing linearly with the domain count.
     One extra LLM call, only when the flat map is big enough to need it."""
     overview = load_overview(paths)

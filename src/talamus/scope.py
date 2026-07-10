@@ -1,4 +1,4 @@
-"""Brain resolution and scoped (multi-brain) retrieval — PRD 9.1 / F1.
+"""Brain resolution and scoped (multi-brain) retrieval.
 
 Resolution order: ``--root > --brain > --global > project ancestor > selected
 global > global default``. The result carries *where it came from* so ``where

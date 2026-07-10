@@ -18,7 +18,7 @@ nav:
   - Benchmarks: benchmarks.md
   - For agents: agent-tool-calling.md
   - Architecture: architecture.md
-  - Release checklist: release-checklist.md
+  - Design principles: design-principles.md
 
 markdown_extensions:
   - admonition

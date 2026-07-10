@@ -1,6 +1,6 @@
 """Deterministic benchmark corpora — no LLM calls, fully reproducible.
 
-Two builders feed the measurement baseline (PRD M0) and the scale benchmarks:
+Two builders feed the measurement baseline and the scale benchmarks:
 
 - ``build_docs_corpus`` derives real concept-notes mechanically from this
   repository's own documentation (one note per ``##`` section, plus a doc-level

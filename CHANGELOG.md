@@ -8,7 +8,7 @@ semantic versioning once it reaches a public release.
 
 Pre-release. The project was renamed **Kortex → Talamus**.
 
-### Engine tiering & v1 hardening (P2/P9/P11, 2026-07-01/02)
+### Engine tiering & v1 hardening (2026-07-01/02)
 
 - **Per-task model+effort tiering** (`talamus.routing`): every LLM call resolves
   through an `EngineRouter` by task class (extraction, routing, expansion, answer,
@@ -28,10 +28,10 @@ Pre-release. The project was renamed **Kortex → Talamus**.
   (sqlite-fts5, 208 MB index); cold `pip install` verified in a clean venv;
   honest-refusal negatives set expanded 8 → 30.
 
-### Final-product phase (PRD M0–M11, 2026-06-10/11)
+### Final-product phase (2026-06-10/11)
 
 - **Measured baseline**: real 120-case eval-set (`examples/eval-cases-real.json`),
-  deterministic corpora, latency/cost curves (`docs/benchmarks/`).
+  deterministic corpora, latency/cost curves.
 - **Multi-brain**: machine-wide registry, `talamus brains` group (use/info/rename/
   delete/register/set/index/promote), federated read index with pointers + markers,
   `--scope` / `--all-brains` on read commands, `where --json`; **`talamus init` now
@@ -48,7 +48,7 @@ Pre-release. The project was renamed **Kortex → Talamus**.
 - **Ontology Lab** (the differentiator): evidence layer → deterministic candidate
   induction → versioned schema candidate/active/deprecated with promotion rules →
   runtime re-typing + typed-first expansion with **measured retrieval lift**
-  (`talamus ontology ...`); research review in `docs/research/`.
+  (`talamus ontology ...`).
 - **Full temporal model**: valid-time claim overlay, robust `--as-of` parsing
   (year/month/date/tz), corrections close+open claims, `talamus timeline`,
   `ask`/`read --as-of`. Cache v5 (migration: `talamus reindex`).

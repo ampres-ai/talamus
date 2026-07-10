@@ -123,7 +123,7 @@ def _route_member_titles(
     llm = router.for_task(TaskClass.ASK_ROUTING)
     tree = load_overview_tree(paths)
     if tree:
-        # Fase R5: two-level routing — pick macro-areas first, then only their
+        # Two-level routing: pick macro-areas first, then only their
         # domains enter the second prompt. Keeps the routing prompt ~log(N)
         # instead of listing every domain (one extra LLM call, big brains only).
         area_map = "\n".join(
@@ -177,7 +177,7 @@ GLOBAL_ESCAPE_SEEDS = 2  # global hits outside the chosen domains: an anti-misro
 def _select_bundle_titles(
     paths: TalamusPaths, question: str, member_titles: list[str], limit: int
 ) -> list[tuple[str, str]]:
-    """RS2.2: the chosen domains' members are RANKED against the question — before,
+    """The chosen domains' members are RANKED against the question — before,
     the first ``limit`` were taken in the domain's listing order, and the right note
     could never be read even though it was the top hit of the global search (the
     RLHF/DPO case on the book). Ranking via the persistent index + a couple of
@@ -205,7 +205,7 @@ def _overview_bundle(
     titles = _route_member_titles(paths, question, router, trace=trace)
     if not titles:
         return ContextBundle(question=question, items=[])
-    # RS3: the LLM acts as the embedding model — it translates the question into the
+    # The LLM acts as the embedding model — it translates the question into the
     # corpus vocabulary BEFORE selection. Measured on the book: ask hit 0.861 -> 0.972,
     # vague 0.50 -> 0.81, cross 0.50 -> 0.88. Costs one extra call per ask.
     expanded = _expand_query(question, router)

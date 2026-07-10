@@ -1,4 +1,4 @@
-"""Local federated read-index across registered brains (PRD 9.1 / 15.2).
+"""Local federated read-index across registered brains.
 
 The central brain can search *all* registered, federated, non-sensitive brains.
 The index stores searchable metadata and **pointers** (`brain_id + note_id +

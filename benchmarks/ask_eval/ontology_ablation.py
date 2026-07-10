@@ -53,7 +53,7 @@ def _run(paths: TalamusPaths, corpus: JudgedCorpus, ask_llm, judge_llm) -> dict:
         if _context_hit(trace.get("items_read", []), relevant):
             hit += 1
         # Faithfulness must judge against what the ask ACTUALLY read, not the gold
-        # docs (RS6 artifact: ontology_on reads richer context and was wrongly
+        # docs (known artifact: ontology_on reads richer context and was wrongly
         # penalised as 'less grounded in gold'). Fall back to gold if no trace.
         read = [Path(p) for p in trace.get("items_read", [])]
         actual_ctx = "\n\n".join(p.read_text("utf-8") for p in read if p.is_file())

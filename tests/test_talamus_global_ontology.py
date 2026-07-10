@@ -1,4 +1,4 @@
-"""One ontology across all brains (dev/specs/2026-07-02-global-ontology-design.md).
+"""One ontology across all brains.
 
 The learned relation-type schema is machine-wide by default: a type promoted in
 one brain immediately types matching surfaces in every other brain. Evidence

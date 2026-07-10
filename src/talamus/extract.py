@@ -10,7 +10,7 @@ from talamus.routing import Router, TaskClass
 # Instructions are ALWAYS English (cheap local models follow English best); the
 # user-facing prose comes out in {language}; the machine layer (canonical alias,
 # relation verbs, half of retrieval_text) stays English-canonical so search and
-# the emergent ontology work across languages. See dev/research notes (Fase RS).
+# the emergent ontology work across languages.
 _PROMPT = """You are an expert librarian: you turn source text into clear, self-contained
 knowledge NOTES. Return ONLY a JSON array, no comments. Each note = ONE reusable
 concept, with these fields:

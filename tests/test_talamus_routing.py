@@ -70,7 +70,7 @@ class StructuredRoutingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp)
             trace: dict = {}
-            # queue: routing, query expansion (RS3), answer
+            # queue: routing, query expansion, answer
             llm = FakeLLMProvider(["dom-tempo", "tempo versioni", "Risposta sul tempo [1]."])
             answer = answer_question(
                 paths, "che versioni esistono?", StaticRouter(llm), trace=trace
@@ -86,7 +86,7 @@ class StructuredRoutingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp)
             trace: dict = {}
-            # queue: routing (name fallback), query expansion (RS3), answer
+            # queue: routing (name fallback), query expansion, answer
             llm = FakeLLMProvider(["Recupero", "recupero ricerca", "Risposta sul recupero [1]."])
             answer = answer_question(paths, "come cerco?", StaticRouter(llm), trace=trace)
             self.assertIn("Risposta sul recupero", answer)

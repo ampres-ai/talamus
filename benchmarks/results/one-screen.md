@@ -3,8 +3,8 @@
 | claim | number | vs competitors | source artifact |
 | --- | --- | --- | --- |
 | Tokens per answer | -97.7% vs loading the brain into context | load-all grows linearly and hits the context wall | benchmarks/results/2026-07-08-token-efficiency.md |
-| Answers cited & source-resolvable | 100% | no competitor here has a provenance model | dev/STATE.md (RS5 profiler row) |
-| Marginal cost per answer | EUR 0 (the LLM you already have) | dense RAG pays embedding infrastructure per corpus | dev/STATE.md (RS5 profiler row) |
+| Answers cited & source-resolvable | 100% | no competitor here has a provenance model | benchmarks/profiler (book-brain profiler run) |
+| Marginal cost per answer | EUR 0 (the LLM you already have) | dense RAG pays embedding infrastructure per corpus | benchmarks/profiler (book-brain profiler run) |
 | Cross-language + vague retrieval (book, hit@10) | talamus-smart 0.971 (recall 0.929) | BM25 0.829 - MiniLM vector DB 0.743 | benchmarks/results/2026-07-08-shootout-book.json |
 | Retrieval quality tracks your engine (book, ranking) | strong engine: talamus-smart nDCG 0.847 / MRR 0.865 - leads e5 (0.837 / 0.857) | free engine: e5 leads ranking (0.837 vs 0.783); Talamus keeps best hit/recall | benchmarks/results/2026-07-08-shootout-book.json (strong) + 2026-06-17-shootout-book.json (free) |
 | English-only turf (SciFact, after the adaptive-trigram fix) | talamus-search nDCG 0.664 / recall 0.797 | beats BM25 (0.652 / 0.776); MiniLM 0.645 / 0.783 | benchmarks/results/2026-07-08-shootout-scifact.json |
@@ -28,5 +28,5 @@ context, and every answer cites sources you can open — plus the time (as-of)
 and self-emerging-ontology moats no retrieval stack here has. Reproduce it:
 every row's artifact is committed, with the command that generated it in its
 sibling .md report. Caveat: the book numbers are single runs and LLM query
-expansion is nondeterministic (RS4 measured ~0.06 hit swings); latency is
-canonical from the scale artifact, not these GPU-contended runs.
+expansion is nondeterministic (repeat runs measured ~0.06 hit swings); latency
+is canonical from the scale artifact, not these GPU-contended runs.

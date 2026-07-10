@@ -20,3 +20,5 @@ It is built on three properties that, together, nothing else gives you:
 - **[Commands](commands.md)** — the full `talamus` CLI reference.
 - **[Configuration](configuration.md)** — `talamus.json`, environment variables, brain scoping.
 - **[Architecture](architecture.md)** — how the pieces fit together.
+- **[Design principles](design-principles.md)** — the deliberate choices and why.
+- **[Benchmarks](benchmarks.md)** — the measured numbers, wins and losses.

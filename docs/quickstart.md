@@ -72,8 +72,8 @@ so you can navigate the knowledge by hovering and clicking.
 
 Prefer a dedicated app? Install the UI extra and launch the local React web
 workbench. It opens in a pywebview window by default; use `--web` for a browser.
-The workbench has 9 views: Home, Ask, Graph, Library, Import, Ontology, Review,
-Brains, and System.
+The workbench has 10 views: Home, Ask, Graph, Library, Import, Ontology, Review,
+Brains, Connect, and System.
 
 ```bash
 pip install "talamus[ui]"

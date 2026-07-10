@@ -1,4 +1,4 @@
-"""The three-layer language architecture (Fase RS-2):
+"""The three-layer language architecture:
 
 1. prompts/instructions: ALWAYS English (cheap local models obey English best);
 2. note prose: the user's language (config `language`, locale fallback);
@@ -64,7 +64,7 @@ class ExtractionPromptTests(unittest.TestCase):
         self.assertIn("ENGLISH verbs", prompt)  # canonical relation surfaces
 
     def test_symptom_vocabulary_directive_present(self) -> None:
-        """RS2.4-bis: il ponte semantico per le domande vaghe si paga all'ingest —
+        """Il ponte semantico per le domande vaghe si paga all'ingest —
         il retrieval_text deve contenere le frasi-sintomo con cui un utente
         porrebbe il problema senza conoscerne il nome."""
         prompt = self._prompt_for("Italian")

@@ -1,4 +1,4 @@
-"""Retrieval research lab — hypothesis-driven ablations, no embeddings (Fase RS).
+"""Retrieval research lab — hypothesis-driven ablations, no embeddings.
 
 The M0/M4 error analysis showed three dominant failure classes on the real
 eval-set: (1) Italian questions vs English-titled notes — zero token overlap;
@@ -212,7 +212,7 @@ def run_ablations(paths: TalamusPaths, cases_file, k: int = 5) -> dict[str, dict
     return results
 
 
-# --- RS2.1: the ask bundle expands 1 hop via the ontology, but at full limit the
+# --- Ablation: the ask bundle expands 1 hop via the ontology, but at full limit the
 # expansion is a no-op (the seeds already fill the cut). Measurable question:
 # "does expanding via typed edges beat simply taking more search hits?"
 
@@ -261,7 +261,7 @@ BUNDLE_VARIANTS: dict[str, dict] = {
 
 
 def run_bundle_ablations(paths: TalamusPaths, cases_file, k: int = 5) -> dict[str, dict]:
-    """RS2.1: compare the bundle variants on the same retriever harness."""
+    """Compare the bundle variants on the same retriever harness."""
     from talamus.eval import evaluate, load_cases
 
     cases = load_cases(cases_file)
@@ -278,7 +278,7 @@ def run_bundle_ablations(paths: TalamusPaths, cases_file, k: int = 5) -> dict[st
     return results
 
 
-# --- RS2 move 2: TRIANGULATION. The previous rejects (V4 propagation, 1-hop
+# --- Ablation: TRIANGULATION. The previous rejects (score propagation, 1-hop
 # expansion) pushed the neighbors of the single top hit -> hub pollution. Here a
 # node emerges only if SEVERAL weak, independent hits converge on it via edges:
 # the vague question describes a situation BETWEEN concepts, and the agreement of
@@ -350,7 +350,7 @@ def run_triangulation_ablations(paths: TalamusPaths, cases_file, k: int = 5) -> 
     return results
 
 
-# --- RS2.6: rejecting negatives. The blended scores are normalized per query
+# --- Ablation: rejecting negatives. The blended scores are normalized per query
 # (the absolute does not separate), but WHICH channels light up does: an
 # out-of-domain query does not light the stemmed lexical channel, only trigram noise.
 
@@ -371,7 +371,7 @@ _FUNCTION_STEMS = frozenset(
 
 
 def rejection_report(paths: TalamusPaths, cases_file) -> dict:
-    """RS2.6, iteration 3. The top lexical hit does not separate (vocabulary
+    """Negative-rejection ablation, iteration 3. The top lexical hit does not separate (vocabulary
     overlap); coverage over ALL informative tokens does not either (English
     function words are OOV in an Italian corpus). Candidate: coverage of CONTENT
     terms only — 'carbonara' df=0 vs 'mixture' df>0."""

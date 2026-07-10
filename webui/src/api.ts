@@ -244,7 +244,7 @@ export function setPendingAskQuery(query: string | null) {
 
 // The per-launch workbench token, injected into index.html by the server. It is
 // sent on every /api call so a cross-origin page (which cannot read this token)
-// cannot drive the local API. See dev/ROADMAP.md Phase S1.
+// cannot drive the local API. See SECURITY.md.
 const UI_TOKEN =
   document.querySelector('meta[name="talamus-ui-token"]')?.getAttribute("content") ?? "";
 

@@ -1,4 +1,4 @@
-"""Symptom enrichment (RS2.4-bis): batches, idempotency, CLI consent.
+"""Symptom enrichment: batches, idempotency, CLI consent.
 
 The vague gap is purely semantic (measured: PRF and triangulation rejected); the
 bridge is built ONCE by writing into retrieval_text the phrasings a user would

@@ -91,7 +91,7 @@ def create_app(root: Path) -> FastAPI:
     app = FastAPI(title="Talamus", docs_url=None, redoc_url=None)
     root = Path(root)
 
-    # --- Local-only workbench guard (security, see dev/ROADMAP.md Phase S1) -------
+    # --- Local-only workbench guard (see SECURITY.md) ----------------------------
     # The API is served on 127.0.0.1 with no user auth, so a malicious website must
     # not be able to drive it. Three layers: (1) the Host header must be local
     # (a DNS-rebinding page sends `Host: evil.test` and is rejected here); (2) any

@@ -59,7 +59,7 @@ class TrigramScaleTests(unittest.TestCase):
         self.assertEqual(_trigram_scale(False, 0.3), 1.0)
 
     def test_default_ships_active(self):
-        # RS8: the lever ships ON (default < 1.0); only monolingual corpora are damped
+        # The lever ships ON (default < 1.0); only monolingual corpora are damped
         from talamus.indexes import MONO_TRIGRAM_SCALE
 
         self.assertLess(MONO_TRIGRAM_SCALE, 1.0)

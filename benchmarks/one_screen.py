@@ -1,11 +1,10 @@
-"""The one-screen benchmark (B1, launch decision D7.3).
+"""The one-screen benchmark.
 
 One reproducible, honest screen for the skeptical first commenter: what Talamus
 wins, what it loses, and where every number comes from. This module MEASURES
 NOTHING — it assembles the committed result artifacts under
-``benchmarks/results/`` (plus the canonical ledger ``dev/STATE.md`` for the two
-profiler headlines that have no JSON artifact) into one table. If an artifact
-is missing, it fails loudly rather than rendering a partial story.
+``benchmarks/results/`` into one table. If an artifact is missing, it fails
+loudly rather than rendering a partial story.
 """
 
 from __future__ import annotations
@@ -42,8 +41,8 @@ context, and every answer cites sources you can open — plus the time (as-of)
 and self-emerging-ontology moats no retrieval stack here has. Reproduce it:
 every row's artifact is committed, with the command that generated it in its
 sibling .md report. Caveat: the book numbers are single runs and LLM query
-expansion is nondeterministic (RS4 measured ~0.06 hit swings); latency is
-canonical from the scale artifact, not these GPU-contended runs."""
+expansion is nondeterministic (repeat runs measured ~0.06 hit swings); latency
+is canonical from the scale artifact, not these GPU-contended runs."""
 
 
 def _load(results_dir: Path, name: str) -> dict:
@@ -89,13 +88,13 @@ def build_rows(results_dir: Path) -> list[tuple[str, str, str, str]]:
             "Answers cited & source-resolvable",
             "100%",
             "no competitor here has a provenance model",
-            "dev/STATE.md (RS5 profiler row)",
+            "benchmarks/profiler (book-brain profiler run)",
         ),
         (
             "Marginal cost per answer",
             "EUR 0 (the LLM you already have)",
             "dense RAG pays embedding infrastructure per corpus",
-            "dev/STATE.md (RS5 profiler row)",
+            "benchmarks/profiler (book-brain profiler run)",
         ),
         (
             "Cross-language + vague retrieval (book, hit@10)",

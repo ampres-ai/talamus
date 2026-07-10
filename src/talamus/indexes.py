@@ -1,4 +1,4 @@
-"""Persistent retrieval indexes — three channels, no embeddings (M4 + Fase RS).
+"""Persistent retrieval indexes — three channels, no embeddings.
 
 The 2026-06 recall research measured the dominant failure class on real corpora:
 cross-language vocabulary mismatch (Italian questions vs English-titled notes
@@ -34,7 +34,7 @@ _K1 = 1.5
 _B = 0.75
 W_TRI_TITLE = 0.7
 W_TRI_SUMMARY = 0.3
-# Adaptive trigram blend (RS8): on a monolingual-ASCII corpus the cross-language
+# Adaptive trigram blend: on a monolingual-ASCII corpus the cross-language
 # cognate bridge only adds noise (it costs nDCG/MRR vs BM25 on English SciFact and
 # vs a multilingual dense model on the book). The trigram weights are scaled by
 # MONO_TRIGRAM_SCALE when the indexed corpus is detected monolingual-ASCII.
@@ -44,7 +44,7 @@ W_TRI_SUMMARY = 0.3
 # regression). Overridable via env for future sweeps.
 MONO_TRIGRAM_SCALE = float(os.environ.get("TALAMUS_MONO_TRIGRAM_SCALE", "0.3"))
 _MAX_QUERY_TRIGRAMS = 64  # bound the OR-query cost
-# Hub suppression (RS4): long "hub" notes accumulate blended score across many
+# Hub suppression: long "hub" notes accumulate blended score across many
 # weak matches and crowd out short, precisely-titled notes. A mild length
 # penalty divides by (avglen + LP·len)/avglen — it bites only where note lengths
 # vary a lot (measured: docs cross-source +0.10, neutral on the uniform book).
@@ -229,7 +229,7 @@ def _blend(channels: list[tuple[dict[str, float], float]]) -> dict[str, float]:
 
 
 def _apply_length_penalty(blended: dict[str, float], hay_len: dict[str, int]) -> dict[str, float]:
-    """Damp hub notes by haystack length (RS4). avglen over the CANDIDATES so the
+    """Damp hub notes by haystack length. avglen over the CANDIDATES so the
     penalty is relative, not absolute; missing lengths are left untouched."""
     if not _LENGTH_PENALTY or not hay_len:
         return blended

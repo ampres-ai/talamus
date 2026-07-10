@@ -1,4 +1,4 @@
-"""Persistent review queue (PRD 15.4) — uncertain changes wait for a human.
+"""Persistent review queue — uncertain changes wait for a human.
 
 Items live one-per-file under ``.talamus/cache/review/``. Applying or rejecting
 never deletes the item: the decision is recorded (rejections stay logged, F7.6).

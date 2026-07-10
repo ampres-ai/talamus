@@ -1,7 +1,7 @@
 # --- Agent / tooling runtime caches -----------------------------------------
 .claude/
 .worktrees/
-# brainstorming-companion servers, logs, pids
+# local tooling caches
 .superpowers/
 
 # --- Python -----------------------------------------------------------------
@@ -46,7 +46,6 @@ credentials.json
 *.key
 
 # --- Talamus brains created inside the repo (derived caches, never truth) ---
-# (the leading-dot dir; never the dev/ docs)
 .talamus/
 
 # --- Downloaded benchmark datasets (BEIR etc.) — regenerable, never committed ---

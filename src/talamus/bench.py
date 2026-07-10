@@ -1,4 +1,4 @@
-"""Measurement baseline (PRD M0) — retrieval quality, latency, and cost curves.
+"""Measurement baseline — retrieval quality, latency, and cost curves.
 
 Everything here is deterministic and LLM-free. ``run_baseline`` builds the real
 docs corpus, runs the real eval-set, measures retrieval latency on synthetic
@@ -107,7 +107,7 @@ def routing_prompt_tokens(n_notes: int, notes_per_domain: int = 10) -> dict:
 def routing_prompt_tokens_tree(
     n_notes: int, notes_per_domain: int = 10, domains_per_area: int = 10
 ) -> dict:
-    """Two-level routing (Fase R5): areas prompt + one area's domains prompt.
+    """Two-level routing: areas prompt + one area's domains prompt.
 
     Flat routing lists every domain (O(N)); the tree lists ~N/100 areas plus ~10
     domains — the sum stays bounded as the brain grows."""

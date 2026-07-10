@@ -1,4 +1,4 @@
-"""Repo scan: compile an existing repository into the brain, safely (PRD 9.2/F2).
+"""Repo scan: compile an existing repository into the brain, safely.
 
 The flow is *plan first, spend later*: ``build_plan`` walks the tree respecting
 ``.gitignore`` (common patterns; negations unsupported) and the default excludes

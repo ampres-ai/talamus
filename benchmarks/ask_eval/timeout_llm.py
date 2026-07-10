@@ -1,14 +1,15 @@
 """Hard wall-clock timeout around an LLM provider.
 
-Real finding (RS6): `subprocess.run(timeout=...)` does NOT reliably kill a hung
+Real finding: `subprocess.run(timeout=...)` does NOT reliably kill a hung
 `gemini-cli` (node) call on Windows — the pipe stays open and the call blocks
 indefinitely past the timeout. That stalled a whole eval batch for hours. This
 wrapper runs each call in a daemon thread and abandons it after `seconds`,
 raising TimeoutError so the caller's fault handling kicks in. The leaked thread
 is a daemon, so it never blocks process exit.
 
-(The same hang is a product reliability risk for `talamus ask`; tracked in
-dev/STATE.md — a hard timeout belongs in the engine adapter eventually.)"""
+(The product engine adapter has its own configurable timeout —
+`TALAMUS_ENGINE_TIMEOUT`; this wrapper hardens the benchmark harness, which
+drives engines the product does not.)"""
 
 from __future__ import annotations
 

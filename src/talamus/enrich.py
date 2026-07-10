@@ -1,4 +1,4 @@
-"""Symptom enrichment: the semantic bridge for vague questions (RS2.4-bis).
+"""Symptom enrichment: the semantic bridge for vague questions.
 
 "The model makes things up" shares no token with the note "Hallucination": the gap
 is purely semantic and no query-time trick closes it (PRF and triangulation rejected

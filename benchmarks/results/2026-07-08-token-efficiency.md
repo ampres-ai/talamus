@@ -9,5 +9,5 @@ Command: `python benchmarks/token_efficiency.py C:/dev/_talamus_book`
 | recall (avg, targeted) | 2,637 | −97.7% |
 | search (avg, titles) | 248 | −99.8% |
 
-Confirms the RS5 headline byte-for-byte on the 2026-07-08 code
+Confirms the June headline byte-for-byte on the 2026-07-08 code
 (post model_json refactor, post ontology-inference merge pending).

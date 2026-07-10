@@ -1,9 +1,9 @@
-"""Per-task model+effort tiering (P2 flagship lever).
+"""Per-task model+effort tiering.
 
 A TaskClass names one point in the pipeline that makes exactly one LLM call. Each task
 carries a TaskIntent (tier, effort); an EngineRouter resolves that intent, within the
 single provider configured for the brain, into a concrete LLMProvider — never across
-providers (see dev/specs/2026-07-01-p2-model-effort-tiering-design.md). Task classes
+providers. Task classes
 never know provider-specific model names; providers never know about task classes.
 """
 

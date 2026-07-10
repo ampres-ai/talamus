@@ -1,5 +1,5 @@
 {
-  "comment": "Real eval-set (PRD F4) authored against the deterministic docs corpus (talamus.corpus.build_docs_corpus on this repo). Categories: direct, vague, cross-source, temporal, code, negative. Negative cases have empty relevant: the brain holds nothing pertinent.",
+  "comment": "Real eval-set authored against the deterministic docs corpus (talamus.corpus.build_docs_corpus on this repo). Categories: direct, vague, cross-source, temporal, code, negative. Negative cases have empty relevant: the brain holds nothing pertinent.",
   "cases": [
     { "id": "direct-001", "category": "direct", "question": "come installo talamus?", "relevant": ["1. Install", "Quickstart"] },
     { "id": "direct-002", "category": "direct", "question": "come provo talamus subito senza configurare un motore LLM?", "relevant": ["2. Try it instantly (no setup, no LLM)"] },

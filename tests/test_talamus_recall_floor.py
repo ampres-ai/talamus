@@ -3,7 +3,7 @@
 The 2026-06 recall research lifted production retrieval on the real 120-case
 eval-set (recall@5 0.394 -> 0.492, MRR 0.333 -> 0.449). This test re-runs that
 exact measurement and fails if anyone regresses it below a safety floor. It IS
-the quality gate the PRD asks for (F4.5): changes to stemming, indexing or
+the quality gate: changes to stemming, indexing or
 ranking must keep beating these numbers or be rejected.
 """
 

@@ -1,6 +1,6 @@
-"""Full bitemporal model: robust as-of parsing + valid-time claim overlay (PRD 9.5/F6).
+"""Full bitemporal model: robust as-of parsing + valid-time claim overlay.
 
-Two timelines, kept distinct (F6.3):
+Two timelines, kept distinct:
 
 - **transaction time** — when Talamus changed its records: note versions in
   ``.talamus/cache/history/`` (since B4), schema events in the Ontology Lab.

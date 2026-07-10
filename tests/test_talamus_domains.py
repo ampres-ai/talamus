@@ -72,7 +72,7 @@ class DomainsTests(unittest.TestCase):
                 ),
             )
 
-            # queue: routing, query expansion (RS3), answer
+            # queue: routing, query expansion, answer
             answer = answer_question(
                 paths,
                 "come funziona?",

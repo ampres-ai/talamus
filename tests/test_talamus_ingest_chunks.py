@@ -3,7 +3,7 @@
 This is the path a 500-page book takes: one extraction call per chunk, progress
 persisted after each, engine outages pause (not burn) the job, and the CLI
 refuses to start a multi-chunk ingest without an explicit --yes after the
-cost estimate (PRD rule: no expensive LLM runs without dry-run + consent)."""
+cost estimate (rule: no expensive LLM runs without dry-run + consent)."""
 
 import io
 import json

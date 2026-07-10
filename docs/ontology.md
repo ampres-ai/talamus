@@ -42,5 +42,5 @@ talamus ontology history | export
 - **Stability** — identical corpus ⇒ identical candidates (deterministic
   clustering; the LLM only names).
 
-The research context and the design decisions live in
-[`dev/research/2026-06-ontology-learning-review.md`](https://github.com/GCrapuzzi/Talamus-Wiki/blob/main/dev/research/2026-06-ontology-learning-review.md).
+Why the ontology is built this way — induced from evidence, promoted only by
+measured rules — is covered in [Design principles](design-principles.md).

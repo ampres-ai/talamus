@@ -1,6 +1,6 @@
 """Smart search: Query2doc-style LLM query expansion in front of lexical search.
 
-The 2026-06 research (dev/research/2026-06-rs4-search-ceiling.md) measured a
+The 2026-06 ablation rounds measured a
 hard ceiling for lexical+trigram+symptom search (~0.86-0.89 on a curated
 brain): the remaining misses are pure vocabulary-mismatch vague queries that no
 lexical trick bridges. The literature's proven no-embedding cure is Query2doc
@@ -69,7 +69,7 @@ def expand_query(paths: TalamusPaths, question: str, router: Router) -> str:
 
 def expand_query_multi(paths: TalamusPaths, question: str, router: Router, passes: int = 1) -> str:
     """N-pass expansion union to smooth the nondeterministic LLM expansion
-    (RS4 measured run-to-run swings of ~0.06 hit). ``passes <= 1`` is the cached
+    (measured run-to-run swings of ~0.06 hit). ``passes <= 1`` is the cached
     single-pass path. Extra passes are uncached (each is a fresh sample) and their
     unique terms are unioned onto the question; any engine failure is skipped so
     the result is never worse than the question itself. For a deterministic engine

@@ -14,10 +14,10 @@ from talamus.paths import TalamusPaths
 from talamus.search import BM25Index
 from talamus.storage.obsidian import render_obsidian_note
 
-# v3: Fase RS three-channel index (bilingual stems + trigram fields). Migration from
+# v3: three-channel index (bilingual stems + trigram fields). Migration from
 # any prior version = `talamus reindex` (doctor reports the stale cache; everything
 # under .talamus/cache is derived/rebuildable).
-CACHE_VERSION = 5  # RS8: index stores the monolingual flag for the adaptive trigram blend
+CACHE_VERSION = 5  # v5: index stores the monolingual flag for the adaptive trigram blend
 
 
 def _write_cache_manifest(paths: TalamusPaths) -> None:

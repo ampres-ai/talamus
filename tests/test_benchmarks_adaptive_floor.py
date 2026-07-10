@@ -1,4 +1,4 @@
-"""RS8 adaptive-trigram floor: locks the measured SciFact ranking win so a future
+"""Adaptive-trigram floor: locks the measured SciFact ranking win so a future
 change to the blend cannot silently regress it. Heavy (downloads BEIR SciFact),
 gated by TALAMUS_BENCH_HEAVY — not in the normal CI run."""
 
@@ -25,10 +25,10 @@ class AdaptiveTrigramScifactFloorTests(unittest.TestCase):
         mean_ndcg, mean_rec = statistics.mean(ndcg), statistics.mean(rec)
         # measured at scale 0.3: nDCG 0.664, recall 0.797 (beats BM25's 0.652/0.776)
         self.assertGreaterEqual(
-            mean_ndcg, 0.63, f"SciFact nDCG {mean_ndcg:.3f} fell below the RS8 adaptive floor"
+            mean_ndcg, 0.63, f"SciFact nDCG {mean_ndcg:.3f} fell below the adaptive floor"
         )
         self.assertGreaterEqual(
-            mean_rec, 0.77, f"SciFact recall {mean_rec:.3f} fell below the RS8 adaptive floor"
+            mean_rec, 0.77, f"SciFact recall {mean_rec:.3f} fell below the adaptive floor"
         )
 
 

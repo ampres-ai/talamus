@@ -236,7 +236,7 @@ def _cmd_consolidate(root: Path, do_apply: bool, router: Router, json_out: bool)
 
 
 def _cmd_enrich(root: Path, yes: bool, router: Router, json_out: bool) -> int:
-    """Symptom enrichment (RS2.4-bis): estimate first, batches only with --yes."""
+    """Symptom enrichment: estimate first, batches only with --yes."""
     service_result = run_enrich(root, router, confirmed=yes)
     if service_result.code == "enrich_nothing_to_do":
         print("all notes already have the symptom vocabulary")

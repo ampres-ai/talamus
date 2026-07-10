@@ -1,4 +1,4 @@
-"""Brain registry — the machine-wide record of every Talamus brain (PRD 15.1).
+"""Brain registry — the machine-wide record of every Talamus brain.
 
 Lives at ``<TALAMUS_HOME>/registry.json``. The registry is metadata, never source
 truth: each brain owns its notes; the registry records where brains live, their

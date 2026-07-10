@@ -1,6 +1,6 @@
 """Smart search: Query2doc-style LLM query expansion in front of lexical search.
 
-The lexical ceiling (dev/research/2026-06-rs4-search-ceiling.md) is broken by
+The measured lexical ceiling (~0.86-0.89 hit) is broken by
 expanding the query with the user's own LLM before searching — measured on both
 corpora (book hit 0.861 → 0.972, docs 0.618 → 0.782). Cached on disk so repeated
 queries are free; degrades to plain search on any engine failure."""

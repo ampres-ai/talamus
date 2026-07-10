@@ -59,11 +59,30 @@ and uploads them to PyPI through the `pypi` GitHub environment. Configure the
 PyPI Trusted Publisher for project `talamus` with owner `GCrapuzzi`, repository
 `Talamus-Wiki`, workflow `publish.yml`, and environment `pypi`.
 
+## Release checklist
+
+Before tagging a release, verify:
+
+- `python dev.py` green on the release commit; CI green on all three OSes
+  (including the extras job).
+- `python -m mkdocs build --strict` clean.
+- Fresh-venv install works: `pip install talamus` then `talamus --version`,
+  `talamus demo`, `talamus search "embedding"`.
+- Benchmark artifacts under `benchmarks/results/` are current for any number
+  the README claims.
+- README and docs match `talamus --help`; CHANGELOG updated; cache migrations
+  documented (migrate with `talamus reindex`).
+- No caches or brains committed; scan secret-redaction tests green.
+- Manual smoke: `talamus ui` renders all ten views; MCP handshake works with
+  a real client (`talamus mcp install`).
+
 ## Where the project truth lives
 
-Start from [AGENTS.md](AGENTS.md) (yes, even as a human — it is the entry
-point for everyone), then the developer canon in `dev/`:
-[CONSTRAINTS.md](dev/CONSTRAINTS.md) (binding rules and why),
-[ARCHITECTURE.md](dev/ARCHITECTURE.md) (how every part works),
-[STATE.md](dev/STATE.md) (what is built, measured, rejected — and the open
-queue), [PRODUCT.md](dev/PRODUCT.md) (the final product definition).
+- [docs/design-principles.md](docs/design-principles.md) — the binding design
+  choices and why they exist. Changes that break one need a very good,
+  measured reason.
+- [docs/architecture.md](docs/architecture.md) — how every part works, module
+  by module. Update it in the same change that alters public behavior.
+- [docs/benchmarks.md](docs/benchmarks.md) — the measured numbers; every
+  public claim traces to a committed artifact in `benchmarks/results/`.
+- [ROADMAP.md](ROADMAP.md) — where the project is going.

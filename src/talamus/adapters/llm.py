@@ -88,7 +88,7 @@ def _engine_timeout() -> int:
     """Hard per-call timeout in seconds (env TALAMUS_ENGINE_TIMEOUT, default 600).
 
     Read per call, not at import: covers the gemini-on-Windows hang and slow local
-    models (RS8: ~12.5% of gemma generations > 90 s) without freezing the product."""
+    models (measured: ~12.5% of gemma generations > 90 s) without freezing the product."""
     try:
         return max(1, int(os.environ.get("TALAMUS_ENGINE_TIMEOUT", "600")))
     except ValueError:

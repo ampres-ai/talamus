@@ -75,7 +75,7 @@ def _cmd_setup(
     router: Router | None = None,
     verify: bool | None = None,
 ) -> int:
-    """One-command onboarding (Fase R4): the coding-agent subscription you
+    """One-command onboarding: the coding-agent subscription you
     already pay for becomes a personal + agentic memory, in minutes."""
     print("Talamus setup\n")
     engines = list_engines()

@@ -1,4 +1,4 @@
-"""Secret detection and redaction for repo scans (PRD F2.9/F2.10, 11.4).
+"""Secret detection and redaction for repo scans.
 
 Two layers of defense before any content reaches a remote LLM:
 

@@ -1,4 +1,4 @@
-# Benchmarks (dev-only)
+# Benchmarks
 
 Reproducible measurements that back Talamus's claims. NOT part of the package —
 competitor deps (`rank-bm25`, `beir`, and later embeddings/mem0) live here so the
@@ -42,6 +42,3 @@ Each system is an adapter behind one `RetrievalSystem` protocol
 - **`token_efficiency.py`** — token cost of targeted *recall* vs *loading the whole
   brain*, plus the cost of *search* (titles+summaries). Uses tiktoken (cl100k_base)
   as a tokenizer proxy. Build a brain first with `talamus ingest`.
-
-The design spec and full implementation plan live locally under `.superpowers/`
-(not committed).

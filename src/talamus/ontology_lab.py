@@ -1,4 +1,4 @@
-"""Ontology Lab — the self-emerging type system, versioned and measured (PRD 9.3/F5).
+"""Ontology Lab — the self-emerging type system, versioned and measured.
 
 The extraction LLM emits *free-form* relation surfaces ("alimenta", "sostituisce",
 "deriva da", ...). The fixed normalizer flattens everything it doesn't know to
@@ -45,7 +45,7 @@ from talamus.store import load_notes, save_ontology
 from talamus.textutil import tokens
 
 DEFAULT_MIN_SUPPORT = 3  # evidence items needed to even become a candidate
-PROMOTION_MIN_SUPPORT = 8  # PRD 12.6 defaults
+PROMOTION_MIN_SUPPORT = 8  # promotion threshold (see docs/ontology.md)
 PROMOTION_MIN_NOTES = 3
 
 
@@ -77,8 +77,8 @@ def schema_path(paths: TalamusPaths) -> Path:
     """Where the relation-type schema lives for this brain's scope.
 
     The schema (learned types) is the user's personal semantic layer, shared
-    machine-wide by default so a type learned anywhere improves every brain
-    (dev/specs/2026-07-02-global-ontology-design.md). Evidence stays per brain."""
+    machine-wide by default so a type learned anywhere improves every brain.
+    Evidence stays per brain."""
     if _ontology_scope(paths) == "brain":
         return lab_dir(paths) / "schema.json"
     return _global_lab_dir() / "schema.json"

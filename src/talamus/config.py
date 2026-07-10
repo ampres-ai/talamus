@@ -32,7 +32,6 @@ class TalamusConfig:
     # Where the learned relation-type schema lives (the emergent ontology):
     # "global" (default) = one ontology shared across all brains (TALAMUS_HOME);
     # "brain" = the historical per-brain isolation. Evidence always stays per brain.
-    # See dev/specs/2026-07-02-global-ontology-design.md.
     ontology_scope: str = "global"
 
     @classmethod
