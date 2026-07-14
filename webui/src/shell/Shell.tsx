@@ -1,4 +1,5 @@
 import { useEffect, useState, ReactNode, ComponentType } from "react";
+import { SearchBar } from "./SearchBar";
 import {
   House,
   Sparkle,
@@ -98,6 +99,7 @@ export function Shell({
         <div style={{ padding: "16px 16px 12px", fontWeight: 600, fontSize: 18, letterSpacing: "-0.02em" }}>
           Talamus<span style={{ color: "var(--accent)" }}>●</span>
         </div>
+        <SearchBar />
         <div style={{ padding: "0 12px 10px" }}>
           <button
             onClick={() => open("brains")}

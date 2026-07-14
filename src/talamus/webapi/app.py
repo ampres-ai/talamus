@@ -14,12 +14,13 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from talamus.config import load_or_default
-from talamus.errors import EngineNotFound
+from talamus.errors import EngineFailed, EngineNotFound
+from talamus.ingest import pending_captures, retry_pending_captures
 from talamus.paths import TalamusPaths
 from talamus.registry import load_registry, register_brain, select_brain
 from talamus.routing import EngineRouter, TaskClass
 from talamus.services.ask import ask_brain
-from talamus.services.brains import init_brain, list_brains
+from talamus.services.brains import init_brain, list_brains, set_registered_brain_flags
 from talamus.services.diagnostics import inspect_diagnostics, reindex_brain
 from talamus.services.engines import probe_engine, update_engine_settings
 from talamus.services.importer import import_markdown_vault
@@ -36,7 +37,7 @@ from talamus.services.ontology import (
     list_ontology_candidates,
     reject_ontology_candidate,
 )
-from talamus.services.query import read_note
+from talamus.services.query import read_note, search_brain
 from talamus.services.readiness import inspect_readiness
 from talamus.services.review import (
     apply_review_item,
@@ -45,6 +46,7 @@ from talamus.services.review import (
 )
 from talamus.services.scan import preview_scan, run_scan
 from talamus.services.verification import verify_single_note
+from talamus.smartsearch import expand_query
 from talamus.webapi.graph_layout import compute_note_graph
 
 _STATIC = Path(__file__).parent / "static"
@@ -136,6 +138,67 @@ def create_app(root: Path) -> FastAPI:
     @app.get("/api/library")
     def library() -> dict:
         return list_library_notes(root).to_dict()
+
+    @app.get("/api/search")
+    def search_endpoint(q: str = "", limit: int = 8) -> dict:
+        """Instant plain search (zero LLM) for the workbench search bar."""
+        if not q.strip():
+            return {"success": True, "code": "search_completed", "data": {"hits": []}}
+        return search_brain(root, q, limit=limit).to_dict()
+
+    @app.post("/api/search/smart")
+    def search_smart(payload: dict | None = None) -> dict:
+        """Expand-with-AI search: ONE LLM call (cached per query), then the
+        same instant index — the CLI's `search --smart` for the workbench."""
+        data = payload or {}
+        q = str(data.get("q", "")).strip()
+        if not q:
+            return {"success": False, "code": "search_query_missing", "message": "Provide a query."}
+        try:
+            router = _router(root)
+            expanded = expand_query(TalamusPaths(root), q, router)
+        except EngineNotFound:
+            return _NO_ENGINE
+        except EngineFailed as exc:
+            return {"success": False, "code": "engine_failed", "message": str(exc)}
+        result = search_brain(root, f"{q} {expanded}".strip(), limit=int(data.get("limit", 8)))
+        out = result.to_dict()
+        out["expanded"] = expanded
+        return out
+
+    @app.get("/api/captures")
+    def captures() -> dict:
+        """Sessions parked after an engine failure, waiting for a retry."""
+        names = [path.name for path in pending_captures(TalamusPaths(root))]
+        return {"success": True, "code": "captures_listed", "data": {"pending": names}}
+
+    @app.post("/api/captures/retry")
+    def captures_retry() -> dict:
+        """Replay parked captures (talamus hook --retry for the workbench)."""
+        try:
+            router = _router(root)
+        except EngineNotFound:
+            return _NO_ENGINE
+        outcome = retry_pending_captures(TalamusPaths(root), router)
+        return {
+            "success": True,
+            "code": "captures_retried",
+            "message": f"retried {outcome['retried']}, remaining {outcome['remaining']}",
+            "data": outcome,
+        }
+
+    @app.post("/api/brains/flags")
+    def brains_flags(payload: dict | None = None) -> dict:
+        """Plain-language brain switches: shared in global searches / private."""
+        data = payload or {}
+        name = str(data.get("name", "")).strip()
+        federated = data.get("federated")
+        sensitive = data.get("sensitive")
+        return set_registered_brain_flags(
+            name,
+            federated=federated if isinstance(federated, bool) else None,
+            sensitive=sensitive if isinstance(sensitive, bool) else None,
+        ).to_dict()
 
     @app.get("/api/graph")
     def graph() -> dict:

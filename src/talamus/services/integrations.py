@@ -21,6 +21,7 @@ class IntegrationReport:
     hook_command: str
     cursor_installed: bool
     codex_on_path: bool
+    opencode_on_path: bool
     hook_installed: bool
 
     def to_dict(self) -> dict[str, Any]:
@@ -68,6 +69,7 @@ def inspect_integrations(root: str | Path) -> ServiceResult[IntegrationReport]:
             hook_command=_hook_command(root_path),
             cursor_installed=cursor_installed(root_path),
             codex_on_path=shutil.which("codex") is not None,
+            opencode_on_path=shutil.which("opencode") is not None,
             hook_installed=hook_installed(root_path),
         )
     except (OSError, TypeError, ValueError, AttributeError, json.JSONDecodeError) as exc:
@@ -90,6 +92,43 @@ def install_mcp_config_cursor(root: str | Path) -> ServiceResult[McpInstallResul
     """Cursor reads `<project>/.cursor/mcp.json` — same shape as `.mcp.json`."""
     root_path = Path(root)
     return _install_mcp_json(root_path / ".cursor" / "mcp.json", root_path)
+
+
+def install_mcp_config_opencode(root: str | Path) -> ServiceResult[McpInstallResult]:
+    """opencode reads `<project>/opencode.json`; its `mcp` section registers
+    local servers. Merge-not-clobber and idempotent, like every installer here."""
+    root_path = Path(root)
+    path = root_path / "opencode.json"
+    data: dict[str, Any] = {}
+    if path.is_file():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return ServiceResult(
+                success=False,
+                message=f"cannot parse existing {path.name} — fix or remove it first",
+                code="opencode_config_unreadable",
+            )
+    if not isinstance(data, dict):
+        data = {}
+    data.setdefault("$schema", "https://opencode.ai/config.json")
+    mcp = data.setdefault("mcp", {})
+    if not isinstance(mcp, dict):
+        return ServiceResult(
+            success=False,
+            message=f"{path.name} has a non-object `mcp` section — fix it first",
+            code="opencode_config_invalid",
+        )
+    mcp["talamus"] = {"type": "local", "command": ["talamus-mcp"], "enabled": True}
+    path.write_text(json.dumps(data, indent=2) + chr(10), encoding="utf-8")
+    return ServiceResult(
+        success=True,
+        message=f"registered talamus in {path.name} (opencode reads it per project)",
+        code="mcp_config_installed_opencode",
+        data=McpInstallResult(
+            config_path=str(path), server_name="talamus", command="talamus-mcp", args=[]
+        ),
+    )
 
 
 def install_mcp_config_codex() -> ServiceResult[McpInstallResult]:
@@ -137,7 +176,7 @@ def install_mcp_config_codex() -> ServiceResult[McpInstallResult]:
     )
 
 
-_MCP_AGENTS = ("auto", "claude", "cursor", "codex", "all")
+_MCP_AGENTS = ("auto", "claude", "cursor", "codex", "opencode", "all")
 
 
 def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResult[dict[str, Any]]:
@@ -151,7 +190,7 @@ def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResul
     if choice not in _MCP_AGENTS:
         return ServiceResult(
             success=False,
-            message=f"Unknown agent {agent!r} — use auto, claude, cursor, codex or all",
+            message=f"Unknown agent {agent!r} — use auto, claude, cursor, codex, opencode or all",
             code="mcp_agent_unknown",
         )
     installs: list[tuple[str, Callable[[], ServiceResult[McpInstallResult]]]] = []
@@ -161,6 +200,8 @@ def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResul
         installs.append(("cursor", lambda: install_mcp_config_cursor(root_path)))
     if choice in ("codex", "all") or (choice == "auto" and shutil.which("codex") is not None):
         installs.append(("codex", install_mcp_config_codex))
+    if choice in ("opencode", "all") or (choice == "auto" and shutil.which("opencode") is not None):
+        installs.append(("opencode", lambda: install_mcp_config_opencode(root_path)))
     results: dict[str, ServiceResult[McpInstallResult]] = {}
     for name, run in installs:
         results[name] = run()

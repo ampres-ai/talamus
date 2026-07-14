@@ -62,12 +62,16 @@ function BrainCard({
   isActive,
   busy,
   onOpen,
+  onToggle,
 }: {
   b: BrainItem;
   isActive: boolean;
   busy: boolean;
   onOpen: () => void;
+  onToggle: (name: string, flags: { federated?: boolean; sensitive?: boolean }) => void;
 }) {
+  const toggleFlag = (name: string, flags: { federated?: boolean; sensitive?: boolean }) =>
+    Promise.resolve(onToggle(name, flags));
   return (
     <div
       style={{
@@ -82,12 +86,22 @@ function BrainCard({
           <Badge text="active" color="var(--accent-2)" bg="rgba(110,91,255,0.16)" border="rgba(110,91,255,0.45)" />
         ) : null}
         <Badge text={b.type} color="var(--muted)" bg="var(--surface-2)" border="var(--border)" />
-        {b.federated ? (
-          <Badge text="federated" color="var(--accent-2)" bg="rgba(79,195,247,0.12)" border="rgba(79,195,247,0.35)" />
-        ) : null}
-        {b.sensitive ? (
-          <Badge text="sensitive" color="var(--warn)" bg="rgba(255,183,77,0.13)" border="rgba(255,183,77,0.35)" />
-        ) : null}
+        <button
+          className="btn"
+          title="Federated brains lend their notes to global searches ([central]/[project] markers)"
+          onClick={() => void toggleFlag(b.name, { federated: !b.federated })}
+          style={{ fontSize: 11, padding: "2px 8px", color: b.federated ? "var(--accent-2)" : "var(--muted)" }}
+        >
+          {b.federated ? "shared in global searches" : "not shared"}
+        </button>
+        <button
+          className="btn"
+          title="Private brains are excluded from every cross-brain search"
+          onClick={() => void toggleFlag(b.name, { sensitive: !b.sensitive })}
+          style={{ fontSize: 11, padding: "2px 8px", color: b.sensitive ? "var(--warn)" : "var(--muted)" }}
+        >
+          {b.sensitive ? "private" : "not private"}
+        </button>
         {!b.exists ? (
           <Badge text="missing" color="var(--danger)" bg="rgba(255,138,138,0.12)" border="rgba(255,138,138,0.4)" />
         ) : null}
@@ -122,12 +136,20 @@ export function Brains({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadBrains = () => {
     api
       .brains()
       .then((r) => setD(r.data))
       .catch(() => setD(null));
-  }, []);
+  };
+  useEffect(loadBrains, []);
+
+  const toggleBrainFlag = (name: string, flags: { federated?: boolean; sensitive?: boolean }) => {
+    api
+      .setBrainFlags(name, flags)
+      .then(loadBrains)
+      .catch(() => setError("Could not update the brain's flags."));
+  };
 
   // On success the shell remounts (App bumps its key), so this component unmounts —
   // the finally still clears busy defensively if anything goes wrong.
@@ -213,6 +235,7 @@ export function Brains({
             isActive={isActive(b)}
             busy={busy}
             onOpen={() => doSwitch({ name: b.name })}
+            onToggle={toggleBrainFlag}
           />
         ))
       )}

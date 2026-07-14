@@ -212,6 +212,7 @@ export type IntegrationReport = {
   hook_command: string;
   cursor_installed: boolean;
   codex_on_path: boolean;
+  opencode_on_path: boolean;
   hook_installed: boolean;
 };
 
@@ -264,6 +265,13 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
   return (await resp.json()) as T;
 }
 
+export type SearchHitLite = {
+  title: string;
+  summary?: string;
+  score?: number;
+  marker?: string;
+};
+
 export const api = {
   readiness: () => get<ServiceResult<Readiness>>("/api/readiness"),
   library: () => get<ServiceResult<{ notes: NoteSummary[] }>>("/api/library"),
@@ -293,6 +301,20 @@ export const api = {
     post<ServiceResult<EngineProbeResult>>("/api/engines/probe", { engine }),
   selectEngine: (engine: string) =>
     post<ServiceResult<Record<string, string>>>("/api/engines/select", { engine }),
+  searchNotes: (q: string, limit = 8) =>
+    get<ServiceResult<{ hits: SearchHitLite[] }>>(
+      `/api/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+    ),
+  smartSearch: (q: string, limit = 8) =>
+    post<ServiceResult<{ hits: SearchHitLite[] }> & { expanded?: string }>("/api/search/smart", {
+      q,
+      limit,
+    }),
+  pendingCaptures: () => get<ServiceResult<{ pending: string[] }>>("/api/captures"),
+  retryCaptures: () =>
+    post<ServiceResult<{ retried: number; remaining: number }>>("/api/captures/retry"),
+  setBrainFlags: (name: string, flags: { federated?: boolean; sensitive?: boolean }) =>
+    post<ServiceResult<Record<string, unknown>>>("/api/brains/flags", { name, ...flags }),
   brains: () => get<ServiceResult<BrainList>>("/api/brains"),
   getActive: () => get<ServiceResult<ActiveBrain>>("/api/active"),
   setActiveBrain: (body: { name?: string; path?: string }) =>

@@ -186,11 +186,13 @@ const AGENTS = [
   { id: "claude", label: "Claude Code" },
   { id: "cursor", label: "Cursor" },
   { id: "codex", label: "codex" },
+  { id: "opencode", label: "opencode" },
 ];
 
 function agentInstalled(agent: string, integrations: IntegrationReport) {
   if (agent === "claude") return integrations.mcp_installed;
   if (agent === "cursor") return integrations.cursor_installed;
+  if (agent === "opencode") return integrations.opencode_on_path;
   return integrations.codex_on_path;
 }
 

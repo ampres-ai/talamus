@@ -209,7 +209,7 @@ def build_parser() -> argparse.ArgumentParser:
     mcp.add_argument("action", nargs="?", default="install", choices=["install"])
     mcp.add_argument(
         "--agent",
-        choices=["auto", "claude", "cursor", "codex", "all"],
+        choices=["auto", "claude", "cursor", "codex", "opencode", "all"],
         default="auto",
         help="which agent to configure (auto: Claude Code + whatever else is detected)",
     )

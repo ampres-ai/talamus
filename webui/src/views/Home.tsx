@@ -259,6 +259,32 @@ export function Home() {
       .then((r) => setD((r.data ?? {}) as Readiness))
       .catch(() => setD({}));
 
+  const [captures, setCaptures] = useState<string[]>([]);
+  const [retrying, setRetrying] = useState(false);
+  const [retryNote, setRetryNote] = useState("");
+
+  const loadCaptures = () => {
+    api
+      .pendingCaptures()
+      .then((r) => setCaptures(r.data?.pending ?? []))
+      .catch(() => setCaptures([]));
+  };
+  useEffect(loadCaptures, []);
+
+  const runRetry = async () => {
+    setRetrying(true);
+    setRetryNote("");
+    try {
+      const r = await api.retryCaptures();
+      setRetryNote(r.message ?? "");
+    } catch {
+      setRetryNote("retry failed — is the engine back?");
+    } finally {
+      setRetrying(false);
+      loadCaptures();
+    }
+  };
+
   useEffect(() => {
     void load();
   }, []);
@@ -357,6 +383,29 @@ export function Home() {
         <Stat label="Index backend" value={asText(d.index_backend, "none")} />
         <Stat label="Cache" value={d.cache_current ? "ok" : "stale"} tone={d.cache_current ? "var(--ok)" : "var(--warn)"} />
       </section>
+
+      {captures.length ? (
+        <section
+          style={{
+            ...panel,
+            padding: "12px 14px",
+            marginBottom: 24,
+            borderLeft: "3px solid var(--warn)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ color: "var(--muted)", fontSize: 13, flex: 1, minWidth: 200 }}>
+            {retryNote ||
+              `${captures.length} captured session(s) could not be compiled (engine limit?) — nothing was lost; retry when your engine is back.`}
+          </span>
+          <button className="btn btn-primary" onClick={() => void runRetry()} disabled={retrying}>
+            {retrying ? "Retrying…" : "Retry captures"}
+          </button>
+        </section>
+      ) : null}
 
       {!d.cache_current ? (
         <section

@@ -35,6 +35,7 @@ from talamus.services.integrations import (
     install_mcp_config,
     install_mcp_config_codex,
     install_mcp_config_cursor,
+    install_mcp_config_opencode,
 )
 from talamus.services.readiness import ReadinessReport, inspect_readiness
 from talamus.store import reindex
@@ -182,11 +183,12 @@ def _cmd_mcp_install(root: Path, agent: str = "auto") -> int:
     """One command, every agent (D7.2). auto = Claude Code always, Cursor when
     the project has a .cursor dir, codex when its CLI is on PATH. An agent the
     user names explicitly must succeed; an auto-detected one may just report."""
-    if agent in ("claude", "cursor", "codex"):
+    if agent in ("claude", "cursor", "codex", "opencode"):
         result = {
             "claude": lambda: install_mcp_config(root),
             "cursor": lambda: install_mcp_config_cursor(root),
             "codex": install_mcp_config_codex,
+            "opencode": lambda: install_mcp_config_opencode(root),
         }[agent]()
         if not result.success:
             print(result.message, file=sys.stderr)

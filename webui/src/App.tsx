@@ -18,6 +18,15 @@ type SwitchOutcome = { success: boolean; message?: string };
 
 export default function App() {
   const [note, setNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onOpenNote = (event: Event) => {
+      const title = (event as CustomEvent<{ title?: string }>).detail?.title;
+      if (typeof title === "string" && title) setNote(title);
+    };
+    window.addEventListener("talamus:openNote", onOpenNote);
+    return () => window.removeEventListener("talamus:openNote", onOpenNote);
+  }, []);
   const [active, setActive] = useState<ActiveBrain | null>(null);
   const [version, setVersion] = useState(0); // bumping remounts the shell → views re-fetch
 

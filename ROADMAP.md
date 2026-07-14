@@ -101,11 +101,12 @@ safety split:
 
 ## Workbench & UX
 
-- **A search bar** — instant-as-you-type plain search everywhere, with an
-  "expand with AI" toggle (smart search); today the workbench only has Ask.
-- **Plain-language brain flags** — "federated"/"sensitive" become
-  human-readable toggles ("shared in global searches" / "private"),
-  switchable from the Brains view, not only from the CLI.
+- **Shipped: a search bar** — instant-as-you-type plain search in the
+  sidebar (zero LLM), with an "expand with AI" action (one cached call);
+  Enter/click opens the note in the inspector.
+- **Shipped: plain-language brain flags** — "shared in global searches" /
+  "private" toggles on every brain card, and pending captures now surface on
+  Home with a one-click retry.
 - **Command palette (Ctrl/⌘-K)** and full keyboard flow.
 - **Ontology insights surface** — show surprising links and gaps the inferred
   relation properties reveal (the inference layer already computes them).
@@ -113,9 +114,10 @@ safety split:
 
 ## Agents
 
-- **Interactive `mcp install`** — a checkbox menu of detected agents instead
-  of flags, and **opencode as a fourth install target** (it consumes MCP; the
-  menu explains its two roles: engine vs agent).
+- **Shipped: opencode as a fourth MCP target** — `talamus mcp install
+  --agent opencode` (and auto-detection) writes the project `opencode.json`;
+  the Connect view gained the opencode card. Still open: the interactive
+  checkbox menu in the CLI.
 - **Cross-brain ontology aggregation** — let the shared schema learn from
   every brain's evidence, not just each brain in isolation.
 
