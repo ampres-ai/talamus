@@ -1,0 +1,132 @@
+{
+  "benchmark": "temporal-freshness",
+  "date": "2026-07-14",
+  "engine": "claude-cli",
+  "pairs": 12,
+  "overall": {
+    "current_hit": 1.0,
+    "stale": 0.0,
+    "change_noted": 1.0
+  },
+  "linked_supersedes": {
+    "current_hit": 1.0,
+    "stale": 0.0,
+    "change_noted": 1.0,
+    "old_excluded_from_context": 1.0
+  },
+  "unlinked_dated_only": {
+    "current_hit": 1.0,
+    "stale": 0.0,
+    "change_noted": 1.0
+  },
+  "rows": [
+    {
+      "pid": "expense",
+      "linked": true,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "The current expense reimbursement procedure: expenses are reimbursed by uploading the receipt to the Concur portal within 15 days [1].\n\nThis 2026 procedure explicitly supersedes the earlier \"Expense Reimbursement Procedure (2025)\" as of 2026-07-14, so any older version is historical, not current [1].\n\n**Sources:**\n[1] Expense-Reimbursement-Procedure-(2026).md\n[2] Product-Pricing-Plan-Tiers-(2025).md\n[3] Product-Pricing-Plan-Tiers-(2026).md"
+    },
+    {
+      "pid": "password",
+      "linked": true,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "Passwords never expire; passphrases of 16 or more characters with MFA are required [1].\n\nThis is the current policy — note [1] explicitly supersedes the earlier \"Password Policy Rotation (2025)\" version (since 2026-07-14), which is now historical.\n\n**Sources:**\n[1] Password-Policy-Rotation-(2026).md\n[2] Support-Sla-Response-Time-(2025).md\n[3] Support-Sla-Response-Time-(2026).md\n[4] Code-Style-Guide-Formatting-(2025).md"
+    },
+    {
+      "pid": "deploy",
+      "linked": true,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "Deploys ship continuously through the ArgoCD pipeline, after canary checks pass [1].\n\nNote that this process was updated in 2026 — the current note explicitly supersedes the 2025 version as of 2026-07-14, so treat any older deploy procedure as historical [1].\n\n**Sources:**\n[1] Production-Deploy-Process-Release-(2026).md\n[2] Vacation-Leave-Request-Approval-(2026).md\n[3] Product-Pricing-Plan-Tiers-(2025).md"
+    },
+    {
+      "pid": "vacation",
+      "linked": true,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "You request vacation in the **Workday self-service portal**, where it is approved automatically by your manager [1].\n\nNote that this procedure changed: the 2026 note supersedes the earlier 2025 version (as of 2026-07-14), so the Workday self-service process is the current one [1].\n\n**Sources:**\n[1] Vacation-Leave-Request-Approval-(2026).md\n[2] Production-Deploy-Process-Release-(2026).md"
+    },
+    {
+      "pid": "apiver",
+      "linked": true,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "Clients should call the **GraphQL v4 gateway at `/graphql`** [1].\n\nNote [1] is the current, authoritative source: it explicitly supersedes the older \"Public Api Version Clients (2025)\" note as of 2026-07-14, marking that earlier version as historical [1]. The remaining notes cover the database engine [2][3] and backup schedule [4], which are unrelated to the API version.\n\n**Sources:**\n[1] Public-Api-Version-Clients-(2026).md\n[2] Database-Engine-Storage-(2025).md\n[3] Database-Engine-Storage-(2026).md\n[4] Backup-Schedule-Retention-(2026).md"
+    },
+    {
+      "pid": "meeting",
+      "linked": true,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "The team meets twice a week — Tuesday and Thursday — and works async the rest of the time [1].\n\nNote that this reflects a change: the 2026 cadence note explicitly supersedes the earlier \"Team Meeting Cadence Standup (2025)\" version as of 2026-07-14, so the older schedule is historical and no longer current [1].\n\n**Sources:**\n[1] Team-Meeting-Cadence-Standup-(2026).md\n[2] Code-Style-Guide-Formatting-(2025).md\n[3] Code-Style-Guide-Formatting-(2026).md"
+    },
+    {
+      "pid": "pricing",
+      "linked": false,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "The current pricing is **29 euro per seat per month, with a free tier** [2].\n\nNote that this changed: the earlier plan (updated 2025-06-01) listed 49 euro per seat per month, annual only [1], but the more recently updated note (2026-07-01) supersedes it with the 29 euro price and a free tier [2].\n\n**Sources:**\n[1] Product-Pricing-Plan-Tiers-(2025).md\n[2] Product-Pricing-Plan-Tiers-(2026).md\n[3] Expense-Reimbursement-Procedure-(2026).md\n[4] Backup-Schedule-Retention-(2025).md"
+    },
+    {
+      "pid": "sla",
+      "linked": false,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "Our current support SLA: **Support answers within 4 hours, 24/7, for all paid plans** [2].\n\nThis changed from the earlier policy. The 2025 SLA promised responses within 48 hours on business days [1], but the note updated 2026-07-01 [2] supersedes it with the faster 4-hour, 24/7 commitment.\n\n**Sources:**\n[1] Support-Sla-Response-Time-(2025).md\n[2] Support-Sla-Response-Time-(2026).md\n[3] Password-Policy-Rotation-(2026).md\n[4] Code-Style-Guide-Formatting-(2025).md"
+    },
+    {
+      "pid": "dbengine",
+      "linked": false,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "We use **PostgreSQL 16 on managed Cloud SQL** [2].\n\nNote that this changed: an older note (updated 2025-06-01) said the service stored data in MySQL 5.7 on self-managed VMs [1], but the more recently updated note (2026-07-01) supersedes it with PostgreSQL 16 on managed Cloud SQL [2].\n\n**Sources:**\n[1] Database-Engine-Storage-(2025).md\n[2] Database-Engine-Storage-(2026).md\n[3] Public-Api-Version-Clients-(2026).md\n[4] Code-Style-Guide-Formatting-(2025).md"
+    },
+    {
+      "pid": "style",
+      "linked": false,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "The line-length rule is **120 characters**, enforced by the formatter [2].\n\nNote this changed: the 2025 guide capped lines at 79 characters (tabs forbidden) [1], but the more recently updated 2026 guide (2026-07-01) raised the cap to 120 characters [2]. Trusting the most recent note, the current rule is 120.\n\n**Sources:**\n[1] Code-Style-Guide-Formatting-(2025).md\n[2] Code-Style-Guide-Formatting-(2026).md\n[3] Support-Sla-Response-Time-(2026).md\n[4] Support-Sla-Response-Time-(2025).md"
+    },
+    {
+      "pid": "backup",
+      "linked": false,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": true,
+      "answer": "The backup schedule is **hourly, with point-in-time recovery and 1-year retention** [2].\n\nNote that this changed: an earlier note said backups ran **weekly on Sunday with 30-day retention** [1] (updated 2025-06-01), but the more recent note [2] (updated 2026-07-01) supersedes it with the hourly / point-in-time / 1-year policy. The weekly-Sunday schedule is now outdated.\n\n**Sources:**\n[1] Backup-Schedule-Retention-(2025).md\n[2] Backup-Schedule-Retention-(2026).md\n[3] Production-Deploy-Process-Release-(2026).md\n[4] Expense-Reimbursement-Procedure-(2026).md"
+    },
+    {
+      "pid": "office",
+      "linked": false,
+      "current_hit": true,
+      "stale": false,
+      "change_noted": true,
+      "old_excluded_from_context": false,
+      "answer": "The office is at **Corso Milano 88, ground floor** [2].\n\nNote that this information changed: an earlier note (updated 2025-06-01) listed the office at Via Roma 12, third floor [1], but the more recently updated note (2026-07-01) supersedes it with the Corso Milano 88 address [2].\n\n**Sources:**\n[1] Office-Address-Headquarters-(2025).md\n[2] Office-Address-Headquarters-(2026).md\n[3] Support-Sla-Response-Time-(2025).md\n[4] Database-Engine-Storage-(2025).md\n[5] Database-Engine-Storage-(2026).md"
+    }
+  ]
+}

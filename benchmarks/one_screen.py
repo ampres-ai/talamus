@@ -21,8 +21,9 @@ _ASK = "2026-06-17-ask-eval.json"
 _ASK_LOCAL = "2026-06-17-ask-eval-ollama.json"
 _ABLATION = "2026-06-17-ask-ablation.json"
 _SCALE = "2026-07-02-scale-100k.json"
+_TEMPORAL = "2026-07-14-temporal.json"
 
-REQUIRED = [_BOOK, _BOOK_FREE, _SCIFACT, _TOKEN, _ASK, _ASK_LOCAL, _ABLATION, _SCALE]
+REQUIRED = [_BOOK, _BOOK_FREE, _SCIFACT, _TOKEN, _ASK, _ASK_LOCAL, _ABLATION, _SCALE, _TEMPORAL]
 
 _HEADER = "| claim | number | vs competitors | source artifact |"
 
@@ -73,6 +74,7 @@ def build_rows(results_dir: Path) -> list[tuple[str, str, str, str]]:
         scifact["vectordb"],
     )
     ask_smart, ask_bm25, ask_minilm = ask["talamus-smart"], ask["bm25"], ask["vectordb"]
+    temporal = _load(results_dir, _TEMPORAL)
     at_10k = next(r for r in scale if r["n_notes"] == 10000)
     at_100k = next(r for r in scale if r["n_notes"] == 100000)
 
@@ -146,6 +148,15 @@ def build_rows(results_dir: Path) -> list[tuple[str, str, str, str]]:
             "every competitor <= "
             + _fmt(max(ask_bm25["honest_refusal"], ask_minilm["honest_refusal"])),
             f"{results_rel}/{_ASK}",
+        ),
+        (
+            "Freshness by default (v1/v2 procedure pairs, asked today)",
+            f"answers use the NEW version {_fmt(temporal['overall']['current_hit'])} - "
+            f"stale answers {_fmt(temporal['overall']['stale'])}",
+            f"supersedes-linked pairs {_fmt(temporal['linked_supersedes']['current_hit'])} "
+            f"(old note mechanically excluded "
+            f"{_fmt(temporal['linked_supersedes']['old_excluded_from_context'])})",
+            f"{results_rel}/{_TEMPORAL}",
         ),
         (
             "Search latency",

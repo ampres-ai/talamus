@@ -19,6 +19,7 @@ python benchmarks/run.py --tier one-screen
 | The ontology improves ANSWERS (same brain, ON vs OFF) | ON: hit 1.000 / correct 0.957 | OFF: 0.857 / 0.886 | benchmarks/results/2026-06-17-ask-ablation.json |
 | Fully local, EUR 0 (ollama gemma as generator AND judge) | correctness 0.800 | 0.857 with a cloud engine — a small, stated gap | benchmarks/results/2026-06-17-ask-eval-ollama.json |
 | Honest refusal on out-of-scope questions | 1.000 | every competitor <= 0.833 | benchmarks/results/2026-06-17-ask-eval.json |
+| Freshness by default (v1/v2 procedure pairs, asked today) | answers use the NEW version 1.000 - stale answers 0.000 | supersedes-linked pairs 1.000 (old note mechanically excluded 1.000) | benchmarks/results/2026-07-14-temporal.json |
 | Search latency | p95 72.6 ms @10k - p50 624.4 ms @100k | no LLM call on the search path | benchmarks/results/2026-07-02-scale-100k.json |
 
 The honest read: on cross-language and vague queries (a real bilingual book
@@ -44,6 +45,7 @@ The one-screen tier only assembles committed results. The measuring runs
 themselves (paid: real competitors + LLM expansion) are:
 
 ```bash
+python benchmarks/temporal_eval.py --engine claude-cli --yes                        # freshness (deterministic scoring, ~12 calls)
 python benchmarks/run.py --tier shootout --yes --dataset scifact                    # dense turf (public BEIR)
 python benchmarks/run.py --tier shootout --yes --dataset book --engine claude-cli   # our turf (local brain; the engine sets smart quality)
 python benchmarks/ask_eval/run.py --queries 0                                       # judged answers (local brain + ollama judge)
