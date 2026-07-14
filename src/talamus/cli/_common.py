@@ -47,7 +47,7 @@ def _print_json(data: object) -> None:
 
 _ALL_COMMANDS = (
     "setup init demo ui status doctor curator reindex ingest scan consolidate enrich verify "
-    "supersede ask overview search read "
+    "supersede watch ask overview search read "
     "history timeline recall neighbors relations remember eval ontology jobs review quickstart "
     "brains where export import import-vault completion mcp hook hook-run"
 )

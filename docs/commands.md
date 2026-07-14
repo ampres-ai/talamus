@@ -35,7 +35,7 @@ instead of the whole shelf or (worse) its own memory of the training data.
 | `talamus demo` | Create a small example brain to try instantly (no LLM needed). |
 | `talamus status` | Check the brain layout is intact. |
 | `talamus doctor` | Health check: brain path, engine on PATH, cache freshness, note count, overview state. |
-| `talamus curator [--fix]` | The Curator's health pass over EVERY registered brain: pending reviews, captures waiting for retry, ontology candidates, stale caches — one readable report, zero LLM calls. `--fix` applies the mechanically safe repairs (rebuilding stale derived caches). |
+| `talamus curator [--fix] [--deep]` | The Curator's health pass over EVERY registered brain: pending reviews, captures waiting for retry, ontology candidates, stale caches — one readable report, zero LLM calls. `--fix` applies the mechanically safe repairs (rebuilding stale derived caches); `--deep` also scans provenance (still no LLM, slower on big brains). |
 | `talamus quickstart` | Print the essential commands. |
 
 ## Knowledge
@@ -55,6 +55,7 @@ instead of the whole shelf or (worse) its own memory of the training data.
 | `talamus timeline "<title>"` | Both timelines: transaction history (when Talamus changed the record) and valid-time claims (when facts were true). |
 | `talamus read "<title>" --as-of T` / `talamus ask "<q>" --as-of T` | The note / the answer as the brain was at time T (accepts `2026`, `2026-01`, `2026-01-15`, full ISO; partial dates = end of period). |
 | `talamus reindex` | Fold hand-edits to the Markdown notes back into the indexes. |
+| `talamus watch [dir] [--cap N] [--interval S] [--once]` | Watch a folder: dropping a supported file in makes it notes automatically (llm-wiki style). Starting the watch IS the consent; a daily cap (default 50 files) bounds the spend, unchanged files are hash-skipped, multi-chunk documents are left for an explicit `talamus ingest --yes`, and the brain's own output is never re-ingested. |
 | `talamus remember --transcript <f> [--diff <f>]` | Capture an agent session into notes. |
 | `talamus import-vault <dir>` | Import a Markdown/Obsidian vault 1:1 — **no LLM call**: titles, tags, aliases and `[[wikilinks]]` preserved, wikilinks become graph edges, idempotent re-runs. A Notion markdown export imports the same way. |
 

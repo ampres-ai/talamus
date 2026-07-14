@@ -55,17 +55,19 @@ safety split:
 - **Shipped: brain health runs** — `talamus curator [--fix]` walks every
   registered brain (pending reviews, waiting captures, ontology candidates,
   stale caches) into one readable report, zero LLM calls; `--fix` applies the
-  mechanically safe repairs. Next: provenance + duplicate scans in the pass.
+  mechanically safe repairs and `--deep` adds the provenance scan. Next:
+  duplicate scanning (needs an LLM, so it needs a consent gate).
 - **Promotion scouting** — session captures classify what they learn as
   project-specific or general; general knowledge produces a promotion
   proposal to the central brain.
 
 ## Ingestion
 
-- **Watch mode (auto-ingest)** — drop a file into a watched project folder
-  and it becomes notes without a manual command, llm-wiki-style. Consent
-  moves from per-run to per-folder: enabling the watch is the consent, with a
-  per-day cost cap and everything logged.
+- **Shipped: watch mode (auto-ingest)** — `talamus watch [dir]`: drop a file
+  in and it becomes notes, llm-wiki-style. Starting the watch is the consent;
+  a daily cap bounds the spend, big documents wait for an explicit `--yes`,
+  and the brain's own output is excluded. Next: run it as a background
+  service instead of a foreground loop.
 - **Richer document extraction** — optional extras for docling and OCR;
   evaluate MarkItDown as an ingest front-end (toward audio/video
   transcripts).

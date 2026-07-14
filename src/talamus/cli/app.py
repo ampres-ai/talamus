@@ -44,6 +44,7 @@ from talamus.cli.pipeline import (
     _cmd_supersede,
     _cmd_verify,
     _cmd_verify_batch,
+    _cmd_watch,
 )
 from talamus.cli.query import (
     _cmd_ask,
@@ -153,7 +154,9 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "status":
             return _cmd_status(root, json_out)
         if command == "curator":
-            return _cmd_curator(bool(getattr(args, "fix", False)), json_out)
+            return _cmd_curator(
+                bool(getattr(args, "fix", False)), json_out, bool(getattr(args, "deep", False))
+            )
         if command == "doctor":
             return _cmd_doctor(root)
         if command == "reindex":
@@ -193,6 +196,10 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             return _cmd_relations(root, args.prune, json_out)
         if command == "scan":
             return _cmd_scan(root, args.target, _build_router(), args)
+        if command == "watch":
+            return _cmd_watch(
+                root, args.directory, _build_router(), args.interval, args.cap, args.once
+            )
         if command == "ingest":
             return _cmd_ingest(root, args.target, _build_router(), json_out, args.yes)
         if command == "consolidate":

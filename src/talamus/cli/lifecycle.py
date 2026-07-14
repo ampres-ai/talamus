@@ -296,11 +296,11 @@ def _cmd_hook_run(root: Path) -> int:
     return 0
 
 
-def _cmd_curator(fix: bool, json_out: bool) -> int:
+def _cmd_curator(fix: bool, json_out: bool, deep: bool = False) -> int:
     """The Curator's health pass: every registered brain, one readable report."""
     from talamus.services.curator import curate_brains
 
-    result = curate_brains(fix=fix)
+    result = curate_brains(fix=fix, deep=deep)
     if not result.success or result.data is None:
         print(result.message, file=sys.stderr)
         return 1
@@ -329,6 +329,8 @@ def _cmd_curator(fix: bool, json_out: bool) -> int:
             print(f"    {row.reviews_pending} review decision(s) — see: talamus review")
         if row.ontology_candidates:
             print(f"    {row.ontology_candidates} ontology candidate(s) — talamus ontology review")
+        if row.provenance_issues > 0:
+            print(f"    {row.provenance_issues} provenance issue(s) — talamus verify --stale")
         if row.jobs_active:
             print(f"    {row.jobs_active} active/resumable job(s) — see: talamus jobs")
     return 0

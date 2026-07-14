@@ -31,6 +31,7 @@ class BrainHealth:
     reviews_pending: int = 0
     ontology_candidates: int = 0
     jobs_active: int = 0
+    provenance_issues: int = -1  # -1 = not scanned (deep pass only)
     fixed: list[str] = field(default_factory=list)
 
     @property
@@ -42,6 +43,7 @@ class BrainHealth:
             or self.reviews_pending
             or self.ontology_candidates
             or self.jobs_active
+            or self.provenance_issues > 0
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -56,12 +58,15 @@ class BrainHealth:
             "reviews_pending": self.reviews_pending,
             "ontology_candidates": self.ontology_candidates,
             "jobs_active": self.jobs_active,
+            "provenance_issues": self.provenance_issues,
             "attention": self.attention,
             "fixed": list(self.fixed),
         }
 
 
-def _inspect_brain(root: Path, name: str, brain_type: str, fix: bool) -> BrainHealth:
+def _inspect_brain(
+    root: Path, name: str, brain_type: str, fix: bool, deep: bool = False
+) -> BrainHealth:
     from talamus.ingest import pending_captures
     from talamus.services.readiness import inspect_readiness
 
@@ -77,6 +82,9 @@ def _inspect_brain(root: Path, name: str, brain_type: str, fix: bool) -> BrainHe
         if result.success:
             fixed.append("reindexed stale cache")
             cache_current = True
+    provenance_issues = -1
+    if deep:
+        provenance_issues = _provenance_issues(TalamusPaths(root))
     return BrainHealth(
         name=name,
         root=str(root),
@@ -88,11 +96,30 @@ def _inspect_brain(root: Path, name: str, brain_type: str, fix: bool) -> BrainHe
         reviews_pending=report.reviews_pending,
         ontology_candidates=report.ontology_candidates,
         jobs_active=report.jobs_active,
+        provenance_issues=provenance_issues,
         fixed=fixed,
     )
 
 
-def curate_brains(fix: bool = False) -> ServiceResult[list[BrainHealth]]:
+def _provenance_issues(paths: TalamusPaths) -> int:
+    """Deterministic provenance health across the brain: notes whose source is
+    missing, changed or low-confidence. Re-extracts sources — slower on big
+    brains, still zero LLM calls (that is why it lives behind --deep)."""
+    from talamus.correct import provenance_status
+    from talamus.store import load_notes
+
+    issues = 0
+    for note in load_notes(paths):
+        try:
+            status = provenance_status(paths, note).get("status", "ok")
+        except (OSError, ValueError):
+            status = "unreadable"
+        if status != "ok":
+            issues += 1
+    return issues
+
+
+def curate_brains(fix: bool = False, deep: bool = False) -> ServiceResult[list[BrainHealth]]:
     """One health pass over every registered brain (report-first; safe fixes
     only with ``fix=True``). Missing brains degrade to a row, never a failure."""
     try:
@@ -101,7 +128,10 @@ def curate_brains(fix: bool = False) -> ServiceResult[list[BrainHealth]]:
         return ServiceResult(
             success=False, message=f"cannot read the brain registry: {exc}", code="registry_error"
         )
-    rows = [_inspect_brain(brain.root(), brain.name, brain.type, fix) for brain in registry.brains]
+    rows = [
+        _inspect_brain(brain.root(), brain.name, brain.type, fix, deep=deep)
+        for brain in registry.brains
+    ]
     needing = sum(1 for row in rows if row.attention)
     return ServiceResult(
         success=True,

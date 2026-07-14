@@ -304,6 +304,26 @@ def _print_supersedes(result: dict) -> None:
         )
 
 
+def _cmd_watch(
+    root: Path, directory: str, router: Router, interval: float, cap: int, once: bool
+) -> int:
+    """Watch mode: starting the watch IS the consent; the daily cap bounds it."""
+    from talamus.watch import watch_folder
+
+    target = Path(directory).resolve()
+    if not target.is_dir():
+        print(f"not a folder: {target}", file=sys.stderr)
+        return 1
+    print(f"watching {target} (cap {cap} files/day, every {interval:g}s — Ctrl+C stops)")
+    try:
+        watch_folder(
+            TalamusPaths(root), target, router, interval=interval, daily_cap=cap, once=once
+        )
+    except KeyboardInterrupt:
+        print("watch stopped")
+    return 0
+
+
 def _cmd_supersede(root: Path, old: str, new: str) -> int:
     """The bitemporal handover: nothing is deleted — the old note moves into
     the past (claims closed, typed edge in the graph) and stays reachable

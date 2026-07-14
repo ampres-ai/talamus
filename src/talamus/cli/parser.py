@@ -91,6 +91,20 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="apply the mechanically safe fixes (reindex stale caches)",
     )
+    curator.add_argument(
+        "--deep",
+        action="store_true",
+        help="also scan provenance (no LLM; slower on big brains)",
+    )
+    watch = sub.add_parser(
+        "watch", parents=[common], help="watch a folder: new files become notes automatically"
+    )
+    watch.add_argument("directory", nargs="?", default=".", help="folder to watch (default: here)")
+    watch.add_argument("--interval", type=float, default=5.0, help="poll seconds (default 5)")
+    watch.add_argument(
+        "--cap", type=int, default=50, help="max ingested files per day (default 50)"
+    )
+    watch.add_argument("--once", action="store_true", help="one pass, then exit (for scripts)")
     sub.add_parser("quickstart", help="print the essential commands")
     brains = sub.add_parser("brains", help="manage the brain registry")
     brains_sub = brains.add_subparsers(dest="brains_cmd")
