@@ -83,6 +83,14 @@ def build_parser() -> argparse.ArgumentParser:
     ui.add_argument("--port", type=int, default=8760, help="port to serve on (default 8760)")
     for name in ("status", "doctor", "reindex"):
         sub.add_parser(name, parents=[common], help=f"{name} the brain")
+    curator = sub.add_parser(
+        "curator", parents=[common], help="health pass over every registered brain"
+    )
+    curator.add_argument(
+        "--fix",
+        action="store_true",
+        help="apply the mechanically safe fixes (reindex stale caches)",
+    )
     sub.add_parser("quickstart", help="print the essential commands")
     brains = sub.add_parser("brains", help="manage the brain registry")
     brains_sub = brains.add_subparsers(dest="brains_cmd")

@@ -18,6 +18,7 @@ from talamus.cli.groups import (
 )
 from talamus.cli.lifecycle import (
     _cmd_completion,
+    _cmd_curator,
     _cmd_demo,
     _cmd_doctor,
     _cmd_export,
@@ -151,6 +152,8 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
             return _cmd_hook_run(root)
         if command == "status":
             return _cmd_status(root, json_out)
+        if command == "curator":
+            return _cmd_curator(bool(getattr(args, "fix", False)), json_out)
         if command == "doctor":
             return _cmd_doctor(root)
         if command == "reindex":

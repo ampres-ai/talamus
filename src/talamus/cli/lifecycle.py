@@ -296,6 +296,44 @@ def _cmd_hook_run(root: Path) -> int:
     return 0
 
 
+def _cmd_curator(fix: bool, json_out: bool) -> int:
+    """The Curator's health pass: every registered brain, one readable report."""
+    from talamus.services.curator import curate_brains
+
+    result = curate_brains(fix=fix)
+    if not result.success or result.data is None:
+        print(result.message, file=sys.stderr)
+        return 1
+    rows = result.data
+    if json_out:
+        _print_json([row.to_dict() for row in rows])
+        return 0
+    if not rows:
+        print("no brains registered — `talamus init` creates and registers one")
+        return 0
+    print(f"Curator — {result.message}")
+    print()
+    for row in rows:
+        if not row.reachable:
+            print(f"! {row.name} ({row.brain_type}) — UNREACHABLE at {row.root}")
+            continue
+        marker = "!" if row.attention else "."
+        print(f"{marker} {row.name} ({row.brain_type}) — {row.notes} notes")
+        if not row.cache_current:
+            print("    stale cache — fix: talamus reindex (or curator --fix)")
+        for fixed in row.fixed:
+            print(f"    fixed: {fixed}")
+        if row.pending_captures:
+            print(f"    {row.pending_captures} capture(s) waiting — fix: talamus hook --retry")
+        if row.reviews_pending:
+            print(f"    {row.reviews_pending} review decision(s) — see: talamus review")
+        if row.ontology_candidates:
+            print(f"    {row.ontology_candidates} ontology candidate(s) — talamus ontology review")
+        if row.jobs_active:
+            print(f"    {row.jobs_active} active/resumable job(s) — see: talamus jobs")
+    return 0
+
+
 def _cmd_hook_retry(root: Path) -> int:
     """Replay captures parked by engine failures; keep the ones that fail again."""
     paths = TalamusPaths(root)

@@ -35,6 +35,7 @@ instead of the whole shelf or (worse) its own memory of the training data.
 | `talamus demo` | Create a small example brain to try instantly (no LLM needed). |
 | `talamus status` | Check the brain layout is intact. |
 | `talamus doctor` | Health check: brain path, engine on PATH, cache freshness, note count, overview state. |
+| `talamus curator [--fix]` | The Curator's health pass over EVERY registered brain: pending reviews, captures waiting for retry, ontology candidates, stale caches — one readable report, zero LLM calls. `--fix` applies the mechanically safe repairs (rebuilding stale derived caches). |
 | `talamus quickstart` | Print the essential commands. |
 
 ## Knowledge

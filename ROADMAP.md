@@ -52,9 +52,10 @@ safety split:
 - **Judgment calls are prepared, not taken** — content corrections, merges
   that change prose, promotions to the central brain arrive as ready-to-apply
   proposals with a one-click accept, and the user is notified.
-- **Brain health runs** — a schedulable pass over all registered brains
-  (provenance checks, duplicate scan, ontology candidates, pending captures)
-  ending in one readable report instead of N manual commands.
+- **Shipped: brain health runs** — `talamus curator [--fix]` walks every
+  registered brain (pending reviews, waiting captures, ontology candidates,
+  stale caches) into one readable report, zero LLM calls; `--fix` applies the
+  mechanically safe repairs. Next: provenance + duplicate scans in the pass.
 - **Promotion scouting** — session captures classify what they learn as
   project-specific or general; general knowledge produces a promotion
   proposal to the central brain.
