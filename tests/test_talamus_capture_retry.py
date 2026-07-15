@@ -76,6 +76,17 @@ class CaptureRetryTests(unittest.TestCase):
             self.assertIn("failed", log)
             self.assertIn("retry", log)
 
+    def test_hostile_model_reply_parks_the_capture_too(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self._paths(tmp)
+
+            result = remember_session_safe(
+                paths, TRANSCRIPT, DIFF, StaticRouter(FakeLLMProvider(["prose, not JSON"]))
+            )
+
+            self.assertTrue(result["failed"])
+            self.assertEqual(1, len(pending_captures(paths)))
+
     def test_below_gate_sessions_do_not_become_pending(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             paths = self._paths(tmp)

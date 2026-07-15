@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import tempfile
 import time
@@ -174,6 +175,12 @@ def run_longmemeval(
     sessions_ingested = 0
     sessions_skipped = 0
 
+    # Benchmark ingest runs LEAN: supersedes detection would add one judge
+    # call per new note (haystack chats share vocabulary, so the prefilter
+    # almost always finds a neighbor) — measured live at ~5 extra calls per
+    # session, quadrupling cost and time. Recorded in provenance for honesty.
+    os.environ["TALAMUS_SUPERSEDES_DETECTION"] = "0"
+
     interrupted: str | None = None
 
     def _build_result() -> dict:
@@ -193,6 +200,7 @@ def run_longmemeval(
                 "offset": offset,
                 "dataset": dataset_path.name,
                 "ingest_mode": ingest_mode,
+                "supersedes_detection": "off (benchmark ingest)",
                 "interrupted": interrupted,
             },
             "total_questions": total,

@@ -367,7 +367,9 @@ def remember_session_safe(paths: TalamusPaths, transcript: str, diff: str, route
     --retry`) replays them until they succeed."""
     try:
         return remember_session(paths, transcript, diff, router)
-    except (EngineFailed, EngineNotFound) as exc:
+    except (EngineFailed, EngineNotFound, ValueError) as exc:
+        # ValueError = hostile model output (prose/refusal instead of JSON):
+        # the session is just as recoverable as an engine failure — park it.
         saved = save_pending_capture(paths, transcript, diff, str(exc))
         _log_capture(paths, "failed", f"engine error — saved for retry ({saved.name}): {exc}")
         return {
@@ -389,7 +391,7 @@ def retry_pending_captures(paths: TalamusPaths, router: Router) -> dict:
         record = json.loads(path.read_text(encoding="utf-8"))
         try:
             remember_session(paths, record.get("transcript", ""), record.get("diff", ""), router)
-        except (EngineFailed, EngineNotFound) as exc:
+        except (EngineFailed, EngineNotFound, ValueError) as exc:
             errors.append(f"{path.name}: {exc}")
             continue
         path.unlink()
