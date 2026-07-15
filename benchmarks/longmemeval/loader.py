@@ -11,7 +11,9 @@ _REQUIRED_FIELDS = {
     "question_id": str,
     "question_type": str,
     "question": str,
-    "answer": str,
+    # the official file carries some gold answers as numbers (temporal
+    # reasoning) — anything scalar is accepted and normalized to str below
+    "answer": (str, int, float),
     "haystack_sessions": list,
     "haystack_dates": list,
     "question_date": str,
@@ -31,7 +33,9 @@ def _validate_item(item: Any, index: int) -> dict:
         if field not in item:
             raise _invalid(index, f"missing required field '{field}'")
         if not isinstance(item[field], expected_type):
-            raise _invalid(index, f"field '{field}' must be a {expected_type.__name__}")
+            label = getattr(expected_type, "__name__", str(expected_type))
+            raise _invalid(index, f"field '{field}' must be a {label}")
+    item["answer"] = str(item["answer"])
 
     sessions = item["haystack_sessions"]
     dates = item["haystack_dates"]

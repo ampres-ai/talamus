@@ -25,6 +25,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--engine", default="claude-cli")
     parser.add_argument("--limit", type=int, default=10)
+    parser.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="skip the first N questions (continue an interrupted run)",
+    )
     parser.add_argument("--yes", action="store_true", help="confirm estimated LLM cost")
     parser.add_argument("--judge", default="gemma4:e4b")
     parser.add_argument("--out", type=Path, default=Path("benchmarks/results"))
@@ -38,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
             out_dir=args.out,
             judge_model=args.judge,
             yes=args.yes,
+            offset=args.offset,
         )
     except (CostConfirmationRequired, FileNotFoundError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
