@@ -156,5 +156,75 @@ class LongMemEvalRunnerTests(unittest.TestCase):
         self.assertEqual(6, len(provider.prompts))
 
 
+class JudgePassTests(unittest.TestCase):
+    def test_deferred_artifact_gets_scored_idempotently(self) -> None:
+        import json as _json
+        import tempfile as _tempfile
+
+        from benchmarks.longmemeval.judge_pass import judge_artifact
+
+        artifact = {
+            "provenance": {
+                "judge": "none",
+                "engine": "x",
+                "limit": 2,
+                "offset": 0,
+                "dataset": "d",
+                "ingest_mode": "sessions",
+                "interrupted": None,
+                "generated_at": "t",
+                "git": "g",
+                "supersedes_detection": "off (benchmark ingest)",
+            },
+            "total_questions": 2,
+            "accuracy": None,
+            "accuracy_by_question_type": {},
+            "exact_contains_rate": 0.5,
+            "sessions_ingested": 4,
+            "sessions_skipped_by_gate": 0,
+            "cases": [
+                {
+                    "question_id": "a",
+                    "question_type": "multi-session",
+                    "question": "q1",
+                    "gold_answer": "g1",
+                    "answer": "a1",
+                    "correct": None,
+                    "exact_contains": True,
+                    "sessions_ingested": 2,
+                    "sessions_skipped_by_gate": 0,
+                    "sessions_failed": 0,
+                },
+                {
+                    "question_id": "b",
+                    "question_type": "multi-session",
+                    "question": "q2",
+                    "gold_answer": "g2",
+                    "answer": "a2",
+                    "correct": True,
+                    "exact_contains": False,
+                    "sessions_ingested": 2,
+                    "sessions_skipped_by_gate": 0,
+                    "sessions_failed": 0,
+                },
+            ],
+        }
+        with _tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "2026-07-15-longmemeval.json"
+            path.write_text(_json.dumps(artifact), encoding="utf-8")
+
+            calls: list[str] = []
+
+            def fake_judge(question: str, gold: str, answer: str) -> bool:
+                calls.append(question)
+                return False
+
+            result = judge_artifact(path, "fake", judge=fake_judge)
+
+            self.assertEqual(["q1"], calls)  # only the unjudged case
+            self.assertEqual(0.5, result["accuracy"])
+            self.assertTrue(path.with_suffix(".md").is_file())
+
+
 if __name__ == "__main__":
     unittest.main()
