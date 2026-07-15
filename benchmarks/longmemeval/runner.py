@@ -203,6 +203,7 @@ def run_longmemeval(
                     "dataset": dataset_path.name,
                     "ingest_mode": ingest_mode,
                     "supersedes_detection": "off (benchmark ingest)",
+                    "session_tier": "economy (benchmark override)",
                     "interrupted": interrupted,
                 },
                 "total_questions": total,
@@ -223,7 +224,16 @@ def run_longmemeval(
                 with tempfile.TemporaryDirectory(prefix="talamus-longmemeval-") as temp_dir:
                     paths = TalamusPaths(Path(temp_dir))
                     paths.ensure_directories()
-                    config = replace(TalamusConfig.default(), llm_provider=engine)
+                    # The product default sends real work sessions to the
+                    # QUALITY tier (rare + precious). Replaying 1200 benchmark
+                    # chats there would burn the strong model's quota at
+                    # ~2 min/session — the benchmark pins bulk extraction to
+                    # the economy tier instead.
+                    config = replace(
+                        TalamusConfig.default(),
+                        llm_provider=engine,
+                        task_tiers={"session_remember": {"tier": "economy", "effort": "low"}},
+                    )
                     save_config(paths.config_path, config)
                     router = router_factory(engine) if router_factory else EngineRouter(config)
 
