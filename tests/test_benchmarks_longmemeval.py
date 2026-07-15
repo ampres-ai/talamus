@@ -156,6 +156,90 @@ class LongMemEvalRunnerTests(unittest.TestCase):
         self.assertEqual(6, len(provider.prompts))
 
 
+class ParallelRunTests(unittest.TestCase):
+    def test_two_workers_run_isolated_questions_and_defer_judging(self) -> None:
+        import json as _json
+        import tempfile as _tempfile
+
+        from benchmarks.longmemeval.runner import run_longmemeval
+
+        from talamus.routing import StaticRouter
+
+        note = _json.dumps(
+            [
+                {
+                    "title": "Thing Decisions",
+                    "retrieval_text": "what is thing project decisions retry policy",
+                    "summary": "The thing we decided.",
+                    "supported_claims": ["s"],
+                    "confidence": 0.9,
+                }
+            ]
+        )
+
+        class EchoProvider:
+            def complete(self, prompt: str) -> str:
+                return "gold-answer [1]" if "QUESTION:" in prompt else note
+
+        prose = "We discussed the retry policy and decided exponential backoff. " * 12
+        turns = [
+            {
+                "role": "user",
+                "content": "a long enough question about the project decisions " + prose,
+            },
+            {
+                "role": "assistant",
+                "content": "a substantive answer describing the decision " + prose,
+            },
+        ]
+        dataset = [
+            {
+                "question_id": f"q{i}",
+                "question_type": "multi-session",
+                "question": f"What is thing {i}?",
+                "answer": "gold-answer",
+                "question_date": "2023/05/30 (Tue) 10:00",
+                "haystack_sessions": [turns],
+                "haystack_dates": ["2023/05/20 (Sat) 02:21"],
+                "answer_session_ids": ["s1"],
+            }
+            for i in range(4)
+        ]
+        with _tempfile.TemporaryDirectory() as tmp:
+            data_path = Path(tmp) / "d.json"
+            data_path.write_text(_json.dumps(dataset), encoding="utf-8")
+
+            result = run_longmemeval(
+                data_path,
+                "claude-cli",
+                limit=4,
+                out_dir=Path(tmp),
+                judge_model="none",
+                yes=True,
+                workers=2,
+                router_factory=lambda engine: StaticRouter(EchoProvider()),
+            )
+
+            self.assertEqual(4, result["total_questions"])
+            self.assertIsNone(result["accuracy"])  # deferred
+            self.assertEqual(1.0, result["exact_contains_rate"])
+            self.assertEqual([0, 1, 2, 3], [c["index"] for c in result["cases"]])
+
+    def test_parallel_with_real_judge_is_refused(self) -> None:
+        from benchmarks.longmemeval.runner import run_longmemeval
+
+        with self.assertRaises(ValueError):
+            run_longmemeval(
+                Path("x.json"),
+                "claude-cli",
+                limit=1,
+                out_dir=Path("."),
+                judge_model="gemma4:e4b",
+                yes=True,
+                workers=2,
+            )
+
+
 class JudgePassTests(unittest.TestCase):
     def test_deferred_artifact_gets_scored_idempotently(self) -> None:
         import json as _json
