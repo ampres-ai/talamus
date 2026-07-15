@@ -179,98 +179,107 @@ def run_longmemeval(
     # call per new note (haystack chats share vocabulary, so the prefilter
     # almost always finds a neighbor) — measured live at ~5 extra calls per
     # session, quadrupling cost and time. Recorded in provenance for honesty.
+    # Saved/restored so the process (and the test suite) keeps its own value.
+    previous_detection = os.environ.get("TALAMUS_SUPERSEDES_DETECTION")
     os.environ["TALAMUS_SUPERSEDES_DETECTION"] = "0"
+    try:
+        interrupted: str | None = None
 
-    interrupted: str | None = None
-
-    def _build_result() -> dict:
-        total = len(cases)
-        judged = [case for case in cases if case["correct"] is not None]
-        accuracy_by_type = {
-            question_type: sum(scores) / len(scores)
-            for question_type, scores in type_scores.items()
-        }
-        return {
-            "provenance": {
-                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                "git": _git_head(),
-                "engine": engine,
-                "judge": judge_model,
-                "limit": limit,
-                "offset": offset,
-                "dataset": dataset_path.name,
-                "ingest_mode": ingest_mode,
-                "supersedes_detection": "off (benchmark ingest)",
-                "interrupted": interrupted,
-            },
-            "total_questions": total,
-            "accuracy": (
-                (sum(case["correct"] for case in judged) / len(judged)) if judged else None
-            ),
-            "accuracy_by_question_type": accuracy_by_type,
-            "exact_contains_rate": (
-                sum(case["exact_contains"] for case in cases) / total if total else 0.0
-            ),
-            "sessions_ingested": sessions_ingested,
-            "sessions_skipped_by_gate": sessions_skipped,
-            "cases": cases,
-        }
-
-    for position, item in enumerate(selected):
-        try:
-            with tempfile.TemporaryDirectory(prefix="talamus-longmemeval-") as temp_dir:
-                paths = TalamusPaths(Path(temp_dir))
-                paths.ensure_directories()
-                config = replace(TalamusConfig.default(), llm_provider=engine)
-                save_config(paths.config_path, config)
-                router = router_factory(engine) if router_factory else EngineRouter(config)
-
-                case_ingested = 0
-                case_skipped = 0
-                for session, date in zip(
-                    item["haystack_sessions"], item["haystack_dates"], strict=True
-                ):
-                    ingest_result = remember_session(paths, _transcript(session, date), "", router)
-                    if ingest_result.get("skipped", False):
-                        case_skipped += 1
-                    else:
-                        case_ingested += 1
-
-                answer = answer_question(paths, item["question"], router)
-        except EngineLimitReached as exc:
-            # a benchmark run pins ONE engine (provenance), so the fallback
-            # chain deliberately does not apply: save everything done so far
-            # and stop cleanly — relaunch later with --offset to continue.
-            interrupted = str(exc)
-            print(f"engine limit at question {offset + position} — saving partial results")
-            break
-        correct = bool(score(item["question"], item["answer"], answer)) if score else None
-        exact_contains = item["answer"].casefold() in answer.casefold()
-        question_type = item["question_type"]
-        if correct is not None:
-            type_scores[question_type].append(correct)
-        sessions_ingested += case_ingested
-        sessions_skipped += case_skipped
-        cases.append(
-            {
-                "question_id": item["question_id"],
-                "question_type": question_type,
-                "question": item["question"],
-                "gold_answer": item["answer"],
-                "answer": answer,
-                "correct": correct,
-                "exact_contains": exact_contains,
-                "sessions_ingested": case_ingested,
-                "sessions_skipped_by_gate": case_skipped,
+        def _build_result() -> dict:
+            total = len(cases)
+            judged = [case for case in cases if case["correct"] is not None]
+            accuracy_by_type = {
+                question_type: sum(scores) / len(scores)
+                for question_type, scores in type_scores.items()
             }
-        )
-        # incremental persistence: a crash or limit never loses finished work
-        _write_artifacts(_build_result(), out_dir)
-        print(
-            f"question {offset + position} done "
-            f"({case_ingested} sessions in, {case_skipped} gated)",
-            flush=True,
-        )
+            return {
+                "provenance": {
+                    "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "git": _git_head(),
+                    "engine": engine,
+                    "judge": judge_model,
+                    "limit": limit,
+                    "offset": offset,
+                    "dataset": dataset_path.name,
+                    "ingest_mode": ingest_mode,
+                    "supersedes_detection": "off (benchmark ingest)",
+                    "interrupted": interrupted,
+                },
+                "total_questions": total,
+                "accuracy": (
+                    (sum(case["correct"] for case in judged) / len(judged)) if judged else None
+                ),
+                "accuracy_by_question_type": accuracy_by_type,
+                "exact_contains_rate": (
+                    sum(case["exact_contains"] for case in cases) / total if total else 0.0
+                ),
+                "sessions_ingested": sessions_ingested,
+                "sessions_skipped_by_gate": sessions_skipped,
+                "cases": cases,
+            }
+
+        for position, item in enumerate(selected):
+            try:
+                with tempfile.TemporaryDirectory(prefix="talamus-longmemeval-") as temp_dir:
+                    paths = TalamusPaths(Path(temp_dir))
+                    paths.ensure_directories()
+                    config = replace(TalamusConfig.default(), llm_provider=engine)
+                    save_config(paths.config_path, config)
+                    router = router_factory(engine) if router_factory else EngineRouter(config)
+
+                    case_ingested = 0
+                    case_skipped = 0
+                    for session, date in zip(
+                        item["haystack_sessions"], item["haystack_dates"], strict=True
+                    ):
+                        ingest_result = remember_session(
+                            paths, _transcript(session, date), "", router
+                        )
+                        if ingest_result.get("skipped", False):
+                            case_skipped += 1
+                        else:
+                            case_ingested += 1
+
+                    answer = answer_question(paths, item["question"], router)
+            except EngineLimitReached as exc:
+                # a benchmark run pins ONE engine (provenance), so the fallback
+                # chain deliberately does not apply: save everything done so far
+                # and stop cleanly — relaunch later with --offset to continue.
+                interrupted = str(exc)
+                print(f"engine limit at question {offset + position} — saving partial results")
+                break
+            correct = bool(score(item["question"], item["answer"], answer)) if score else None
+            exact_contains = item["answer"].casefold() in answer.casefold()
+            question_type = item["question_type"]
+            if correct is not None:
+                type_scores[question_type].append(correct)
+            sessions_ingested += case_ingested
+            sessions_skipped += case_skipped
+            cases.append(
+                {
+                    "question_id": item["question_id"],
+                    "question_type": question_type,
+                    "question": item["question"],
+                    "gold_answer": item["answer"],
+                    "answer": answer,
+                    "correct": correct,
+                    "exact_contains": exact_contains,
+                    "sessions_ingested": case_ingested,
+                    "sessions_skipped_by_gate": case_skipped,
+                }
+            )
+            # incremental persistence: a crash or limit never loses finished work
+            _write_artifacts(_build_result(), out_dir)
+            print(
+                f"question {offset + position} done "
+                f"({case_ingested} sessions in, {case_skipped} gated)",
+                flush=True,
+            )
+    finally:
+        if previous_detection is None:
+            os.environ.pop("TALAMUS_SUPERSEDES_DETECTION", None)
+        else:
+            os.environ["TALAMUS_SUPERSEDES_DETECTION"] = previous_detection
 
     result = _build_result()
     json_path, markdown_path = _write_artifacts(result, out_dir)
