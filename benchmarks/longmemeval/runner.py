@@ -98,7 +98,13 @@ def _markdown(result: dict) -> str:
         "",
         "| metric | value |",
         "| --- | ---: |",
-        f"| Judge accuracy | {result['accuracy']:.3f} |",
+        "| Judge accuracy | "
+        + (
+            f"{result['accuracy']:.3f}"
+            if result["accuracy"] is not None
+            else "deferred (judge=none)"
+        )
+        + " |",
         f"| Exact-contains rate | {result['exact_contains_rate']:.3f} |",
         f"| Sessions ingested | {result['sessions_ingested']} |",
         f"| Sessions skipped by gate | {result['sessions_skipped_by_gate']} |",
@@ -149,7 +155,14 @@ def run_longmemeval(
             "LongMemEval aborted before LLM work. Pass yes=True (CLI: --yes) to confirm cost."
         )
 
-    score = judge or _default_judge(judge_model, out_dir)
+    # judge_model="none" defers judging: answers are still recorded in the
+    # artifact, so a later judge pass can score them when the local judge has
+    # RAM headroom (it needs ~10 GB); exact_contains stays as an instant signal.
+    score = (
+        judge
+        if judge is not None
+        else (None if judge_model == "none" else _default_judge(judge_model, out_dir))
+    )
     cases: list[dict] = []
     type_scores: dict[str, list[bool]] = defaultdict(list)
     sessions_ingested = 0
@@ -175,10 +188,11 @@ def run_longmemeval(
                     case_ingested += 1
 
             answer = answer_question(paths, item["question"], router)
-            correct = bool(score(item["question"], item["answer"], answer))
+            correct = bool(score(item["question"], item["answer"], answer)) if score else None
             exact_contains = item["answer"].casefold() in answer.casefold()
             question_type = item["question_type"]
-            type_scores[question_type].append(correct)
+            if correct is not None:
+                type_scores[question_type].append(correct)
             sessions_ingested += case_ingested
             sessions_skipped += case_skipped
             cases.append(
@@ -196,6 +210,7 @@ def run_longmemeval(
             )
 
     total = len(cases)
+    judged = [case for case in cases if case["correct"] is not None]
     accuracy_by_type = {
         question_type: sum(scores) / len(scores) for question_type, scores in type_scores.items()
     }
@@ -210,7 +225,7 @@ def run_longmemeval(
             "ingest_mode": ingest_mode,
         },
         "total_questions": total,
-        "accuracy": sum(case["correct"] for case in cases) / total if total else 0.0,
+        "accuracy": (sum(case["correct"] for case in judged) / len(judged)) if judged else None,
         "accuracy_by_question_type": accuracy_by_type,
         "exact_contains_rate": (
             sum(case["exact_contains"] for case in cases) / total if total else 0.0
