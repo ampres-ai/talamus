@@ -1,5 +1,7 @@
 # Talamus
 
+![Talamus — Memory that survives the session.](assets/talamus-social-preview.png)
+
 **Local-first memory with time, meaning, and verifiability — for your second brain and your AI agents.**
 
 Talamus compiles your sources (documents, notes, and agent work sessions) into

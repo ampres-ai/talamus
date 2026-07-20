@@ -1,5 +1,7 @@
 # Talamus
 
+![Talamus — Memory that survives the session.](docs/assets/talamus-social-preview.png)
+
 [![CI](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml/badge.svg)](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 
 **Talamus is a local-first knowledge compiler — a second brain you and your AI agents share.**
