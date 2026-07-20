@@ -1,6 +1,6 @@
 # Talamus
 
-[![CI](https://github.com/GCrapuzzi/Talamus-Wiki/actions/workflows/ci.yml/badge.svg)](https://github.com/GCrapuzzi/Talamus-Wiki/actions/workflows/ci.yml) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
+[![CI](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml/badge.svg)](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 
 **Local-first memory with time, meaning, and verifiability — for your second brain and your AI agents.**
 

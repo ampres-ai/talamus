@@ -32,8 +32,8 @@ Per orientarsi, ciò che **esiste già** e su cui costruiamo: ingest testo/Markd
 
 ## A0 — Rebrand Kortex → Talamus ✅
 > Fatto (2026-06-08): "Kortex" si sovrapponeva a un altro prodotto. Nuovo nome **Talamus** (il talamo: lo snodo cerebrale che *instrada* le informazioni alla corteccia). Eseguito su branch `chore/rebrand-talamus`, poi in `main`.
-- Package `src/kortex/`→`src/talamus/` + tutti gli identificatori (`KortexPaths`→`TalamusPaths`…); CLI `kortex`→`talamus`; `pyproject` (name + script `talamus`/`talamus-mcp`); config `kortex.json`→`talamus.json`; cache `.kortex/`→`.talamus/`; env `KORTEX_*`→`TALAMUS_*`; nome server MCP; hook; skill; doc rinominati. Repo: **`talamus_wiki`**. **72 test verdi**, CLI `talamus` verificata.
-- **Resta manuale (quando comodo):** rinomina della cartella locale `C:\dev\Kortex`→`Talamus`; creazione repo GitHub `talamus_wiki` + remote (insieme ad A4).
+- Package `src/kortex/`→`src/talamus/` + tutti gli identificatori (`KortexPaths`→`TalamusPaths`…); CLI `kortex`→`talamus`; `pyproject` (name + script `talamus`/`talamus-mcp`); config `kortex.json`→`talamus.json`; cache `.kortex/`→`.talamus/`; env `KORTEX_*`→`TALAMUS_*`; nome server MCP; hook; skill; doc rinominati. Repo: **`ampres-ai/talamus`**. **72 test verdi**, CLI `talamus` verificata.
+- **Resta manuale (quando comodo):** rinomina della cartella locale `C:\dev\Kortex`→`Talamus`; repository pubblico e remote già allineati a `https://github.com/ampres-ai/talamus`.
 
 ## A1 — Salute del codice ✅
 *Fatte tutte le voci A1.1–A1.12 (gate verde, 79 test): ruff+mypy+`dev.py`, CI multi-OS, gerarchia errori, logging `--verbose`, config con env-override/validazione, file-fonte normalizzati su disco, versioning cache, `docs/architecture.md`, `SECURITY.md`, harness benchmark. Voci di dettaglio sotto, come registro.*
