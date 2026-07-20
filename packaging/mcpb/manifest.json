@@ -1,0 +1,130 @@
+{
+  "manifest_version": "0.4",
+  "name": "talamus",
+  "display_name": "Talamus",
+  "version": "1.0.3",
+  "description": "Local-first, source-grounded memory with bitemporal history and provenance for AI agents.",
+  "long_description": "Talamus gives AI agents a durable local memory stored as readable Markdown. It preserves source provenance and bitemporal history, offers zero-cost lexical recall, and gates uncertain corrections through a review queue.",
+  "author": {
+    "name": "Ampres",
+    "url": "https://ampres-ai.github.io/talamus/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ampres-ai/talamus.git"
+  },
+  "homepage": "https://ampres-ai.github.io/talamus/",
+  "documentation": "https://ampres-ai.github.io/talamus/",
+  "support": "https://github.com/ampres-ai/talamus/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "uv",
+    "entry_point": "src/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "src/server.py",
+        "--root",
+        "${user_config.brain_directory}"
+      ]
+    }
+  },
+  "user_config": {
+    "brain_directory": {
+      "type": "directory",
+      "title": "Talamus brain folder",
+      "description": "Choose the local folder where Talamus should read and store this agent's memory.",
+      "required": true,
+      "default": "${DOCUMENTS}/Talamus"
+    }
+  },
+  "tools": [
+    {
+      "name": "search",
+      "description": "Search the local brain for notes relevant to a query."
+    },
+    {
+      "name": "read_note",
+      "description": "Read a note or one of its historical versions."
+    },
+    {
+      "name": "ask",
+      "description": "Answer a question with citations using the configured LLM provider."
+    },
+    {
+      "name": "verify",
+      "description": "Check a note against its original source using the configured LLM provider."
+    },
+    {
+      "name": "recall",
+      "description": "Retrieve relevant note context without an LLM call."
+    },
+    {
+      "name": "overview",
+      "description": "Show the brain's domain map."
+    },
+    {
+      "name": "neighbors",
+      "description": "Show concepts connected to a concept in the brain."
+    },
+    {
+      "name": "history",
+      "description": "List the past versions of a note."
+    },
+    {
+      "name": "sources",
+      "description": "Show the recorded sources and locators for a note."
+    },
+    {
+      "name": "ontology_status",
+      "description": "Show the state and coverage of the emergent type system."
+    },
+    {
+      "name": "remember",
+      "description": "Save an important insight or decision into the brain."
+    },
+    {
+      "name": "ingest_text",
+      "description": "Compile selected text into brain notes."
+    },
+    {
+      "name": "propose_note",
+      "description": "Put uncertain knowledge into the human review queue."
+    },
+    {
+      "name": "review_list",
+      "description": "List pending review decisions."
+    },
+    {
+      "name": "review_apply",
+      "description": "Apply an approved review item while preserving history."
+    },
+    {
+      "name": "review_reject",
+      "description": "Reject a review item and retain the decision record."
+    }
+  ],
+  "keywords": [
+    "agent-memory",
+    "bitemporal",
+    "local-first",
+    "markdown",
+    "mcp",
+    "provenance",
+    "retrieval"
+  ],
+  "license": "Apache-2.0",
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ],
+    "runtimes": {
+      "python": ">=3.11,<4.0"
+    }
+  }
+}
