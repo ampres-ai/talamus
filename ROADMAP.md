@@ -6,14 +6,23 @@ ships without measurements, and the free/local core is never weakened.
 
 ## Near term
 
-- **v1.0 on PyPI** — the package is release-ready; publishing is the
-  maintainer's click.
-- **Recorded 60-second demo** — the end-to-end "your agent remembers" arc
-  (`scripts/demo/run_magic.py`) captured as a short video for the README.
 - **Security debt** — close the four known non-blocking items tracked in
   [SECURITY.md](SECURITY.md): owner-only credentials file, MCP read-only by
   default with `--enable-writes`, secret detection over PDF/DOCX text,
   YAML-safe frontmatter.
+- **Feedback-driven integrations** — use real install failures and client
+  requests to prioritize the next MCP targets instead of adding speculative
+  adapters.
+
+## Launch foundation (shipped)
+
+- **PyPI release** — `talamus` 1.0.2 is published through Trusted Publishing,
+  with wheel and source artifacts attached to the matching GitHub release.
+- **Official MCP Registry** — `io.github.ampres-ai/talamus` is active with a
+  PyPI/`uvx` stdio definition and GitHub OIDC publishing.
+- **Animated 60-second demo** — the end-to-end "your agent remembers" arc is
+  visible near the top of the README and reproducible with
+  `scripts/demo/run_magic.py --fake` without an LLM call.
 
 ## Freshness by default (the temporal guarantee)
 
