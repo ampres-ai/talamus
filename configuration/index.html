@@ -1,0 +1,936 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Local-first memory with time, meaning, and verifiability — for your second brain and your AI agents.">
+      
+      
+      
+      
+        <link rel="prev" href="../commands/">
+      
+      
+        <link rel="next" href="../multi-brain/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Configuration - Talamus</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#configuration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Talamus" class="md-header__button md-logo" aria-label="Talamus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Talamus
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Configuration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Talamus" class="md-nav__button md-logo" aria-label="Talamus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Talamus
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#talamusjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        talamus.json
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="talamus.json">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#engines-llm_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engines (llm_provider)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#language-support-honest-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Language support (honest status)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-command-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related command flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-brain-is-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which brain is used
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi-brain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-brain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ontology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontology Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measuring retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-tool-calling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    For agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#talamusjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        talamus.json
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="talamus.json">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#engines-llm_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engines (llm_provider)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#language-support-honest-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Language support (honest status)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-command-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related command flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-brain-is-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which brain is used
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="configuration">Configuration</h1>
+<h2 id="talamusjson"><code>talamus.json</code></h2>
+<p>Created by <code>talamus init</code> in the brain directory. Fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>llm_provider</code></td>
+<td>Which LLM engine to use</td>
+<td><code>claude-cli</code> (auto-detected)</td>
+</tr>
+<tr>
+<td><code>llm_model</code></td>
+<td>Model name for the engine (optional)</td>
+<td>engine default</td>
+</tr>
+<tr>
+<td><code>fallback_providers</code></td>
+<td>The engine chain, in order — e.g. <code>["codex-cli", "ollama"]</code>. When your engine hits its usage limit (or its CLI is missing), the same request retries on the next one, with a visible warning; a local <code>ollama</code> model last means work never fully stops. Generic engine errors do NOT fall back.</td>
+<td><code>[]</code> (single engine)</td>
+</tr>
+<tr>
+<td><code>language</code></td>
+<td>The language notes are written in (prose). Prompts are always English (cheap local models follow English best); the machine layer (relation verbs, canonical aliases, half of <code>retrieval_text</code>) stays English-canonical for cross-language search.</td>
+<td>auto from system locale</td>
+</tr>
+<tr>
+<td><code>storage_provider</code></td>
+<td>Notes rendering</td>
+<td><code>obsidian</code></td>
+</tr>
+<tr>
+<td><code>graph_provider</code></td>
+<td>Graph index</td>
+<td><code>deterministic-json</code></td>
+</tr>
+<tr>
+<td><code>search_provider</code></td>
+<td>Lexical search</td>
+<td><code>builtin-bm25</code></td>
+</tr>
+<tr>
+<td><code>pdf_converter</code> / <code>ocr_provider</code> / <code>ocr_model</code></td>
+<td>Source conversion. Today only <code>pypdf</code> (PDFs) is wired; OCR is not. A richer converter (docling) and OCR are on the <a href="https://github.com/ampres-ai/talamus/blob/main/ROADMAP.md">roadmap</a>.</td>
+<td><code>pypdf</code> / <code>none</code> / <code>none</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="engines-llm_provider">Engines (<code>llm_provider</code>)</h3>
+<ul>
+<li><code>claude-cli</code> — your Claude subscription (default if <code>claude</code> is on PATH).</li>
+<li><code>codex-cli</code> (or <code>codex</code>) — your ChatGPT subscription (Codex is bundled with it).</li>
+<li><code>antigravity-cli</code> (or <code>agy</code>) — Google Antigravity, your Gemini subscription.</li>
+<li><code>opencode</code> — opencode, with whatever providers you configured in it.</li>
+<li><code>ollama</code> — a local model, fully offline. Set <code>llm_model</code> (e.g. <code>llama3</code>).</li>
+<li><code>anthropic-api</code> (or <code>api</code>) — the Anthropic API. Needs <code>ANTHROPIC_API_KEY</code>.</li>
+<li><code>gemini-cli</code> (or <code>gemini</code>) — <strong>deprecated</strong>: Google replaced the standalone
+  gemini CLI with Antigravity. The adapter still works if you have the old
+  binary, but Talamus warns and you should switch to <code>antigravity-cli</code>.</li>
+</ul>
+<p>Every engine goes through per-task <strong>model+effort tiering</strong> (<code>task_tiers</code> and
+<code>provider_models</code> in <code>talamus.json</code> override the cost-minimizing defaults);
+<code>TALAMUS_ENGINE_TIMEOUT</code> caps a single engine call in seconds (default 600).</p>
+<h2 id="language-support-honest-status">Language support (honest status)</h2>
+<p>Talamus is built to be language-agnostic, and the parts that involve the LLM
+already are. The built-in search index has known limits. What works today:</p>
+<ul>
+<li><strong>Note prose: any language.</strong> Set <code>language</code> (or let the locale decide) and
+  the LLM writes notes in your language — German, Chinese, anything it speaks.</li>
+<li><strong>Cross-language retrieval: any language, via the machine layer.</strong> Every
+  note also carries an English canonical alias and bilingual retrieval text
+  written by the LLM at ingest, and <code>ask</code> / <code>search --smart</code> translate your
+  question into the corpus vocabulary. This bridge is the LLM's work, so it
+  is not tied to any hardcoded language list.</li>
+<li><strong>Plain <code>search</code>: best for Latin-script languages.</strong> The lexical index
+  stems Italian and English suffixes, and the character-trigram channel
+  covers Latin scripts (accents included) — German, French, Spanish work
+  well. Non-Latin scripts (Chinese, Japanese, Russian, Arabic...) currently
+  produce no index tokens: on those corpora use <code>ask</code> or <code>search --smart</code>,
+  which work through the LLM bridge. Unicode-aware tokenization is on the
+  <a href="https://github.com/ampres-ai/talamus/blob/main/ROADMAP.md">roadmap</a>.</li>
+</ul>
+<h2 id="environment-variables">Environment variables</h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TALAMUS_&lt;FIELD&gt;</code></td>
+<td>Override any config field, e.g. <code>TALAMUS_LLM_PROVIDER=ollama</code>, <code>TALAMUS_LLM_MODEL=llama3</code>.</td>
+</tr>
+<tr>
+<td><code>TALAMUS_HOME</code></td>
+<td>Where global brains live (default <code>~/talamus</code>).</td>
+</tr>
+<tr>
+<td><code>TALAMUS_CONTEXT_BUDGET</code></td>
+<td>Max tokens of note context sent to the engine per answer (default <code>6000</code>); keeps answer cost flat as the brain grows.</td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>API key for the <code>anthropic-api</code> engine.</td>
+</tr>
+<tr>
+<td><code>OLLAMA_HOST</code></td>
+<td>Ollama HTTP endpoint for local model calls when HTTP options are used (default <code>http://localhost:11434</code>).</td>
+</tr>
+<tr>
+<td><code>TALAMUS_UI_TOKEN</code></td>
+<td>Advanced: override the random per-launch workbench token. Normally leave unset.</td>
+</tr>
+<tr>
+<td><code>TALAMUS_MONO_TRIGRAM_SCALE</code></td>
+<td>Advanced retrieval tuning: trigram scale for monolingual-ASCII corpora (default <code>0.3</code>).</td>
+</tr>
+<tr>
+<td><code>TALAMUS_SUPERSEDES_DETECTION</code></td>
+<td>Set to <code>0</code> to disable automatic supersedes detection at ingest.</td>
+</tr>
+<tr>
+<td><code>TALAMUS_LOG</code></td>
+<td>Set (any value) to enable DEBUG logging — same as <code>--verbose</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="related-command-flags">Related command flags</h2>
+<ul>
+<li>Global output: <code>--plain</code> / <code>--no-color</code> disables ANSI color; <code>--json</code> is for machine-readable read output.</li>
+<li>Setup/init: <code>talamus init --profile docs|code|all --scan</code> initializes a brain and shows a scan plan.</li>
+<li>Consent gates: <code>talamus ingest --yes</code> confirms large multi-chunk ingest; <code>talamus enrich --yes</code> confirms enrichment batches.</li>
+<li>Scan limits: <code>talamus scan --max-files N --include GLOB --exclude GLOB</code> shapes the repo plan before any LLM spend.</li>
+<li>UI: <code>talamus ui --web --port N</code> opens the React workbench in a browser on a chosen port.</li>
+<li>Ontology: <code>reject</code> / <code>deprecate</code> accept <code>--reason</code>; <code>eval</code> accepts <code>-k</code>; <code>stability</code> accepts <code>--runs</code>.</li>
+</ul>
+<h2 id="which-brain-is-used">Which brain is used</h2>
+<p>When you don't pass an explicit <code>--root</code>, Talamus resolves the brain in this order:</p>
+<ol>
+<li><code>--root &lt;dir&gt;</code> — an explicit directory.</li>
+<li><code>--brain &lt;name&gt;</code> — a named global brain under <code>TALAMUS_HOME</code>.</li>
+<li><code>--global</code> — the default global brain (<code>TALAMUS_HOME/default</code>).</li>
+<li><strong>Project brain</strong> — the nearest ancestor of the current directory that contains
+   a <code>talamus.json</code>.</li>
+<li><strong>Global default</strong> — <code>TALAMUS_HOME/default</code>.</li>
+</ol>
+<p><code>talamus where</code> prints the resolved brain; <code>talamus brains</code> lists the global ones.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

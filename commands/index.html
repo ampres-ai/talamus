@@ -1,0 +1,1244 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Local-first memory with time, meaning, and verifiability — for your second brain and your AI agents.">
+      
+      
+      
+      
+        <link rel="prev" href="../quickstart/">
+      
+      
+        <link rel="next" href="../configuration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Commands - Talamus</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#commands" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Talamus" class="md-header__button md-logo" aria-label="Talamus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Talamus
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Commands
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Talamus" class="md-nav__button md-logo" aria-label="Talamus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Talamus
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#four-ways-to-query-your-brain-and-what-each-one-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Four ways to query your brain — and what each one costs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup &amp; health
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Knowledge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#curate-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Curate &amp; verify
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#brains-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Brains &amp; scoping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ontology-lab-the-emergent-type-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ontology Lab (the emergent type system)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jobs-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jobs &amp; review
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integrations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#global-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi-brain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-brain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ontology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontology Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measuring retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-tool-calling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    For agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#four-ways-to-query-your-brain-and-what-each-one-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Four ways to query your brain — and what each one costs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup &amp; health
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Knowledge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#curate-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Curate &amp; verify
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#brains-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Brains &amp; scoping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ontology-lab-the-emergent-type-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ontology Lab (the emergent type system)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jobs-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jobs &amp; review
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integrations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#global-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="commands">Commands</h1>
+<p>Run <code>talamus</code> with no arguments for a status panel, or <code>talamus &lt;command&gt; -h</code> for
+options. Most commands accept the <a href="#global-flags">global flags</a> below.</p>
+<h2 id="four-ways-to-query-your-brain-and-what-each-one-costs">Four ways to query your brain — and what each one costs</h2>
+<p>New to Talamus? These four commands look similar but do different jobs. The
+price that matters is <strong>LLM calls</strong> (they consume your subscription or your
+local model's time) and <strong>tokens</strong> (the amount of text sent to the LLM — what
+subscriptions actually meter).</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What you get</th>
+<th>LLM calls</th>
+<th>Speed</th>
+<th>Use it when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>search "q"</code></td>
+<td>a ranked list of matching notes</td>
+<td><strong>0</strong></td>
+<td>instant</td>
+<td>you know roughly what you're looking for</td>
+</tr>
+<tr>
+<td><code>search "q" --smart</code></td>
+<td>the same list, but the LLM rewrites your query first (cached)</td>
+<td>1 the first time, 0 on repeats</td>
+<td>~seconds once</td>
+<td>you only remember the <em>idea</em>, not the words</td>
+</tr>
+<tr>
+<td><code>recall "q"</code></td>
+<td>the full text of the relevant notes, raw</td>
+<td><strong>0</strong></td>
+<td>instant</td>
+<td>you are an <strong>agent</strong> and want material to reason over</td>
+</tr>
+<tr>
+<td><code>ask "q"</code></td>
+<td>a written answer <strong>with citations</strong> and honest "I don't know"</td>
+<td>3–4</td>
+<td>~seconds</td>
+<td>you want an answer, not a reading list</td>
+</tr>
+</tbody>
+</table>
+<p>How much does an <code>ask</code> cost in tokens? Ask it: <code>talamus ask "q" --trace</code> prints
+the exact context tokens sent (the workbench shows it as <em>cost</em> on every
+answer). Measured on a real 212-note brain, a targeted answer reads ~2,600
+tokens of context — <strong>~98% less</strong> than the alternative of pasting the whole
+knowledge base into a chat (~113,500 tokens, growing with every note you add,
+until it no longer fits at all). That is the point of a brain: the same LLM you
+already use, but pointed at exactly the right three pages — with sources —
+instead of the whole shelf or (worse) its own memory of the training data.</p>
+<h2 id="setup-health">Setup &amp; health</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>talamus setup [--engine E] [--capture ask\|yes\|no] [--verify-engine]</code></td>
+<td>One-command onboarding: brain + engine + MCP + the capture hook (installed only with your consent). In a terminal the engine is probed with one tiny live call and any failure comes with the exact fix.</td>
+</tr>
+<tr>
+<td><code>talamus init [--engine E] [--scan] [--profile docs\|code\|all]</code></td>
+<td>Create a brain here; auto-detects your LLM engine. <code>--scan</code> shows the repo scan plan after init.</td>
+</tr>
+<tr>
+<td><code>talamus demo</code></td>
+<td>Create a small example brain to try instantly (no LLM needed).</td>
+</tr>
+<tr>
+<td><code>talamus status</code></td>
+<td>Check the brain layout is intact.</td>
+</tr>
+<tr>
+<td><code>talamus doctor</code></td>
+<td>Health check: brain path, engine on PATH, cache freshness, note count, overview state.</td>
+</tr>
+<tr>
+<td><code>talamus curator [--fix] [--deep]</code></td>
+<td>The Curator's health pass over EVERY registered brain: pending reviews, captures waiting for retry, ontology candidates, stale caches — one readable report, zero LLM calls. <code>--fix</code> applies the mechanically safe repairs (rebuilding stale derived caches); <code>--deep</code> also scans provenance (still no LLM, slower on big brains).</td>
+</tr>
+<tr>
+<td><code>talamus quickstart</code></td>
+<td>Print the essential commands.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="knowledge">Knowledge</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>talamus ingest &lt;file\|dir\|url&gt; [--yes]</code></td>
+<td>Turn a document, folder, or URL into source-grounded concept notes (PDF/DOCX/HTML/Markdown/text). Large multi-chunk ingests estimate first and require <code>--yes</code>.</td>
+</tr>
+<tr>
+<td><code>talamus scan [dir] [--dry-run\|--yes\|--background]</code></td>
+<td>Compile an existing repository: plan first (zero cost), then execute as a resumable job. <code>--profile docs\|code\|all</code>, <code>--max-files N</code>, <code>--include GLOB</code>, <code>--exclude GLOB</code>, respects <code>.gitignore</code>, excludes vendor/caches/lockfiles/secret files, <strong>redacts likely secrets</strong> and stops for approval (<code>--allow-secrets</code>). Code becomes module/API digests, not prose.</td>
+</tr>
+<tr>
+<td><code>talamus ask "&lt;question&gt;"</code></td>
+<td>Cited answer composed from your brain.</td>
+</tr>
+<tr>
+<td><code>talamus overview [--rebuild]</code></td>
+<td>Show the hierarchical domain map induced from the graph.</td>
+</tr>
+<tr>
+<td><code>talamus search "&lt;query&gt;" [--limit N]</code></td>
+<td>List relevant notes (token-cheap, instant).</td>
+</tr>
+<tr>
+<td><code>talamus search "&lt;query&gt;" --smart [--passes N]</code></td>
+<td>Same, but the LLM expands the query first (cached) — finds vague/paraphrased queries the plain search misses. <code>--passes N</code> unions N fresh expansion samples (N LLM calls, uncached) to smooth expansion variance.</td>
+</tr>
+<tr>
+<td><code>talamus read "&lt;title&gt;"</code></td>
+<td>Print one note.</td>
+</tr>
+<tr>
+<td><code>talamus recall "&lt;question&gt;" [--limit N]</code></td>
+<td>Retrieve the relevant context (for agents to reason over).</td>
+</tr>
+<tr>
+<td><code>talamus neighbors "&lt;concept&gt;"</code></td>
+<td>Show a concept's typed connections.</td>
+</tr>
+<tr>
+<td><code>talamus history "&lt;title&gt;" [--as-of T]</code></td>
+<td>Show a note's past versions (or the one current at time T).</td>
+</tr>
+<tr>
+<td><code>talamus timeline "&lt;title&gt;"</code></td>
+<td>Both timelines: transaction history (when Talamus changed the record) and valid-time claims (when facts were true).</td>
+</tr>
+<tr>
+<td><code>talamus read "&lt;title&gt;" --as-of T</code> / <code>talamus ask "&lt;q&gt;" --as-of T</code></td>
+<td>The note / the answer as the brain was at time T (accepts <code>2026</code>, <code>2026-01</code>, <code>2026-01-15</code>, full ISO; partial dates = end of period).</td>
+</tr>
+<tr>
+<td><code>talamus reindex</code></td>
+<td>Fold hand-edits to the Markdown notes back into the indexes.</td>
+</tr>
+<tr>
+<td><code>talamus watch [dir] [--cap N] [--interval S] [--once]</code></td>
+<td>Watch a folder: dropping a supported file in makes it notes automatically (llm-wiki style). Starting the watch IS the consent; a daily cap (default 50 files) bounds the spend, unchanged files are hash-skipped, multi-chunk documents are left for an explicit <code>talamus ingest --yes</code>, and the brain's own output is never re-ingested.</td>
+</tr>
+<tr>
+<td><code>talamus remember --transcript &lt;f&gt; [--diff &lt;f&gt;]</code></td>
+<td>Capture an agent session into notes.</td>
+</tr>
+<tr>
+<td><code>talamus import-vault &lt;dir&gt;</code></td>
+<td>Import a Markdown/Obsidian vault 1:1 — <strong>no LLM call</strong>: titles, tags, aliases and <code>[[wikilinks]]</code> preserved, wikilinks become graph edges, idempotent re-runs. A Notion markdown export imports the same way.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="curate-verify">Curate &amp; verify</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>talamus consolidate [--apply]</code></td>
+<td>Find (and optionally merge) duplicate concepts, across languages.</td>
+</tr>
+<tr>
+<td><code>talamus enrich [--yes]</code></td>
+<td>Add symptom/vocabulary phrasings to <code>retrieval_text</code>; estimates first and runs only with <code>--yes</code>.</td>
+</tr>
+<tr>
+<td><code>talamus verify "&lt;title&gt;" [--apply]</code></td>
+<td>Check a note against its preserved source; optionally apply the correction.</td>
+</tr>
+<tr>
+<td><code>talamus verify --all \| --stale \| --source S</code></td>
+<td>Batch: provenance health (missing/changed source, low confidence — no LLM with <code>--stale</code>) + content checks; proposed corrections land in the <strong>review queue</strong>, never overwrite silently.</td>
+</tr>
+<tr>
+<td><code>talamus supersede "&lt;old&gt;" --by "&lt;new&gt;"</code></td>
+<td>The bitemporal handover: mark a note as replaced by a newer one. <strong>Nothing is deleted</strong> — the old note keeps its prose and history (<code>--as-of</code> still reaches it); its open claims close, a <code>supersedes</code> edge enters the graph, and default answers read only the successor.</td>
+</tr>
+<tr>
+<td><em>(automatic at ingest)</em></td>
+<td>When a newly ingested note looks like a replacement of an existing one, Talamus judges it (one LLM call): confident verdicts apply the handover automatically and say so; uncertain ones land in the review queue. Disable with <code>TALAMUS_SUPERSEDES_DETECTION=0</code>.</td>
+</tr>
+<tr>
+<td><code>talamus relations [--prune MIN]</code></td>
+<td>List typed relations, or prune those below a confidence.</td>
+</tr>
+<tr>
+<td><code>talamus eval --cases &lt;f.json&gt; [-k N] [--category C]</code></td>
+<td>Measure retrieval quality (recall@k / precision@k / MRR) on your own cases.</td>
+</tr>
+<tr>
+<td><code>talamus eval --scale [--sizes N,N,N]</code></td>
+<td>Latency benchmark at growing corpus sizes (persistent index backend).</td>
+</tr>
+<tr>
+<td><code>talamus ask "&lt;q&gt;" --trace</code></td>
+<td>Explain the route: domains chosen (by stable id), notes read, context tokens, fallbacks.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="brains-scoping">Brains &amp; scoping</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>talamus brains [list]</code></td>
+<td>List the registered brains (registry under <code>TALAMUS_HOME</code>).</td>
+</tr>
+<tr>
+<td><code>talamus brains use &lt;name&gt;</code></td>
+<td>Select the default global brain (used when no project is found).</td>
+</tr>
+<tr>
+<td><code>talamus brains info &lt;name&gt;</code></td>
+<td>Show one brain's registry record + stats.</td>
+</tr>
+<tr>
+<td><code>talamus brains register &lt;path&gt; [--name N] [--type T]</code></td>
+<td>Register an existing brain (project/central/archive).</td>
+</tr>
+<tr>
+<td><code>talamus brains rename &lt;old&gt; &lt;new&gt;</code> / <code>delete &lt;name&gt;</code></td>
+<td>Rename / unregister (files on disk are preserved).</td>
+</tr>
+<tr>
+<td><code>talamus brains set &lt;name&gt; --federated true\|false --sensitive true\|false</code></td>
+<td>Federation &amp; privacy flags.</td>
+</tr>
+<tr>
+<td><code>talamus brains index [status] [--rebuild]</code></td>
+<td>Build or inspect the local federated index.</td>
+</tr>
+<tr>
+<td><code>talamus brains promote &lt;note&gt; --from A --to B</code></td>
+<td>Promote a note between brains (id, provenance and history preserved).</td>
+</tr>
+<tr>
+<td><code>talamus where [--json]</code></td>
+<td>Print which brain is resolved (JSON adds scope + source).</td>
+</tr>
+<tr>
+<td><code>talamus export &lt;zip&gt;</code></td>
+<td>Export the brain to a zip.</td>
+</tr>
+<tr>
+<td><code>talamus import &lt;zip&gt; [--root D]</code></td>
+<td>Import a brain zip into a directory.</td>
+</tr>
+</tbody>
+</table>
+<p><code>ask</code> / <code>search</code> / <code>recall</code> / <code>overview</code> accept <strong><code>--scope</code></strong> (<code>project-only</code>, <code>central-only</code>,
+<code>project+central</code>, <code>all</code>) and <strong><code>--all-brains</code></strong> (alias for <code>--scope all</code>). Inside a project the
+default is <code>project+central</code>; from the central brain it is <code>all</code> (sensitive brains excluded).
+Cross-brain results carry markers (<code>[central]</code>, <code>[project:name]</code>) and always read the real
+notes from the owning brain — the federated index is a pointer index, never source truth.</p>
+<h2 id="ontology-lab-the-emergent-type-system">Ontology Lab (the emergent type system)</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>talamus ontology status</code></td>
+<td>Schema version, type counts, coverage (share of typed edges).</td>
+</tr>
+<tr>
+<td><code>talamus ontology induce [--min-support N]</code></td>
+<td>Induce candidate relation types from unexplained surfaces (1 LLM call).</td>
+</tr>
+<tr>
+<td><code>talamus ontology review</code></td>
+<td>Candidates with support, definitions and real-source examples.</td>
+</tr>
+<tr>
+<td><code>talamus ontology apply &lt;id&gt; [--force]</code></td>
+<td>Promote to active (thresholds: support ≥ 8 on ≥ 3 notes); re-types the concept map.</td>
+</tr>
+<tr>
+<td><code>talamus ontology reject &lt;id&gt; [--reason R]</code></td>
+<td>Reject a candidate; the decision is recorded.</td>
+</tr>
+<tr>
+<td><code>talamus ontology deprecate &lt;id&gt; [--reason R]</code></td>
+<td>Deprecate an active type; types are never deleted.</td>
+</tr>
+<tr>
+<td><code>talamus ontology eval --cases &lt;f&gt; [-k N]</code></td>
+<td>Retrieval lift: fixed baseline vs active emergent schema.</td>
+</tr>
+<tr>
+<td><code>talamus ontology stability [--runs N]</code></td>
+<td>Cluster stability (Jaccard) over repeated inductions.</td>
+</tr>
+<tr>
+<td><code>talamus ontology history\|export</code></td>
+<td>Schema events, full schema JSON.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="jobs-review">Jobs &amp; review</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>talamus jobs [list]</code></td>
+<td>List long-running jobs (scan/ingest/verify/...).</td>
+</tr>
+<tr>
+<td><code>talamus jobs status\|logs\|cancel\|resume &lt;id&gt;</code></td>
+<td>Inspect, cancel (cooperative, never corrupts notes) or resume a job.</td>
+</tr>
+<tr>
+<td><code>talamus review [list] [--all]</code></td>
+<td>Pending decisions (corrections, duplicates, ontology candidates, ...).</td>
+</tr>
+<tr>
+<td><code>talamus review show\|apply &lt;id&gt;</code></td>
+<td>Inspect or apply an item.</td>
+</tr>
+<tr>
+<td><code>talamus review reject &lt;id&gt; [--reason R]</code></td>
+<td>Reject an item; rejections stay logged, never deleted.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="integrations">Integrations</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>talamus mcp install [--agent auto\|claude\|cursor\|codex\|opencode\|all]</code></td>
+<td>Connect your agents in one command: <code>.mcp.json</code> (Claude Code), <code>.cursor/mcp.json</code> (Cursor), and a global <code>codex mcp add</code> registration (codex; the brain resolves from the project codex runs in). Auto detects what you have.</td>
+</tr>
+<tr>
+<td><code>talamus hook</code></td>
+<td>Print the Claude Code <code>SessionEnd</code> capture-hook config.</td>
+</tr>
+<tr>
+<td><code>talamus hook --install</code></td>
+<td>Write the hook into <code>.claude/settings.json</code> (merges, idempotent).</td>
+</tr>
+<tr>
+<td><code>talamus hook --retry</code></td>
+<td>Replay captured sessions the engine failed on (a hit usage limit parks the capture under <code>.talamus/pending/</code> instead of losing it; entries stay until they succeed — <code>doctor</code> reminds you).</td>
+</tr>
+<tr>
+<td><code>talamus hook-run</code></td>
+<td>Run the capture hook (reads the hook JSON on stdin).</td>
+</tr>
+<tr>
+<td><code>talamus completion [bash\|zsh]</code></td>
+<td>Print a shell completion script.</td>
+</tr>
+<tr>
+<td><code>talamus ui [--web] [--port N]</code></td>
+<td>Launch the local React workbench (needs the <code>ui</code> extra): pywebview window by default, browser with <code>--web</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="global-flags">Global flags</h2>
+<ul>
+<li><code>--root &lt;dir&gt;</code> — use an explicit brain directory.</li>
+<li><code>--brain &lt;name&gt;</code> — use a named global brain under <code>TALAMUS_HOME</code>.</li>
+<li><code>--global</code> — use the default global brain.</li>
+<li><code>--json</code> — machine-readable output (read commands).</li>
+<li><code>--plain</code> / <code>--no-color</code> — plain output with no ANSI color.</li>
+<li><code>--verbose</code> — verbose diagnostics to stderr.</li>
+</ul>
+<p>See <strong><a href="../configuration/">Configuration</a></strong> for how a brain is resolved when no flag is given.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

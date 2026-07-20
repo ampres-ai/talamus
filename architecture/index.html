@@ -1,0 +1,1243 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Local-first memory with time, meaning, and verifiability — for your second brain and your AI agents.">
+      
+      
+      
+      
+        <link rel="prev" href="../agent-tool-calling/">
+      
+      
+        <link rel="next" href="../design-principles/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Architecture - Talamus</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Talamus" class="md-header__button md-logo" aria-label="Talamus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Talamus
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Talamus" class="md-nav__button md-logo" aria-label="Talamus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Talamus
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi-brain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-brain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ontology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontology Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measuring retrieval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-tool-calling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    For agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#anatomy-of-a-brain-on-disk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anatomy of a brain on disk
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-model-modelspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data model (models.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingest-pipeline-ingestpy-sourcespy-normalizepy-extractpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ingest pipeline (ingest.py, sources.py, normalize.py, extract.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#retrieval-indexespy-textutilpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieval (indexes.py, textutil.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ask-path-askpy-the-user-facing-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ask path (ask.py) — the user-facing pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ontology-ontologypy-ontology_labpy-relationspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ontology (ontology.py, ontology_lab.py, relations.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#domains-hierarchical-overview-domainspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domains &amp; hierarchical overview (domains.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#temporal-temporalpy-timelinepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temporal (temporal.py, timeline.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-correctpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification (correct.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#curation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Curation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jobs-jobspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jobs (jobs.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-brain-registrypy-scopepy-federationpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-brain (registry.py, scope.py, federation.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#engines-adaptersllmpy-routingpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engines (adapters/llm.py, routing.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interfaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measurement-instrumentation-evalpy-corpuspy-benchpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measurement instrumentation (eval.py, corpus.py, bench.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-quality-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The quality gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#anatomy-of-a-brain-on-disk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anatomy of a brain on disk
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-model-modelspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data model (models.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingest-pipeline-ingestpy-sourcespy-normalizepy-extractpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ingest pipeline (ingest.py, sources.py, normalize.py, extract.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#retrieval-indexespy-textutilpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieval (indexes.py, textutil.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ask-path-askpy-the-user-facing-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ask path (ask.py) — the user-facing pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ontology-ontologypy-ontology_labpy-relationspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ontology (ontology.py, ontology_lab.py, relations.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#domains-hierarchical-overview-domainspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domains &amp; hierarchical overview (domains.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#temporal-temporalpy-timelinepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temporal (temporal.py, timeline.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-correctpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification (correct.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#curation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Curation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jobs-jobspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jobs (jobs.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-brain-registrypy-scopepy-federationpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-brain (registry.py, scope.py, federation.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#engines-adaptersllmpy-routingpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Engines (adapters/llm.py, routing.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interfaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measurement-instrumentation-evalpy-corpuspy-benchpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measurement instrumentation (eval.py, corpus.py, bench.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-quality-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The quality gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="architecture">Architecture</h1>
+<p>How every part of Talamus works: what each module does, how data flows, and
+where to look. File references are relative to <code>src/talamus/</code>. The core is
+<strong>Python stdlib-only</strong>; optional features (UI, MCP, PDF, benchmarks) live
+behind extras and adapters.</p>
+<h2 id="anatomy-of-a-brain-on-disk">Anatomy of a brain on disk</h2>
+<div class="highlight"><pre><span></span><code>&lt;brain root&gt;/
+  talamus.json            ← config: llm_provider, llm_model, language, providers
+  notes/*.md              ← HUMAN TRUTH: Obsidian-compatible notes, frontmatter
+                            (id, title, aliases, tags, confidence, sources)
+  .talamus/
+    raw/                  ← preserved source copies (files, URL dumps, chunks)
+    normalized/           ← sectioned normalized view (provenance anchors)
+    cache/
+      notes/*.json        ← MACHINE TRUTH: full CanonicalNote (relations,
+                            retrieval_text, proposed_links, sources, history ptr)
+      index.sqlite        ← persistent search index (FTS5) — derived
+      postings.json       ← fallback search index — derived
+      graph.json          ← note/source graph — derived
+      ontology.json       ← typed edges + concepts — derived
+      overview.json       ← domains (id, name, description, members) — derived
+      overview-tree.json  ← macro-areas over domains — derived
+      schema.json         ← ontology schema (versioned, candidate/active)
+      claims.jsonl        ← valid-time facts, append-only
+      history/            ← note versions, append-only
+      jobs/               ← resumable job records + logs
+      ingested.json       ← content hashes for incremental ingest
+    logs/capture.log      ← agent-capture audit trail
+</code></pre></div>
+<p>Hybrid truth model: Markdown is the human-editable truth for prose fields;
+cache JSON is the machine truth for provenance, relations and retrieval.
+<code>talamus reindex</code> re-reads the Markdown, merges human edits into the machine
+records, and rebuilds every derived index. A bump of <code>CACHE_VERSION</code> (in
+<code>store.py</code>) forces a reindex migration.</p>
+<h2 id="data-model-modelspy">Data model (<code>models.py</code>)</h2>
+<p><code>CanonicalNote</code>: note_id, title, aliases, folder, tags, summary,
+retrieval_text, body_sections (fixed structural keys used as identifiers, not
+display text), proposed_links (anchor→target), relations (source, relation,
+target, confidence), sources (<code>SourceRef</code>: raw_path, normalized_path#section,
+locator, source_hash over extracted TEXT, supported_claims), confidence,
+timestamps.</p>
+<h2 id="ingest-pipeline-ingestpy-sourcespy-normalizepy-extractpy">Ingest pipeline (<code>ingest.py</code>, <code>sources.py</code>, <code>normalize.py</code>, <code>extract.py</code>)</h2>
+<ol>
+<li><code>extract_text</code> dispatches on suffix: pdf (pypdf, optional extra), docx
+   (stdlib zip+xml), html (stdlib strip), md/txt. URLs via <code>read_url</code>.</li>
+<li>Incremental: a content hash in <code>ingested.json</code> skips unchanged files.</li>
+<li><strong>Chunking</strong> (<code>split_chunks</code>): deterministic paragraph split with a fixed
+   overlap so boundary concepts survive. More than one chunk → <code>ingest_large</code>:
+   a resumable job, one extraction call per chunk, progress persisted after
+   each, engine failures pause (resumable), single bad chunks retried once and
+   then recorded without aborting the run. Chunk files are always <code>.md</code>
+   (extracted text). One reindex at job end (crash-safe). CLI consent gate:
+   the estimate is printed and the job runs only with <code>--yes</code>.</li>
+<li><code>normalize_text</code> → sections with stable ids (provenance anchors);
+   <code>source_hash</code> is the sha256 of the extracted text (not file bytes —
+   platform newlines and binary formats would break comparison).</li>
+<li><code>extract_notes</code> (<code>extract.py</code>): one English prompt with an output-language
+   directive. The model returns a JSON array of notes; the parser is
+   deliberately forgiving of malformed model output (see <code>model_json.py</code>).
+   Every note carries an English canonical alias, bilingual retrieval text and
+   English relation verbs (see <a href="../design-principles/">design principle 9</a>).</li>
+<li><code>_compile_package</code>: phase 1 writes all note JSONs (merging on the same id —
+   <code>merge_notes</code> unions aliases/tags/relations/sources/retrieval_text and
+   keeps the higher-confidence prose); phase 2 renders Markdown with a
+   whole-batch registry so same-batch wikilinks resolve (self-links dropped);
+   then <code>rebuild_indexes</code>.</li>
+</ol>
+<p>Also: <code>ingest_dir</code> (recursive, failures recorded), <code>ingest_url</code>, <code>ingest_text</code>
+(agent insights, scan digests), and <code>remember_session</code> (transcript + diff
+behind a worth-remembering gate, audited in <code>capture.log</code>).</p>
+<h2 id="retrieval-indexespy-textutilpy">Retrieval (<code>indexes.py</code>, <code>textutil.py</code>)</h2>
+<p>Three blended channels, <strong>no embeddings</strong>:</p>
+<div class="highlight"><pre><span></span><code>score = lexical_bm25 + 0.7 · trigram(title+aliases) + 0.3 · trigram(summary)
+</code></pre></div>
+<ul>
+<li>Lexical: a bilingual light stemmer (<code>textutil.tokens</code>), a field-weighted
+  haystack (title ×3, aliases ×2, tags, retrieval_text, summary), BM25.</li>
+<li>Trigram channels: character 3-grams — the <strong>cognate bridge</strong>
+  (architettur<em>ali</em> / architectur<em>e</em>) that buys cross-language recall without
+  embeddings. On a corpus detected as monolingual-ASCII at index build, the
+  trigram channel is damped (tunable via <code>TALAMUS_MONO_TRIGRAM_SCALE</code>) — this
+  measured fix closes the English-only ranking gap against BM25.</li>
+<li>Long "hub" notes are damped by a length penalty so they cannot accumulate
+  blended score across every query.</li>
+<li>Backends: sqlite FTS5 (4 columns, per-column bm25 weights) preferred; a
+  deterministic JSON postings fallback; a legacy in-memory path. Channels are
+  normalized per query, then weighted-summed.</li>
+</ul>
+<p>Cross-language search works <strong>by construction</strong>: English canonical aliases
+and bilingual retrieval text are written at ingest, symptom phrasings via
+<code>talamus enrich</code>.</p>
+<h2 id="ask-path-askpy-the-user-facing-pipeline">Ask path (<code>ask.py</code>) — the user-facing pipeline</h2>
+<div class="highlight"><pre><span></span><code>question
+  → routing (LLM): macro-areas (if the tree exists) → domains, by stable id,
+    validated against the map
+  → LLM query EXPANSION (your LLM acts as the embedding model: it translates
+    your phrasing into corpus vocabulary; +1 call, cached)
+  → selection (deterministic): the chosen domains&#39; members ranked against
+    question+expansion via the persistent index, plus 2 top global hits
+    outside the chosen domains (the escape hatch for routing mistakes)
+  → budget (fit_to_budget, TALAMUS_CONTEXT_BUDGET)
+  → answer (LLM): only from context, cites [n], answers in the question&#39;s
+    language, refuses honestly when context is insufficient; sources legend
+</code></pre></div>
+<p>With no overview: persistent-index seeds + 1-hop typed-first ontology
+expansion (active only when seeds are scarce); still nothing → an LLM
+query-expansion retry. <code>--as-of</code> reads historical versions; <code>--trace</code> returns
+the full route (areas, domains, expansion, items read, tokens). Federated
+extras (<code>[central]</code> items) are appended by the CLI layer per scope policy.</p>
+<h2 id="ontology-ontologypy-ontology_labpy-relationspy">Ontology (<code>ontology.py</code>, <code>ontology_lab.py</code>, <code>relations.py</code>)</h2>
+<ul>
+<li><code>build_ontology</code>: edges from note relations (normalized surfaces) +
+  proposed links (type "related"); rebuilt at every reindex with the active
+  surface map, so <strong>promotions re-type edges globally</strong>.</li>
+<li>The Ontology Lab: an evidence layer → deterministic clustering of
+  unexplained surfaces → one LLM naming call (English definitions) → a
+  versioned schema (candidate/active/deprecated, full history) → promotion
+  only by rule: support ≥ 8 across ≥ 3 distinct notes (<code>--force</code> overrides,
+  logged). The schema is global across your brains (per-brain opt-out).</li>
+<li><code>talamus ontology infer</code> induces relation-type <em>properties</em>
+  (inverse/transitive/symmetric) purely structurally from corpus witnesses,
+  through the same candidate → review → promote lifecycle; promoted
+  properties drive a deterministic, cycle-safe closure into a derived cache
+  of inferred edges, each carrying its rule and derivation. Zero LLM calls.</li>
+<li>Runtime effect: typed edges come first in context expansion and in the UI
+  graph; domain clustering runs on the ontology edges. Its measured value is
+  in <strong>structure</strong> (clustering, routing, navigation) and in answer quality —
+  ontology-in-ranking boosts were tried and rejected with data.</li>
+</ul>
+<h2 id="domains-hierarchical-overview-domainspy">Domains &amp; hierarchical overview (<code>domains.py</code>)</h2>
+<ul>
+<li>Structural clusters come from union-find over the ontology edges.</li>
+<li>Small brains get a single full-partition naming call. Bigger brains use
+  <strong>batched induction</strong> (a single prompt collapses at scale): giant clusters
+  get a dedicated split call; mid clusters are named in one call echoing only
+  a numeric index (first title as the deterministic fallback); strays are
+  assigned in batches against the named domains. A malformed answer hurts
+  only its slice.</li>
+<li>Domains get stable ids (<code>dom-*</code>); enough domains → an overview tree groups
+  them into macro-areas (<code>area-*</code>), so routing cost grows like log(N).</li>
+</ul>
+<h2 id="temporal-temporalpy-timelinepy">Temporal (<code>temporal.py</code>, <code>timeline.py</code>)</h2>
+<ul>
+<li>Transaction time: note versions in append-only history; <code>note_as_of</code>.</li>
+<li>Valid time: <code>claims.jsonl</code>, append-only; <code>record_claim</code> /
+  <code>invalidate_claim</code> (corrections close the old claim and open the new one —
+  never delete); <code>claims_as_of</code>, <code>note_timeline</code>. <code>parse_when</code>: partial dates
+  mean the END of the period; naive datetimes warn and use the local tz.</li>
+<li><strong>Freshness by default</strong>: <code>record_supersedes</code> (CLI <code>talamus supersede</code>) is
+  the bitemporal handover — the old note is kept (prose, sources, history),
+  its open claims are closed by the successor, the handover is recorded as a
+  claim, and a system-typed <code>supersedes</code> edge (new → old) enters the graph.
+  The default ask path drops superseded notes from context (the past stays
+  reachable via <code>--as-of</code>), stamps every context note with its last-updated
+  date, attaches each note's fact-validity record (claims, open and closed)
+  plus the handover notice on successors ("supersedes X since DATE"), and the
+  answer contract prefers the most recent when notes conflict and never
+  presents a closed fact as current. At ingest, <code>supersedes.py</code> checks each
+  new note against its closest existing neighbor (deterministic prefilter,
+  one LLM judge call): confident replacements apply the handover
+  automatically (reported, reversible), uncertain ones go to the review
+  queue. <code>TALAMUS_SUPERSEDES_DETECTION=0</code> disables detection.</li>
+</ul>
+<h2 id="verification-correctpy">Verification (<code>correct.py</code>)</h2>
+<ul>
+<li><code>provenance_status</code> (no LLM): resolves the RAW source first (the hash was
+  computed on extracted text, so comparisons re-extract — never file bytes);
+  the normalized view proves existence only; flags source_missing /
+  source_changed / low_confidence.</li>
+<li><code>verify_batch</code>: stale notes → review items without an LLM; checked notes →
+  the LLM compares them against their source; mismatches become PROPOSED
+  corrections in the review queue. <code>review apply</code> writes them with history
+  preserved.</li>
+</ul>
+<h2 id="curation">Curation</h2>
+<ul>
+<li><strong><code>enrich.py</code></strong>: symptom-vocabulary enrichment — batched, English prompt
+  echoing note ids, idempotent (marker in retrieval_text), guard-rails for
+  weak models, estimate + <code>--yes</code>, one reindex at the end.</li>
+<li><strong><code>consolidate.py</code></strong>: duplicate detection (one call, with balanced-object
+  salvage for truncated answers) → groups PROPOSED; <code>apply_consolidation</code>
+  accepts only REVIEWED groups (models tend to lump related-but-distinct
+  concepts); the merge unions retrieval text and accumulates provenance.</li>
+</ul>
+<h2 id="jobs-jobspy">Jobs (<code>jobs.py</code>)</h2>
+<p>Persistent records under <code>cache/jobs</code>, created BEFORE the first expensive
+call. States: queued→running→completed/failed/cancelled (+paused).
+<code>run_items</code>: the done-set is persisted per item, cancel is cooperative
+between items, failures leave a resumable record, and stale <code>running</code> records
+(hard kill) are adopted on resume.</p>
+<h2 id="multi-brain-registrypy-scopepy-federationpy">Multi-brain (<code>registry.py</code>, <code>scope.py</code>, <code>federation.py</code>)</h2>
+<p>The registry lives at <code>TALAMUS_HOME/registry.json</code>. Scope policies:
+project-only / central-only / project+central (default) / all. Federation is
+a pointer index (derived); central reads federate into search/ask
+(<code>[central]</code> markers), writes stay local unless <code>--all-brains</code>;
+<code>brains promote</code> moves a note to central. See <a href="../multi-brain/">Multi-brain</a>.</p>
+<h2 id="engines-adaptersllmpy-routingpy">Engines (<code>adapters/llm.py</code>, <code>routing.py</code>)</h2>
+<p><code>LLMProvider</code> protocol = <code>complete(prompt) -&gt; str</code>. Adapters: claude-cli,
+codex-cli (pinned to a read-only sandbox), antigravity-cli, opencode
+(read-only plan agent), ollama (CLI or HTTP), anthropic-api (key from env or
+the machine credential store; env wins), and the deprecated gemini-cli
+(kept for old installs; Talamus warns and points at antigravity-cli).
+Model passthrough via config <code>llm_model</code>. Executables are resolved with
+<code>shutil.which</code> (Windows shims included). All model JSON is parsed defensively
+(lenient parsing, balanced-object salvage, batch isolation) — enforced by the
+hostile-model CI battery.</p>
+<p>Every LLM call resolves through per-task <strong>model + effort tiering</strong>
+(<code>routing.py</code>): ten task classes with cost-minimizing defaults (bulk work on
+the cheap tier, the answer you read on the strong tier), overridable via
+<code>task_tiers</code> + <code>provider_models</code> in <code>talamus.json</code>. Usage-limit exhaustion
+raises a clear, actionable error, and <code>TALAMUS_ENGINE_TIMEOUT</code> caps a single
+call.</p>
+<h2 id="interfaces">Interfaces</h2>
+<p>All front ends route through <code>services/</code> wherever a shared contract exists:
+typed <code>ServiceResult</code> contracts are the seam between the core and the
+interfaces, so behaviour stays identical across CLI, MCP, UI and SDK.</p>
+<ul>
+<li><strong>Shared services</strong> (<code>services/</code>): readiness, engine setup, ingestion
+  preview/consent/run, repository scan, enrichment, consolidation,
+  verification, brains registry, jobs, review queue, read-side query, graph
+  snapshots, diagnostics, library, integrations (MCP install + capture hook),
+  backup export/import, and ontology operations.</li>
+<li><strong>CLI</strong> (<code>cli/</code> package): the full surface; bare <code>talamus</code> is the
+  dashboard; <code>--json</code> on read commands; <code>--root</code>/scope flags; consent gates.</li>
+<li><strong>MCP</strong> (<code>mcp_server.py</code>, optional extra): read tools (search, read_note,
+  recall, ask, verify, neighbors, overview, history, sources,
+  ontology_status) + write tools (remember, ingest_text with scope,
+  propose_note → review, review_list/apply/reject). Local stdio; optional
+  localhost HTTP. See <a href="../agent-tool-calling/">For agents</a>.</li>
+<li><strong>SDK</strong> (<code>recall.py</code>): read-side functions for embedding in agent code.</li>
+<li><strong>Web workbench</strong> (<code>webapi/</code> + the <code>webui/</code> React app, optional <code>ui</code>
+  extra): FastAPI + a prebuilt React SPA launched by <code>talamus ui</code> in a
+  pywebview window by default, or a browser with <code>--web</code>. Every mutating
+  endpoint requires the per-launch UI token (see <a href="https://github.com/ampres-ai/talamus/blob/main/SECURITY.md">SECURITY.md</a>).
+  <code>ui/physics.py</code> is the pure server-side force layout used by
+  <code>webapi/graph_layout.py</code>.</li>
+<li><strong>Hook</strong> (<code>scripts/talamus-session-hook.py</code>): session capture on agent
+  session end, consent-first.</li>
+</ul>
+<h2 id="measurement-instrumentation-evalpy-corpuspy-benchpy">Measurement instrumentation (<code>eval.py</code>, <code>corpus.py</code>, <code>bench.py</code>)</h2>
+<ul>
+<li><code>eval.py</code>: recall@k / precision / MRR / hit-rate / negative rejection over
+  a pluggable retriever; cases from JSON; category breakdown. CLI
+  <code>talamus eval</code> — see <a href="../evaluation/">Measuring retrieval</a>.</li>
+<li><code>benchmarks/retrieval_lab.py</code> (outside the package): in-memory ablation
+  variants (tokenizers, channels, weights, bundle selection, rejection
+  analysis) — retrieval hypotheses run here first; only multi-corpus winners
+  ship.</li>
+<li><code>corpus.py</code>: deterministic corpora built from frozen fixtures, so the
+  regression floors in CI compare like with like.</li>
+</ul>
+<h2 id="the-quality-gate">The quality gate</h2>
+<p><code>python dev.py</code> = ruff check + ruff format check + mypy + full unittest,
+cross-platform. CI runs it on Linux/macOS/Windows across Python 3.11–3.13.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
