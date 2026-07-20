@@ -3,7 +3,9 @@ import json
 import tempfile
 import unittest
 from contextlib import redirect_stdout
+from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import patch
 
 from talamus.errors import TalamusError
 from talamus.models import CanonicalNote, SourceRef
@@ -130,16 +132,19 @@ class AsOfReadTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = TalamusPaths(Path(tmp))
             paths.ensure_directories()
-            write_note(paths, _note("Concetto", "Prima versione."))
-            first = note_as_of(paths, "Concetto", "2999")  # latest
-            self.assertEqual(first["summary"], "Prima versione.")
-            t1 = first["updated_at"]
-            overwrite_note_json(paths, _note("Concetto", "Seconda versione."))
+            frozen = datetime(2026, 7, 20, 9, 40, tzinfo=UTC)
+            with patch("talamus.store._utc_now", return_value=frozen):
+                write_note(paths, _note("Concetto", "Prima versione."))
+                first = note_as_of(paths, "Concetto", "2999")  # latest
+                self.assertEqual(first["summary"], "Prima versione.")
+                t1 = first["updated_at"]
+                overwrite_note_json(paths, _note("Concetto", "Seconda versione."))
             rebuild_indexes(paths)
             old = note_as_of(paths, "Concetto", t1)
             self.assertEqual(old["summary"], "Prima versione.")
             latest = note_as_of(paths, "Concetto", "2999")
             self.assertEqual(latest["summary"], "Seconda versione.")
+            self.assertGreater(latest["updated_at"], t1)
 
     def test_cli_read_as_of_and_timeline(self) -> None:
         from talamus.cli import main

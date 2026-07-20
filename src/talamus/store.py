@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from talamus.graph import build_graph, save_graph
 from talamus.linking import NoteRegistry
@@ -43,8 +43,30 @@ def cache_is_current(paths: TalamusPaths) -> bool:
     return cache_version(paths) == CACHE_VERSION
 
 
-def _now() -> str:
-    return datetime.now(UTC).isoformat()
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+def _now(previous: str = "") -> str:
+    """Return a UTC timestamp strictly after ``previous`` when supplied.
+
+    Some Windows clocks expose a resolution coarser than Python's microsecond
+    timestamp format. Two immediate writes can therefore observe the same wall
+    time, which makes an as-of read unable to distinguish the versions.
+    """
+    now = _utc_now()
+    if previous:
+        try:
+            prior = datetime.fromisoformat(previous.replace("Z", "+00:00"))
+            if prior.tzinfo is None:
+                prior = prior.replace(tzinfo=UTC)
+            else:
+                prior = prior.astimezone(UTC)
+            if now <= prior:
+                now = prior + timedelta(microseconds=1)
+        except ValueError:
+            pass
+    return now.isoformat()
 
 
 def _append_history(paths: TalamusPaths, note: CanonicalNote) -> None:
@@ -135,13 +157,14 @@ def merge_notes(existing: CanonicalNote, new: CanonicalNote) -> CanonicalNote:
 def write_note_json(paths: TalamusPaths, note: CanonicalNote) -> None:
     paths.notes_cache.mkdir(parents=True, exist_ok=True)
     path = paths.notes_cache / f"{note_slug(note.note_id)}.json"
-    now = _now()
     if path.is_file():
         existing = _note_from_dict(json.loads(path.read_text(encoding="utf-8")))
+        now = _now(existing.updated_at)
         _append_history(paths, existing)
         note = merge_notes(existing, note)
         note = dataclasses.replace(note, created_at=existing.created_at or now, updated_at=now)
     else:
+        now = _now()
         note = dataclasses.replace(note, created_at=now, updated_at=now)
     path.write_text(json.dumps(note.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
 
@@ -150,12 +173,14 @@ def overwrite_note_json(paths: TalamusPaths, note: CanonicalNote) -> None:
     """Replace a note (no merge); the prior version is preserved in history."""
     paths.notes_cache.mkdir(parents=True, exist_ok=True)
     path = paths.notes_cache / f"{note_slug(note.note_id)}.json"
-    now = _now()
     created = note.created_at
     if path.is_file():
         existing = _note_from_dict(json.loads(path.read_text(encoding="utf-8")))
+        now = _now(existing.updated_at)
         _append_history(paths, existing)
         created = existing.created_at or now
+    else:
+        now = _now()
     note = dataclasses.replace(note, created_at=created or now, updated_at=now)
     path.write_text(json.dumps(note.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
 

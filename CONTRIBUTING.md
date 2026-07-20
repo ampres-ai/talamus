@@ -56,8 +56,8 @@ release:
 
 The `Publish to PyPI` workflow builds the package, checks the distributions,
 and uploads them to PyPI through the `pypi` GitHub environment. Configure the
-PyPI Trusted Publisher for project `talamus` with owner `GCrapuzzi`, repository
-`Talamus-Wiki`, workflow `publish.yml`, and environment `pypi`.
+PyPI Trusted Publisher for project `talamus` with owner `ampres-ai`, repository
+`talamus`, workflow `publish.yml`, and environment `pypi`.
 
 ## Release checklist
 
@@ -66,13 +66,15 @@ Before tagging a release, verify:
 - `python dev.py` green on the release commit; CI green on all three OSes
   (including the extras job).
 - `python -m mkdocs build --strict` clean.
-- Fresh-venv install works: `pip install talamus` then `talamus --version`,
-  `talamus demo`, `talamus search "embedding"`.
+- `python -m build` and `python -m twine check dist/*` succeed.
+- Fresh-venv install of the newly built wheel works, then `talamus --version`,
+  `talamus demo`, and `talamus search "embedding"` succeed.
 - Benchmark artifacts under `benchmarks/results/` are current for any number
   the README claims.
 - README and docs match `talamus --help`; CHANGELOG updated; cache migrations
   documented (migrate with `talamus reindex`).
-- No caches or brains committed; scan secret-redaction tests green.
+- No caches or brains committed; secret-redaction tests green; Gitleaks scans
+  the complete Git history with no unreviewed findings.
 - Manual smoke: `talamus ui` renders all ten views; MCP handshake works with
   a real client (`talamus mcp install`).
 

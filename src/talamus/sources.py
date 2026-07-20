@@ -16,7 +16,7 @@ from xml.etree import ElementTree
 
 from talamus.errors import SourceNotFound, TalamusError
 
-_USER_AGENT = "Talamus/1.0 (+https://github.com/GCrapuzzi/Talamus-Wiki)"
+_USER_AGENT = "Talamus/1.0 (+https://github.com/ampres-ai/talamus)"
 
 # WordprocessingML namespace for .docx paragraph/run/text elements.
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"

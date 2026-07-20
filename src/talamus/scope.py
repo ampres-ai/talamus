@@ -129,11 +129,13 @@ def scoped_search(
         )
         warnings.extend(fed_warnings)
         results = []
+        seen_paths: set[str] = set()
         for row in rows:
             note_path = Path(row["note_path"])
             if not note_path.is_file():
                 warnings.append(f"stale pointer: {row['title']} in {row['brain_name']}")
                 continue
+            seen_paths.add(str(note_path.resolve()).casefold())
             results.append(
                 {
                     "title": row["title"],
@@ -143,7 +145,31 @@ def scoped_search(
                     "path": str(note_path),
                 }
             )
-        return results[:limit], warnings
+
+        # ``all`` still includes the brain the user is standing in. A fresh
+        # install has no federated index yet, and an implicit default central
+        # brain may not be registered in that index at all. Search it directly,
+        # then prepend only hits that the pointer index did not already return.
+        from talamus.naming import note_filename
+        from talamus.paths import TalamusPaths
+
+        if current_entry is not None:
+            local_scope = _marker(current_entry.name, current_entry.type)
+        elif central_root == current:
+            local_scope = "[central]"
+        else:
+            local_scope = "[project]"
+        local_results = []
+        for item in search_notes_safe(current_root, query, limit, warnings):
+            note_path = (TalamusPaths(current_root).notes / note_filename(item["title"])).resolve()
+            key = str(note_path).casefold()
+            if key in seen_paths:
+                continue
+            local_item = {**item, "scope": local_scope, "path": str(note_path)}
+            if current_entry is not None:
+                local_item["brain_id"] = current_entry.id
+            local_results.append(local_item)
+        return [*local_results, *results][:limit], warnings
 
     results = []
     if policy in ("project-only", "project+central"):

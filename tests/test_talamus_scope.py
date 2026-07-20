@@ -169,6 +169,17 @@ class ScopedSearchTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as project:
                 self.assertEqual(default_scope(Path(project), home=Path(home)), "project+central")
 
+    def test_all_scope_keeps_current_brain_when_federated_index_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as home:
+            root = Path(home) / "default"
+            _brain(root, [("Embedding", "embedding semantic search")])
+
+            results, warnings = scoped_search(root, "embedding", "all", limit=5, home=Path(home))
+
+            self.assertEqual([row["title"] for row in results], ["Embedding"])
+            self.assertEqual(results[0]["scope"], "[central]")
+            self.assertTrue(any("federated index not built" in warning for warning in warnings))
+
 
 class PromoteNoteTests(unittest.TestCase):
     def test_promote_preserves_id_provenance_and_origin(self) -> None:

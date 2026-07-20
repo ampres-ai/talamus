@@ -47,4 +47,4 @@ Talamus validated its reranking stage — a case that graph-only retrieval ranke
 and reranking ranked right, with the numbers to prove it.
 
 A starter template lives in
-[`examples/eval-cases.example.json`](https://github.com/GCrapuzzi/Talamus-Wiki/blob/main/examples/eval-cases.example.json).
+[`examples/eval-cases.example.json`](https://github.com/ampres-ai/talamus/blob/main/examples/eval-cases.example.json).

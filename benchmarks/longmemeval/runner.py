@@ -9,6 +9,7 @@ import tempfile
 import time
 from collections import defaultdict
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import replace
 from pathlib import Path
 
@@ -18,7 +19,7 @@ from benchmarks.longmemeval.loader import load_dataset
 from talamus.adapters.llm import OllamaProvider
 from talamus.ask import answer_question
 from talamus.config import TalamusConfig, save_config
-from talamus.errors import EngineLimitReached
+from talamus.errors import EngineFailed, EngineLimitReached
 from talamus.ingest import remember_session
 from talamus.paths import TalamusPaths
 from talamus.routing import EngineRouter, Router
@@ -142,6 +143,7 @@ def run_longmemeval(
     ingest_mode: str = "sessions",
     yes: bool = False,
     offset: int = 0,
+    workers: int = 1,
     router_factory: RouterFactory | None = None,
     judge: Judge | None = None,
 ) -> dict:
@@ -155,6 +157,13 @@ def run_longmemeval(
     out_dir = Path(out_dir)
     if offset < 0:
         raise ValueError("offset must be non-negative")
+    if workers < 1:
+        raise ValueError("workers must be >= 1")
+    if workers > 1 and judge is None and judge_model != "none":
+        raise ValueError(
+            "parallel runs defer judging (the judge cache is not thread-safe): "
+            "use --judge none and run judge_pass.py afterwards"
+        )
     selected = load_dataset(dataset_path)[offset : offset + limit]
     _estimate_cost(selected)
     if not yes:
@@ -171,9 +180,6 @@ def run_longmemeval(
         else (None if judge_model == "none" else _default_judge(judge_model, out_dir))
     )
     cases: list[dict] = []
-    type_scores: dict[str, list[bool]] = defaultdict(list)
-    sessions_ingested = 0
-    sessions_skipped = 0
 
     # Benchmark ingest runs LEAN: supersedes detection would add one judge
     # call per new note (haystack chats share vocabulary, so the prefilter
@@ -186,8 +192,12 @@ def run_longmemeval(
         interrupted: str | None = None
 
         def _build_result() -> dict:
-            total = len(cases)
-            judged = [case for case in cases if case["correct"] is not None]
+            ordered = sorted(cases, key=lambda case: case["index"])
+            total = len(ordered)
+            judged = [case for case in ordered if case["correct"] is not None]
+            type_scores: dict[str, list[bool]] = defaultdict(list)
+            for case in judged:
+                type_scores[case["question_type"]].append(case["correct"])
             accuracy_by_type = {
                 question_type: sum(scores) / len(scores)
                 for question_type, scores in type_scores.items()
@@ -203,6 +213,8 @@ def run_longmemeval(
                     "dataset": dataset_path.name,
                     "ingest_mode": ingest_mode,
                     "supersedes_detection": "off (benchmark ingest)",
+                    "workers": workers,
+                    "session_tier": "economy (benchmark override)",
                     "interrupted": interrupted,
                 },
                 "total_questions": total,
@@ -211,70 +223,101 @@ def run_longmemeval(
                 ),
                 "accuracy_by_question_type": accuracy_by_type,
                 "exact_contains_rate": (
-                    sum(case["exact_contains"] for case in cases) / total if total else 0.0
+                    sum(case["exact_contains"] for case in ordered) / total if total else 0.0
                 ),
-                "sessions_ingested": sessions_ingested,
-                "sessions_skipped_by_gate": sessions_skipped,
-                "cases": cases,
+                "sessions_ingested": sum(case["sessions_ingested"] for case in ordered),
+                "sessions_skipped_by_gate": sum(
+                    case["sessions_skipped_by_gate"] for case in ordered
+                ),
+                "cases": ordered,
             }
 
-        for position, item in enumerate(selected):
-            try:
-                with tempfile.TemporaryDirectory(prefix="talamus-longmemeval-") as temp_dir:
-                    paths = TalamusPaths(Path(temp_dir))
-                    paths.ensure_directories()
-                    config = replace(TalamusConfig.default(), llm_provider=engine)
-                    save_config(paths.config_path, config)
-                    router = router_factory(engine) if router_factory else EngineRouter(config)
-
-                    case_ingested = 0
-                    case_skipped = 0
-                    for session, date in zip(
-                        item["haystack_sessions"], item["haystack_dates"], strict=True
-                    ):
+        def _run_case(position: int, item: dict) -> dict:
+            """One question in its own isolated brain — the unit of parallelism.
+            Questions never share state, so N workers = N concurrent CLIs with
+            zero write contention."""
+            with tempfile.TemporaryDirectory(prefix="talamus-longmemeval-") as temp_dir:
+                paths = TalamusPaths(Path(temp_dir))
+                paths.ensure_directories()
+                # The product default sends real work sessions to the QUALITY
+                # tier (rare + precious). Replaying 1200 benchmark chats there
+                # would burn the strong model's quota at ~2 min/session — the
+                # benchmark pins bulk extraction to the economy tier instead.
+                config = replace(
+                    TalamusConfig.default(),
+                    llm_provider=engine,
+                    task_tiers={"session_remember": {"tier": "economy", "effort": "low"}},
+                )
+                save_config(paths.config_path, config)
+                router = router_factory(engine) if router_factory else EngineRouter(config)
+                case_ingested = 0
+                case_skipped = 0
+                case_failed = 0
+                for session, date in zip(
+                    item["haystack_sessions"], item["haystack_dates"], strict=True
+                ):
+                    try:
                         ingest_result = remember_session(
                             paths, _transcript(session, date), "", router
                         )
-                        if ingest_result.get("skipped", False):
-                            case_skipped += 1
-                        else:
-                            case_ingested += 1
-
-                    answer = answer_question(paths, item["question"], router)
-            except EngineLimitReached as exc:
-                # a benchmark run pins ONE engine (provenance), so the fallback
-                # chain deliberately does not apply: save everything done so far
-                # and stop cleanly — relaunch later with --offset to continue.
-                interrupted = str(exc)
-                print(f"engine limit at question {offset + position} — saving partial results")
-                break
+                    except EngineLimitReached:
+                        raise  # the clean partial-save path below
+                    except (ValueError, EngineFailed):
+                        # one hostile model reply (prose instead of JSON, a
+                        # refusal) must cost ONE session, never the whole run
+                        case_failed += 1
+                        continue
+                    if ingest_result.get("skipped", False):
+                        case_skipped += 1
+                    else:
+                        case_ingested += 1
+                answer = answer_question(paths, item["question"], router)
             correct = bool(score(item["question"], item["answer"], answer)) if score else None
-            exact_contains = item["answer"].casefold() in answer.casefold()
-            question_type = item["question_type"]
-            if correct is not None:
-                type_scores[question_type].append(correct)
-            sessions_ingested += case_ingested
-            sessions_skipped += case_skipped
-            cases.append(
-                {
-                    "question_id": item["question_id"],
-                    "question_type": question_type,
-                    "question": item["question"],
-                    "gold_answer": item["answer"],
-                    "answer": answer,
-                    "correct": correct,
-                    "exact_contains": exact_contains,
-                    "sessions_ingested": case_ingested,
-                    "sessions_skipped_by_gate": case_skipped,
-                }
-            )
-            # incremental persistence: a crash or limit never loses finished work
-            _write_artifacts(_build_result(), out_dir)
-            print(
-                f"question {offset + position} done "
-                f"({case_ingested} sessions in, {case_skipped} gated)",
-                flush=True,
-            )
+            return {
+                "index": position,
+                "question_id": item["question_id"],
+                "question_type": item["question_type"],
+                "question": item["question"],
+                "gold_answer": item["answer"],
+                "answer": answer,
+                "correct": correct,
+                "exact_contains": item["answer"].casefold() in answer.casefold(),
+                "sessions_ingested": case_ingested,
+                "sessions_skipped_by_gate": case_skipped,
+                "sessions_failed": case_failed,
+            }
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(_run_case, position, item): position
+                for position, item in enumerate(selected)
+            }
+            for future in as_completed(futures):
+                position = futures[future]
+                try:
+                    case = future.result()
+                except EngineLimitReached as exc:
+                    # a benchmark run pins ONE engine (provenance), so the
+                    # fallback chain deliberately does not apply: save what is
+                    # done, cancel the rest, resume later with --offset.
+                    interrupted = str(exc)
+                    print(
+                        f"engine limit at question {offset + position} - saving partial results",
+                        flush=True,
+                    )
+                    for pending in futures:
+                        pending.cancel()
+                    break
+                cases.append(case)
+                # incremental persistence: a crash or limit never loses finished work
+                _write_artifacts(_build_result(), out_dir)
+                print(
+                    f"question {offset + position} done "
+                    f"({case['sessions_ingested']} sessions in, "
+                    f"{case['sessions_skipped_by_gate']} gated, "
+                    f"{case['sessions_failed']} failed)",
+                    flush=True,
+                )
     finally:
         if previous_detection is None:
             os.environ.pop("TALAMUS_SUPERSEDES_DETECTION", None)

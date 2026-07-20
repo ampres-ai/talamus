@@ -1,0 +1,6 @@
+# Intentional synthetic credentials used by the secret-detection test suite.
+# Keep these exceptions fingerprint-specific so new secrets anywhere in tests
+# still fail a complete-history Gitleaks scan.
+eda834b63574085c1139da494e7d0f4f08a591fe:tests/test_talamus_scan.py:generic-api-key:30
+eda834b63574085c1139da494e7d0f4f08a591fe:tests/test_talamus_scan.py:generic-api-key:33
+eda834b63574085c1139da494e7d0f4f08a591fe:tests/test_talamus_redact.py:stripe-access-token:24

@@ -256,7 +256,7 @@ interfaces, so behaviour stays identical across CLI, MCP, UI and SDK.
 - **Web workbench** (`webapi/` + the `webui/` React app, optional `ui`
   extra): FastAPI + a prebuilt React SPA launched by `talamus ui` in a
   pywebview window by default, or a browser with `--web`. Every mutating
-  endpoint requires the per-launch UI token (see [SECURITY.md](https://github.com/GCrapuzzi/Talamus-Wiki/blob/main/SECURITY.md)).
+  endpoint requires the per-launch UI token (see [SECURITY.md](https://github.com/ampres-ai/talamus/blob/main/SECURITY.md)).
   `ui/physics.py` is the pure server-side force layout used by
   `webapi/graph_layout.py`.
 - **Hook** (`scripts/talamus-session-hook.py`): session capture on agent

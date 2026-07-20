@@ -13,7 +13,7 @@ Created by `talamus init` in the brain directory. Fields:
 | `storage_provider` | Notes rendering | `obsidian` |
 | `graph_provider` | Graph index | `deterministic-json` |
 | `search_provider` | Lexical search | `builtin-bm25` |
-| `pdf_converter` / `ocr_provider` / `ocr_model` | Source conversion. Today only `pypdf` (PDFs) is wired; OCR is not. A richer converter (docling) and OCR are on the [roadmap](https://github.com/GCrapuzzi/Talamus-Wiki/blob/main/ROADMAP.md). | `pypdf` / `none` / `none` |
+| `pdf_converter` / `ocr_provider` / `ocr_model` | Source conversion. Today only `pypdf` (PDFs) is wired; OCR is not. A richer converter (docling) and OCR are on the [roadmap](https://github.com/ampres-ai/talamus/blob/main/ROADMAP.md). | `pypdf` / `none` / `none` |
 
 ### Engines (`llm_provider`)
 
@@ -49,7 +49,7 @@ already are. The built-in search index has known limits. What works today:
   well. Non-Latin scripts (Chinese, Japanese, Russian, Arabic...) currently
   produce no index tokens: on those corpora use `ask` or `search --smart`,
   which work through the LLM bridge. Unicode-aware tokenization is on the
-  [roadmap](https://github.com/GCrapuzzi/Talamus-Wiki/blob/main/ROADMAP.md).
+  [roadmap](https://github.com/ampres-ai/talamus/blob/main/ROADMAP.md).
 
 ## Environment variables
 

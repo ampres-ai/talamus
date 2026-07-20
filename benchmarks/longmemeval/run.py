@@ -26,6 +26,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--engine", default="claude-cli")
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="concurrent questions (isolated brains; needs --judge none)",
+    )
+    parser.add_argument(
         "--offset",
         type=int,
         default=0,
@@ -45,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
             judge_model=args.judge,
             yes=args.yes,
             offset=args.offset,
+            workers=args.workers,
         )
     except (CostConfirmationRequired, FileNotFoundError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)

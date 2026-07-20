@@ -6,7 +6,48 @@ semantic versioning once it reaches a public release.
 
 ## [Unreleased]
 
-Pre-release. The project was renamed **Kortex → Talamus**.
+No changes yet.
+
+## [1.0.1] - 2026-07-20
+
+### Added
+
+- **Freshness by default**: the bitemporal `supersedes` handover preserves old
+  notes and claims while default answers use the current successor. Dated,
+  claims-aware context and ingest-time replacement detection complete the flow.
+  The committed temporal benchmark records current-answer rate `1.000` and stale
+  rate `0.000` in `benchmarks/results/2026-07-14-temporal.json`.
+- **Curator and watch mode**: deterministic health checks across registered brains,
+  a deep provenance pass, safe cache repairs, and consent-bounded auto-ingest.
+- **Workbench round**: instant plain search, AI-expanded search, capture retry,
+  plain-language brain flags, and opencode MCP installation.
+- **Engine resilience**: provider fallback on exhausted quotas or missing CLIs,
+  plus durable capture parking for engine limits and hostile model output.
+- **LongMemEval adapter hardening**: incremental artifacts, question offsets,
+  deferred local judging, economy-tier extraction, and question-level workers.
+
+### Changed
+
+- Canonical project ownership, package metadata, badges, links, and user-agent now
+  point to `ampres-ai/talamus` and identify Talamus as an Ampres project.
+- The release workflow now enforces tag/version parity and runs the complete
+  quality gate before building or publishing distributions.
+
+### Fixed
+
+- `scope=all` always includes the current brain, even before the federated index
+  exists, so a clean-install `talamus demo` is immediately searchable.
+- Note-version timestamps remain strictly ordered on coarse-resolution clocks,
+  so immediate consecutive writes are distinguishable with `--as-of`.
+
+### Security
+
+- The complete Git history is scanned with Gitleaks; the only allowlisted
+  fingerprints are three synthetic credentials in the secret-detection tests.
+
+## [1.0.0] - 2026-07-03
+
+Initial public PyPI release. The project was renamed **Kortex → Talamus**.
 
 ### Engine tiering & v1 hardening (2026-07-01/02)
 

@@ -31,11 +31,10 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install packaging tools
-        run: python -m pip install --upgrade build twine
+      - name: Install release and quality tools
+        run: python -m pip install --upgrade build twine ".[dev]"
 
       - name: Validate release tag
-        if: github.event_name == 'release'
         shell: python
         run: |
           import os
@@ -51,6 +50,9 @@ jobs:
               print(f"Release tag {tag!r} does not match pyproject version {version!r}.")
               print(f"Use tag {expected!r}, or update pyproject.toml before publishing.")
               sys.exit(1)
+
+      - name: Run the quality gate
+        run: python dev.py
 
       - name: Build distributions
         run: python -m build
