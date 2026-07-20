@@ -1,5 +1,8 @@
 site_name: Talamus
 site_description: Local-first memory with time, meaning, and verifiability — for your second brain and your AI agents.
+site_url: https://ampres-ai.github.io/talamus/
+repo_url: https://github.com/ampres-ai/talamus
+repo_name: ampres-ai/talamus
 
 theme:
   name: material
@@ -22,5 +25,6 @@ nav:
 
 markdown_extensions:
   - admonition
+  - attr_list
   - tables
   - pymdownx.superfences

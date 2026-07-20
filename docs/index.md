@@ -2,25 +2,50 @@
 
 ![Talamus — Memory that survives the session.](assets/talamus-social-preview.png)
 
-**Local-first memory with time, meaning, and verifiability — for your second brain and your AI agents.**
+**Local-first, source-grounded memory that you and your AI agents share.**
 
-Talamus compiles your sources (documents, notes, and agent work sessions) into
-source-grounded, cross-linked **concept notes**, builds a typed **graph as an
-index**, and answers questions **with citations** — on your machine, on the LLM
-engine you already use.
+Talamus turns documents, repositories, URLs, and consented agent sessions into
+durable Markdown knowledge. It retrieves that knowledge with citations and
+bitemporal history, on your machine and with the LLM engine you already use.
 
-It is built on three properties that, together, nothing else gives you:
+[Install in 60 seconds](quickstart.md){ .md-button .md-button--primary }
+[View on GitHub](https://github.com/ampres-ai/talamus){ .md-button }
 
-- **Time** — shipped: `ask` / `read` / `history --as-of` plus `timeline`.
-- **Meaning** — shipped: Ontology Lab and global schema (`induce`, `review`,
-  `apply`, `eval`, `stability`, `history`, `export`).
-- **Verifiability** — every note keeps its sources, preserved for verification.
+```bash
+pipx install "talamus[mcp]"
+talamus setup
+```
+
+No account or hosted service is required. Plain search and recall are local and
+free; operations that invoke an LLM remain explicit.
+
+## See memory survive a fresh session
+
+![A completed agent session becomes cited, local memory for the next one.](assets/talamus-demo.gif)
+
+Talamus exposes 16 MCP tools for Claude Code, Cursor, Codex, and OpenCode, while
+the same brain stays readable as ordinary Markdown plus a local SQLite/FTS5
+index.
+
+## What makes it different
+
+- **Time** — inspect what the brain knew at an earlier date with `--as-of`,
+  `history`, and `timeline`.
+- **Meaning** — induce and review an evidence-backed ontology instead of
+  imposing a fixed folder tree.
+- **Verifiability** — retain source provenance, cite retrieved notes, and gate
+  proposed corrections behind review.
+- **Local-first control** — keep the core usable without a cloud account,
+  hosted database, or hidden paid call.
+
+The [measured benchmarks](benchmarks.md) publish both wins and losses, with every
+public number traced to a committed result artifact.
 
 ## Where to go next
 
 - **[Quickstart](quickstart.md)** — install and try it in 10 minutes.
-- **[Commands](commands.md)** — the full `talamus` CLI reference.
-- **[Configuration](configuration.md)** — `talamus.json`, environment variables, brain scoping.
-- **[Architecture](architecture.md)** — how the pieces fit together.
-- **[Design principles](design-principles.md)** — the deliberate choices and why.
-- **[Benchmarks](benchmarks.md)** — the measured numbers, wins and losses.
+- **[Agent install guide](https://github.com/ampres-ai/talamus/blob/main/llms-install.md)** — configure an agent without hidden side effects.
+- **[Commands](commands.md)** — browse the full `talamus` CLI reference.
+- **[Benchmarks](benchmarks.md)** — inspect the measured numbers and artifacts.
+- **[Architecture](architecture.md)** — see how the local-first pieces fit together.
+- **[GitHub](https://github.com/ampres-ai/talamus)** — report an issue, contribute, or star the project.
