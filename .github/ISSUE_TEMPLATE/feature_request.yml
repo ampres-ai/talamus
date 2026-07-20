@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose a measured improvement to Talamus.
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What real workflow is difficult today, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed outcome
+      description: Describe the behavior you want, without prescribing an implementation unless necessary.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or measurement
+      description: Examples, failure cases, benchmark ideas, or acceptance criteria that would prove the improvement.
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Design principles
+      options:
+        - label: The proposal preserves the free, local-first core.
+          required: true
+        - label: Any LLM or network spend remains explicit and consented.
+          required: true

@@ -4,7 +4,7 @@
 
 ![Talamus — Memory that survives the session.](docs/assets/talamus-social-preview.png)
 
-[![CI](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml/badge.svg)](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
+[![CI](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml/badge.svg)](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/talamus)](https://pypi.org/project/talamus/) [![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-5b5bd6)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.ampres-ai%2Ftalamus) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 
 **Talamus is a local-first knowledge compiler — a second brain you and your AI agents share.**
 
@@ -15,6 +15,8 @@ It turns documents, notes, repos, URLs, and agent sessions into source-grounded 
 ![Talamus demo — a completed agent session becomes cited, local memory for the next one.](docs/assets/talamus-demo.gif)
 
 Talamus is an open-source project by [Ampres](https://ampres.io), an independent AI and open-source lab.
+
+If Talamus makes agent memory less disposable, [star the repository](https://github.com/ampres-ai/talamus) so other builders can find it.
 
 ## The 60-second story
 

@@ -1,7 +1,8 @@
 # Contributing to Talamus
 
 Thanks for your interest! Talamus is local-first and stdlib-only at the core, with
-optional adapters behind extras.
+optional adapters behind extras. Participation is governed by the
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Setup
 
@@ -54,8 +55,9 @@ release:
 4. Create a GitHub release tagged `vX.Y.Z`, matching the exact
    `pyproject.toml` version.
 
-The `Publish to PyPI` workflow builds the package, checks the distributions,
-and uploads them to PyPI through the `pypi` GitHub environment. Configure the
+The `Publish release` workflow builds the package, checks the distributions,
+uploads them to PyPI through the `pypi` GitHub environment, and then publishes
+`server.json` to the official MCP Registry through GitHub OIDC. Configure the
 PyPI Trusted Publisher for project `talamus` with owner `ampres-ai`, repository
 `talamus`, workflow `publish.yml`, and environment `pypi`.
 
@@ -76,7 +78,7 @@ Before tagging a release, verify:
 - No caches or brains committed; secret-redaction tests green; Gitleaks scans
   the complete Git history with no unreviewed findings.
 - Manual smoke: `talamus ui` renders all ten views; MCP handshake works with
-  a real client (`talamus mcp install`).
+  a real client (`talamus mcp serve --root .`).
 
 ## Where the project truth lives
 

@@ -75,7 +75,7 @@ These are real and scheduled for the first releases after launch:
 
 ## Reporting a vulnerability
 
-Please open a private report (or email the maintainers) with steps to reproduce.
-Do not file public issues for security-sensitive reports until a fix is
-available. Reports on the known-debt items above are still welcome — severity
-may be higher than we assessed.
+Please open a [private GitHub security advisory](https://github.com/ampres-ai/talamus/security/advisories/new)
+with steps to reproduce. Do not file public issues for security-sensitive
+reports until a fix is available. Reports on the known-debt items above are
+still welcome — severity may be higher than we assessed.
