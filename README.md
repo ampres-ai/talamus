@@ -4,7 +4,7 @@
 
 ![Talamus — Memory that survives the session.](docs/assets/talamus-social-preview.png)
 
-[![CI](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml/badge.svg)](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/talamus)](https://pypi.org/project/talamus/) [![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-5b5bd6)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.ampres-ai%2Ftalamus) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
+[![CI](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml/badge.svg)](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/talamus)](https://pypi.org/project/talamus/) [![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-5b5bd6)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.ampres-ai%2Ftalamus) [![Smithery](https://img.shields.io/badge/Smithery-install-111827)](https://smithery.ai/servers/ampres-ai/talamus) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 
 **Talamus is a local-first knowledge compiler — a second brain you and your AI agents share.**
 
@@ -86,6 +86,12 @@ talamus ingest ./notes && talamus ask "what should I remember?"
 ```
 
 Run `talamus` for the status dashboard, `talamus quickstart` for essential commands, or `talamus ui` for the local React workbench.
+
+Containerized MCP (the brain remains in the mounted local folder):
+
+```bash
+docker run --rm -i -v "$PWD:/data" ghcr.io/ampres-ai/talamus:1.0.3
+```
 
 ## Links
 
