@@ -47,12 +47,16 @@ Google has deprecated it — use `antigravity-cli` instead.)
 ## 5. Use it from agents (MCP)
 
 ```bash
-talamus mcp install             # one command: Claude Code + Cursor + codex (auto-detected)
+talamus mcp install             # Claude Code + detected Cursor/Codex/OpenCode/OpenClaw
+talamus mcp install --agent openclaw  # explicit OpenClaw registration
 ```
 
 Claude Code reads the project `.mcp.json`, Cursor its `.cursor/mcp.json`,
 and codex gets one global registration (`codex mcp add talamus`) that resolves
-the right brain from whatever project codex runs in.
+the right brain from whatever project codex runs in. OpenClaw gets a global
+`mcp.servers.talamus` definition pinned to this project brain, with a
+read-oriented tool filter by default; enable LLM-backed or mutating tools only
+when you intend to use them.
 
 Agents can then `search` / `read_note` / `recall` / `overview` / `neighbors` / `remember`
 against your brain. To capture your work sessions automatically:

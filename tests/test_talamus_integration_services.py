@@ -69,6 +69,7 @@ class TalamusIntegrationServiceTests(unittest.TestCase):
         self.assertTrue(report.mcp_config_path.endswith(".mcp.json"))
         self.assertFalse(report.cursor_installed)
         self.assertFalse(report.codex_on_path)
+        self.assertFalse(report.openclaw_on_path)
         self.assertFalse(report.hook_installed)
 
     def test_inspect_integrations_reports_cursor_codex_and_hook(self) -> None:
@@ -102,7 +103,30 @@ class TalamusIntegrationServiceTests(unittest.TestCase):
         self.assertTrue(results["cursor"]["success"])
         self.assertFalse(results["codex"]["success"])
         self.assertEqual("codex_not_found", results["codex"]["code"])
+        self.assertFalse(results["openclaw"]["success"])
+        self.assertEqual("openclaw_not_found", results["openclaw"]["code"])
         self.assertFalse(explicit.success)
+
+    def test_install_mcp_for_agent_auto_detects_openclaw(self) -> None:
+        calls: list[list[str]] = []
+
+        def fake_which(command: str) -> str | None:
+            return "C:/fake/openclaw.cmd" if command == "openclaw" else None
+
+        def fake_run(cmd, **kwargs):
+            calls.append(list(cmd))
+            return mock.Mock(returncode=0, stdout="", stderr="")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch("talamus.services.integrations.shutil.which", side_effect=fake_which):
+                with mock.patch("talamus.services.integrations.subprocess.run", fake_run):
+                    result = install_mcp_for_agent(tmp, "auto")
+
+        self.assertTrue(result.success, result.message)
+        assert result.data is not None
+        self.assertIn("claude", result.data["results"])
+        self.assertTrue(result.data["results"]["openclaw"]["success"])
+        self.assertEqual(["C:/fake/openclaw.cmd", "mcp", "set", "talamus"], calls[0][:4])
 
 
 if __name__ == "__main__":

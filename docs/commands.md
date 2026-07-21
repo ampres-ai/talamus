@@ -124,7 +124,7 @@ notes from the owning brain — the federated index is a pointer index, never so
 
 | Command | What it does |
 | --- | --- |
-| `talamus mcp install [--agent auto\|claude\|cursor\|codex\|opencode\|all]` | Connect your agents in one command: `.mcp.json` (Claude Code), `.cursor/mcp.json` (Cursor), and a global `codex mcp add` registration (codex; the brain resolves from the project codex runs in). Auto detects what you have. |
+| `talamus mcp install [--agent auto\|claude\|cursor\|codex\|opencode\|openclaw\|all]` | Connect agents in one command. OpenClaw is registered through `openclaw mcp set`, pins this project brain with `--root`, and starts with read-oriented tools; LLM-backed and mutating tools remain opt-in. Auto detects installed CLIs. |
 | `talamus hook` | Print the Claude Code `SessionEnd` capture-hook config. |
 | `talamus hook --install` | Write the hook into `.claude/settings.json` (merges, idempotent). |
 | `talamus hook --retry` | Replay captured sessions the engine failed on (a hit usage limit parks the capture under `.talamus/pending/` instead of losing it; entries stay until they succeed — `doctor` reminds you). |

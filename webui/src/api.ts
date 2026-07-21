@@ -213,6 +213,7 @@ export type IntegrationReport = {
   cursor_installed: boolean;
   codex_on_path: boolean;
   opencode_on_path: boolean;
+  openclaw_on_path: boolean;
   hook_installed: boolean;
 };
 

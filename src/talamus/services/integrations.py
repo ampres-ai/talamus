@@ -22,6 +22,7 @@ class IntegrationReport:
     cursor_installed: bool
     codex_on_path: bool
     opencode_on_path: bool
+    openclaw_on_path: bool
     hook_installed: bool
 
     def to_dict(self) -> dict[str, Any]:
@@ -70,6 +71,7 @@ def inspect_integrations(root: str | Path) -> ServiceResult[IntegrationReport]:
             cursor_installed=cursor_installed(root_path),
             codex_on_path=shutil.which("codex") is not None,
             opencode_on_path=shutil.which("opencode") is not None,
+            openclaw_on_path=shutil.which("openclaw") is not None,
             hook_installed=hook_installed(root_path),
         )
     except (OSError, TypeError, ValueError, AttributeError, json.JSONDecodeError) as exc:
@@ -176,21 +178,101 @@ def install_mcp_config_codex() -> ServiceResult[McpInstallResult]:
     )
 
 
-_MCP_AGENTS = ("auto", "claude", "cursor", "codex", "opencode", "all")
+_OPENCLAW_DEFAULT_TOOLS = (
+    "search",
+    "read_note",
+    "recall",
+    "overview",
+    "neighbors",
+    "history",
+    "sources",
+    "ontology_status",
+    "review_list",
+)
+
+
+def install_mcp_config_openclaw(root: str | Path) -> ServiceResult[McpInstallResult]:
+    """Register Talamus in OpenClaw's global MCP registry via its own CLI.
+
+    OpenClaw owns the config format and validation, so use ``openclaw mcp set``
+    instead of editing ``~/.openclaw/openclaw.json`` ourselves. The explicit
+    root makes the selected project brain stable even when the Gateway starts
+    the stdio child from another working directory. Default to a read-oriented
+    tool surface; LLM-backed and mutating tools remain an explicit opt-in in
+    OpenClaw's MCP settings.
+    """
+    openclaw = shutil.which("openclaw")
+    if openclaw is None:
+        return ServiceResult(
+            success=False,
+            message="openclaw CLI not found on PATH — install OpenClaw or skip --agent openclaw",
+            code="openclaw_not_found",
+        )
+    root_path = Path(root)
+    args = ["--root", str(root_path)]
+    server_config = {
+        "command": "talamus-mcp",
+        "args": args,
+        "transport": "stdio",
+        "toolFilter": {"include": list(_OPENCLAW_DEFAULT_TOOLS)},
+    }
+    try:
+        configured = subprocess.run(
+            [
+                openclaw,
+                "mcp",
+                "set",
+                "talamus",
+                json.dumps(server_config, separators=(",", ":")),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (subprocess.SubprocessError, OSError) as exc:
+        return _integration_error(exc)
+    if configured.returncode != 0:
+        detail = (configured.stderr or configured.stdout or "").strip()
+        return ServiceResult(
+            success=False,
+            message=f"openclaw mcp set failed: {detail}",
+            code="openclaw_mcp_set_failed",
+        )
+    return ServiceResult(
+        success=True,
+        message=(
+            "registered talamus with openclaw "
+            "(global definition, project brain pinned by --root, read-oriented tools by default)"
+        ),
+        code="mcp_config_installed_openclaw",
+        data=McpInstallResult(
+            config_path="openclaw mcp (~/.openclaw/openclaw.json)",
+            server_name="talamus",
+            command="talamus-mcp",
+            args=args,
+        ),
+    )
+
+
+_MCP_AGENTS = ("auto", "claude", "cursor", "codex", "opencode", "openclaw", "all")
+_OPTIONAL_MISSING_CODES = {"codex_not_found", "openclaw_not_found"}
 
 
 def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResult[dict[str, Any]]:
     """One call, every agent (D7.2, the UI side of `talamus mcp install`):
-    claude always, cursor when named or the project has `.cursor/`, codex when
-    named or its CLI is on PATH. A MISSING codex is a skip under auto/all
-    (reported per-agent, not fatal) but an error when the user asked for codex
-    explicitly — the same contract as the CLI."""
+    Claude always, Cursor when named or the project has `.cursor/`, and agent
+    CLIs when named or found on PATH. A missing optional CLI is a skip under
+    auto/all (reported per-agent, not fatal) but an error when explicitly
+    requested — the same contract as the CLI."""
     root_path = Path(root)
     choice = (agent or "auto").strip().lower()
     if choice not in _MCP_AGENTS:
         return ServiceResult(
             success=False,
-            message=f"Unknown agent {agent!r} — use auto, claude, cursor, codex, opencode or all",
+            message=(
+                f"Unknown agent {agent!r} — use auto, claude, cursor, codex, "
+                "opencode, openclaw or all"
+            ),
             code="mcp_agent_unknown",
         )
     installs: list[tuple[str, Callable[[], ServiceResult[McpInstallResult]]]] = []
@@ -202,13 +284,16 @@ def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResul
         installs.append(("codex", install_mcp_config_codex))
     if choice in ("opencode", "all") or (choice == "auto" and shutil.which("opencode") is not None):
         installs.append(("opencode", lambda: install_mcp_config_opencode(root_path)))
+    if choice in ("openclaw", "all") or (choice == "auto" and shutil.which("openclaw") is not None):
+        installs.append(("openclaw", lambda: install_mcp_config_openclaw(root_path)))
     results: dict[str, ServiceResult[McpInstallResult]] = {}
     for name, run in installs:
         results[name] = run()
     failed = [
         name
         for name, result in results.items()
-        if not result.success and not (choice != "codex" and result.code == "codex_not_found")
+        if not result.success
+        and not (choice not in ("codex", "openclaw") and result.code in _OPTIONAL_MISSING_CODES)
     ]
     installed = [name for name, result in results.items() if result.success]
     data = {

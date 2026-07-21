@@ -23,7 +23,7 @@ free; operations that invoke an LLM remain explicit.
 
 ![A completed agent session becomes cited, local memory for the next one.](assets/talamus-demo.gif)
 
-Talamus exposes 16 MCP tools for Claude Code, Cursor, Codex, and OpenCode, while
+Talamus exposes 16 MCP tools for Claude Code, Cursor, Codex, OpenCode, and OpenClaw, while
 the same brain stays readable as ordinary Markdown plus a local SQLite/FTS5
 index.
 

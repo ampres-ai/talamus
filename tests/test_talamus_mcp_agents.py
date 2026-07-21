@@ -13,6 +13,7 @@ from talamus.cli import main
 from talamus.services.integrations import (
     install_mcp_config_codex,
     install_mcp_config_cursor,
+    install_mcp_config_openclaw,
 )
 
 
@@ -81,6 +82,51 @@ class CodexInstallTests(unittest.TestCase):
         self.assertIn("boom", result.message)
 
 
+class OpenClawInstallTests(unittest.TestCase):
+    def test_registers_project_brain_with_read_oriented_tools(self) -> None:
+        calls: list[list[str]] = []
+        resolved = "C:/fake/npm/openclaw.cmd"
+
+        def fake_run(cmd, **kwargs):
+            calls.append(list(cmd))
+            return mock.Mock(returncode=0, stdout="", stderr="")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch("talamus.services.integrations.shutil.which", return_value=resolved):
+                with mock.patch("talamus.services.integrations.subprocess.run", fake_run):
+                    result = install_mcp_config_openclaw(tmp)
+
+        self.assertTrue(result.success, result.message)
+        self.assertEqual([resolved, "mcp", "set", "talamus"], calls[0][:4])
+        config = json.loads(calls[0][4])
+        self.assertEqual("talamus-mcp", config["command"])
+        self.assertEqual(["--root", tmp], config["args"])
+        self.assertEqual("stdio", config["transport"])
+        included = config["toolFilter"]["include"]
+        self.assertIn("search", included)
+        self.assertIn("review_list", included)
+        self.assertNotIn("remember", included)
+        self.assertNotIn("review_apply", included)
+
+    def test_fails_actionably_when_openclaw_missing(self) -> None:
+        with mock.patch("talamus.services.integrations.shutil.which", return_value=None):
+            result = install_mcp_config_openclaw(".")
+
+        self.assertFalse(result.success)
+        self.assertEqual("openclaw_not_found", result.code)
+        self.assertIn("openclaw", result.message)
+
+    def test_surfaces_openclaw_cli_failure(self) -> None:
+        failed = mock.Mock(returncode=1, stdout="", stderr="invalid MCP config")
+        with mock.patch("talamus.services.integrations.shutil.which", return_value="openclaw"):
+            with mock.patch("talamus.services.integrations.subprocess.run", return_value=failed):
+                result = install_mcp_config_openclaw(".")
+
+        self.assertFalse(result.success)
+        self.assertEqual("openclaw_mcp_set_failed", result.code)
+        self.assertIn("invalid MCP config", result.message)
+
+
 class McpInstallCliTests(unittest.TestCase):
     def test_agent_all_writes_claude_and_cursor(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -131,6 +177,19 @@ class McpInstallCliTests(unittest.TestCase):
 
             self.assertEqual(1, code)
             self.assertIn("codex", err.getvalue())
+
+    def test_agent_openclaw_without_openclaw_is_a_clear_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            err = io.StringIO()
+            with (
+                redirect_stdout(io.StringIO()),
+                redirect_stderr(err),
+                mock.patch("talamus.services.integrations.shutil.which", return_value=None),
+            ):
+                code = main(["mcp", "install", "--agent", "openclaw", "--root", tmp])
+
+            self.assertEqual(1, code)
+            self.assertIn("openclaw", err.getvalue())
 
 
 if __name__ == "__main__":

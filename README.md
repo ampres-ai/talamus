@@ -28,7 +28,7 @@ Copy-pasteable arc, with the reproducible version in [`scripts/demo/run_magic.py
    pipx install "talamus[mcp]"
    ```
 
-2. Set up the project brain. `talamus setup` initializes the brain, chooses an engine, installs MCP for Claude Code/Cursor/codex, asks once before installing the session-capture hook, and can probe the engine with one tiny live call.
+2. Set up the project brain. `talamus setup` initializes the brain, chooses an engine, installs MCP for Claude Code, Cursor, Codex, OpenCode, and OpenClaw when detected, asks once before installing the session-capture hook, and can probe the engine with one tiny live call.
 
    ```bash
    talamus setup

@@ -187,17 +187,19 @@ const AGENTS = [
   { id: "cursor", label: "Cursor" },
   { id: "codex", label: "codex" },
   { id: "opencode", label: "opencode" },
+  { id: "openclaw", label: "OpenClaw" },
 ];
 
 function agentInstalled(agent: string, integrations: IntegrationReport) {
   if (agent === "claude") return integrations.mcp_installed;
   if (agent === "cursor") return integrations.cursor_installed;
   if (agent === "opencode") return integrations.opencode_on_path;
+  if (agent === "openclaw") return integrations.openclaw_on_path;
   return integrations.codex_on_path;
 }
 
 function agentBadge(agent: string, installed: boolean) {
-  if (agent === "codex") return installed ? "on PATH" : "missing";
+  if (agent === "codex" || agent === "openclaw") return installed ? "on PATH" : "missing";
   return installed ? "installed" : "missing";
 }
 

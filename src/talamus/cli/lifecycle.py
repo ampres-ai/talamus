@@ -35,6 +35,7 @@ from talamus.services.integrations import (
     install_mcp_config,
     install_mcp_config_codex,
     install_mcp_config_cursor,
+    install_mcp_config_openclaw,
     install_mcp_config_opencode,
 )
 from talamus.services.readiness import ReadinessReport, inspect_readiness
@@ -181,14 +182,15 @@ def _cmd_demo(root: Path) -> int:
 
 def _cmd_mcp_install(root: Path, agent: str = "auto") -> int:
     """One command, every agent (D7.2). auto = Claude Code always, Cursor when
-    the project has a .cursor dir, codex when its CLI is on PATH. An agent the
-    user names explicitly must succeed; an auto-detected one may just report."""
-    if agent in ("claude", "cursor", "codex", "opencode"):
+    the project has a .cursor dir, and installed agent CLIs. An agent the user
+    names explicitly must succeed; an auto-detected one may just report."""
+    if agent in ("claude", "cursor", "codex", "opencode", "openclaw"):
         result = {
             "claude": lambda: install_mcp_config(root),
             "cursor": lambda: install_mcp_config_cursor(root),
             "codex": install_mcp_config_codex,
             "opencode": lambda: install_mcp_config_opencode(root),
+            "openclaw": lambda: install_mcp_config_openclaw(root),
         }[agent]()
         if not result.success:
             print(result.message, file=sys.stderr)
@@ -220,6 +222,23 @@ def _cmd_mcp_install(root: Path, agent: str = "auto") -> int:
                 code = 1
         else:
             print(f"codex: {codex_result.message}")
+    if agent == "all" or shutil.which("opencode") is not None:
+        opencode_result = install_mcp_config_opencode(root)
+        if not opencode_result.success:
+            print(opencode_result.message, file=sys.stderr)
+            code = 1
+        else:
+            print(f"opencode: {opencode_result.message}")
+    if agent == "all" or shutil.which("openclaw") is not None:
+        openclaw_result = install_mcp_config_openclaw(root)
+        if not openclaw_result.success:
+            if openclaw_result.code == "openclaw_not_found":
+                print(f"openclaw: skipped ({openclaw_result.message})")
+            else:
+                print(openclaw_result.message, file=sys.stderr)
+                code = 1
+        else:
+            print(f"openclaw: {openclaw_result.message}")
     return code
 
 

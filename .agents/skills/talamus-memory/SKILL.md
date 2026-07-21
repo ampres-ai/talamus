@@ -147,8 +147,10 @@ Install the MCP configuration only when the user asks to connect an agent:
 talamus mcp install --agent auto
 ```
 
-Use `--agent claude`, `cursor`, `codex`, `opencode`, or `all` when the target is
-explicit. Re-run `talamus doctor` and report which integrations were detected.
+Use `--agent claude`, `cursor`, `codex`, `opencode`, `openclaw`, or `all` when
+the target is explicit. OpenClaw receives a read-oriented tool filter by
+default; LLM-backed and mutating tools remain opt-in. Re-run `talamus doctor`
+and report which integrations were detected.
 
 For automatic session memory, explain that the hook reads the session
 transcript and git diff, stores decisions locally, and audits the decision.

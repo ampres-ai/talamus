@@ -263,7 +263,8 @@ def create_app(root: Path) -> FastAPI:
 
     @app.post("/api/integrations/mcp")
     def integrations_mcp(payload: dict | None = None) -> dict:
-        """Connect agents via MCP: {"agent": "auto|claude|cursor|codex|all"} —
+        """Connect agents via MCP:
+        {"agent": "auto|claude|cursor|codex|opencode|openclaw|all"} —
         per-agent results in data.results (S1 middleware guards this POST)."""
         agent = str((payload or {}).get("agent", "auto"))
         return install_mcp_for_agent(root, agent).to_dict()
