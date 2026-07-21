@@ -11,6 +11,12 @@ semantic versioning once it reaches a public release.
 - A repository-level goose Open Plugin that installs the consent-aware Talamus
   memory skill and starts the pinned local MCP server for the active project.
 
+### Security
+
+- Agent skills and answer generation now treat files, URLs, transcripts, MCP
+  responses, and retrieved notes as untrusted data; embedded requests cannot
+  override consent, reveal secrets, or trigger commands and tools.
+
 ## [1.0.3] - 2026-07-20
 
 ### Added

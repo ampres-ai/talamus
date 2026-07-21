@@ -98,6 +98,16 @@ Install the consent-aware Talamus agent skill from [skills.sh](https://skills.sh
 npx skills add ampres-ai/talamus --skill talamus-memory
 ```
 
+OpenClaw can install the same standalone skill directly from ClawHub:
+
+```bash
+openclaw skills install @ampres-ai/talamus-memory
+```
+
+Installing the standalone skill does not install Talamus automatically. If the
+CLI is missing, the skill explains the isolated installation choices and asks
+before running one.
+
 Gemini CLI can install Talamus directly from its extension gallery or from this
 repository. The extension starts the pinned PyPI release through `uvx`, so it
 does not modify the cloned source tree:
