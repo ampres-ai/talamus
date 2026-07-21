@@ -6,7 +6,10 @@ semantic versioning once it reaches a public release.
 
 ## [Unreleased]
 
-No changes yet.
+### Changed
+
+- The MCPB and Smithery bundle now pin the published Talamus 1.1.0 package and
+  document the exact versioned build and publication commands.
 
 ## [1.1.0] - 2026-07-21
 

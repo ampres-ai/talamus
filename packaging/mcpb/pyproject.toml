@@ -1,10 +1,10 @@
 [project]
 name = "talamus-mcpb-launcher"
-version = "1.0.3"
+version = "1.1.0"
 description = "UV launcher for the Talamus MCP bundle."
 requires-python = ">=3.11"
 dependencies = [
-  "talamus[mcp]==1.0.3",
+  "talamus[mcp]==1.1.0",
 ]
 
 [tool.uv]

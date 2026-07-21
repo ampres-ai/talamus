@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "talamus",
   "display_name": "Talamus",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Local-first, source-grounded memory with bitemporal history and provenance for AI agents.",
   "long_description": "Talamus gives AI agents a durable local memory stored as readable Markdown. It preserves source provenance and bitemporal history, offers zero-cost lexical recall, and gates uncertain corrections through a review queue.",
   "author": {
