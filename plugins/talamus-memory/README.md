@@ -54,4 +54,7 @@ uvx --from "talamus[mcp]==1.0.3" talamus-mcp --help
 ```
 
 The plugin is designed for both the Claude Code plugin format and GitHub
-Copilot CLI's compatible plugin loader.
+Copilot CLI's compatible plugin loader. The manifest is present in both
+`.claude-plugin/plugin.json` and `plugin.json` because the two marketplace
+validators currently recognize different canonical locations; repository tests
+keep their content identical.

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "talamus-memory",
+  "displayName": "Talamus Memory",
+  "version": "1.0.0",
+  "description": "Durable, local-first agent memory with cited retrieval, provenance, history, and MCP tools.",
+  "author": {
+    "name": "Ampres",
+    "url": "https://github.com/ampres-ai"
+  },
+  "homepage": "https://ampres-ai.github.io/talamus/",
+  "repository": "https://github.com/ampres-ai/talamus",
+  "license": "Apache-2.0",
+  "keywords": [
+    "agent-memory",
+    "citations",
+    "local-first",
+    "mcp",
+    "provenance"
+  ],
+  "skills": [
+    "./skills/talamus-memory"
+  ],
+  "mcpServers": "./.mcp.json"
+}
