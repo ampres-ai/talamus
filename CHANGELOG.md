@@ -8,6 +8,8 @@ semantic versioning once it reaches a public release.
 
 ### Added
 
+- A Cursor Marketplace plugin manifest that bundles the consent-aware memory
+  skill with a project-relative, version-pinned local MCP launcher.
 - A repository-level goose Open Plugin that installs the consent-aware Talamus
   memory skill and starts the pinned local MCP server for the active project.
 

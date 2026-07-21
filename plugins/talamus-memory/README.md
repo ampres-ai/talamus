@@ -1,8 +1,8 @@
 # Talamus Memory plugin
 
-Give Claude Code, GitHub Copilot CLI, or goose durable, source-grounded memory
-for the current project. The plugin combines a consent-aware agent skill with
-Talamus's local MCP server.
+Give Cursor, Claude Code, GitHub Copilot CLI, or goose durable, source-grounded
+memory for the current project. The plugin combines a consent-aware agent skill
+with Talamus's local MCP server.
 
 ## What installation does
 
@@ -50,6 +50,7 @@ From the Talamus repository root:
 
 ```bash
 claude plugin validate ./plugins/talamus-memory --strict
+python -m unittest tests.test_agent_plugin_package -v
 uvx --from "talamus[mcp]==1.0.3" talamus-mcp --help
 ```
 
@@ -60,3 +61,6 @@ validators currently recognize different canonical locations; repository tests
 keep their content identical. goose uses the repository-level
 `.goose-plugin/plugin.json`, which points to this skill and supplies a
 project-relative MCP launcher without changing either compatible manifest.
+Cursor uses `.cursor-plugin/plugin.json` and `mcp.json` in this bundle; the
+repository-level `.cursor-plugin/marketplace.json` points Cursor at it. That MCP
+launcher is also project-relative and pins the same published Talamus version.

@@ -1,0 +1,16 @@
+{
+  "name": "talamus-plugins",
+  "owner": {
+    "name": "Ampres"
+  },
+  "metadata": {
+    "description": "Official Cursor plugins for Talamus local-first agent memory."
+  },
+  "plugins": [
+    {
+      "name": "talamus",
+      "source": "./plugins/talamus-memory",
+      "description": "Durable, local-first agent memory with citations, provenance, history, and MCP tools."
+    }
+  ]
+}

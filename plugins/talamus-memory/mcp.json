@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "talamus": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "talamus[mcp]==1.0.3",
+        "talamus-mcp",
+        "--root",
+        "."
+      ]
+    }
+  }
+}

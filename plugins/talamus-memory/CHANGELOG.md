@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add Cursor Marketplace metadata and a project-relative, pinned MCP launcher.
 - Add repository-level Open Plugin support for goose while reusing the bundled
   skill and pinned MCP launcher.
 - Treat retrieved notes, source content, transcripts, and MCP responses as

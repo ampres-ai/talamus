@@ -1,0 +1,29 @@
+{
+  "name": "talamus",
+  "displayName": "Talamus",
+  "version": "1.0.0",
+  "description": "Durable, local-first agent memory with citations, provenance, history, and MCP tools.",
+  "author": {
+    "name": "Ampres"
+  },
+  "publisher": "Ampres",
+  "homepage": "https://ampres-ai.github.io/talamus/",
+  "repository": "https://github.com/ampres-ai/talamus",
+  "license": "Apache-2.0",
+  "logo": "./assets/logo.png",
+  "keywords": [
+    "agent-memory",
+    "citations",
+    "local-first",
+    "mcp",
+    "provenance"
+  ],
+  "category": "developer-tools",
+  "tags": [
+    "ai-agents",
+    "knowledge-management",
+    "memory"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json"
+}

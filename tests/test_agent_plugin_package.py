@@ -8,6 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "talamus-memory"
 GOOSE_MANIFEST = ROOT / ".goose-plugin" / "plugin.json"
+CURSOR_MARKETPLACE = ROOT / ".cursor-plugin" / "marketplace.json"
+CURSOR_MANIFEST = PLUGIN / ".cursor-plugin" / "plugin.json"
 STANDALONE_SKILL = ROOT / ".agents" / "skills" / "talamus-memory" / "SKILL.md"
 BUNDLED_SKILL = PLUGIN / "skills" / "talamus-memory" / "SKILL.md"
 
@@ -31,6 +33,39 @@ class AgentPluginPackageTests(unittest.TestCase):
         args = config["mcpServers"]["talamus"]["args"]
 
         self.assertEqual(f"talamus[mcp]=={project['project']['version']}", args[1])
+
+    def test_cursor_marketplace_points_to_the_bundled_plugin(self) -> None:
+        marketplace = json.loads(CURSOR_MARKETPLACE.read_text(encoding="utf-8"))
+        entry = marketplace["plugins"][0]
+        manifest = json.loads(CURSOR_MANIFEST.read_text(encoding="utf-8"))
+
+        self.assertEqual("talamus", entry["name"])
+        self.assertEqual(entry["name"], manifest["name"])
+        self.assertEqual("./plugins/talamus-memory", entry["source"])
+        self.assertTrue((ROOT / entry["source"] / ".cursor-plugin" / "plugin.json").is_file())
+
+    def test_cursor_plugin_reuses_skill_and_pins_project_mcp(self) -> None:
+        project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        manifest = json.loads(CURSOR_MANIFEST.read_text(encoding="utf-8"))
+
+        self.assertEqual("./skills/", manifest["skills"])
+        self.assertTrue((PLUGIN / manifest["skills"] / "talamus-memory" / "SKILL.md").is_file())
+        self.assertTrue((PLUGIN / manifest["logo"]).is_file())
+
+        config = json.loads((PLUGIN / manifest["mcpServers"]).read_text(encoding="utf-8"))
+        server = config["mcpServers"]["talamus"]
+        self.assertEqual("uvx", server["command"])
+        self.assertEqual(
+            [
+                "--from",
+                f"talamus[mcp]=={project['project']['version']}",
+                "talamus-mcp",
+                "--root",
+                ".",
+            ],
+            server["args"],
+        )
+        self.assertNotIn("${CLAUDE_PROJECT_DIR}", json.dumps(config))
 
     def test_goose_open_plugin_reuses_the_bundled_skill(self) -> None:
         manifest = json.loads(GOOSE_MANIFEST.read_text(encoding="utf-8"))
