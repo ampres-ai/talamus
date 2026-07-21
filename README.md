@@ -103,7 +103,7 @@ docker run --rm -i -v "$PWD:/data" ghcr.io/ampres-ai/talamus:1.0.3
 
 ## Links
 
-Docs: [quickstart](docs/quickstart.md), [agent install guide](llms-install.md), [commands](docs/commands.md), [agent tool calling](docs/agent-tool-calling.md), [configuration](docs/configuration.md), [benchmarks](docs/benchmarks.md), [architecture](docs/architecture.md), [design principles](docs/design-principles.md), [evaluation](docs/evaluation.md), [multi-brain](docs/multi-brain.md), [ontology](docs/ontology.md).
+Docs: [quickstart](docs/quickstart.md), [local-first agent memory](docs/local-first-agent-memory.md), [agent install guide](llms-install.md), [commands](docs/commands.md), [agent tool calling](docs/agent-tool-calling.md), [configuration](docs/configuration.md), [benchmarks](docs/benchmarks.md), [architecture](docs/architecture.md), [design principles](docs/design-principles.md), [evaluation](docs/evaluation.md), [multi-brain](docs/multi-brain.md), [ontology](docs/ontology.md).
 
 Project: [security](SECURITY.md), [contributing](CONTRIBUTING.md), [roadmap](ROADMAP.md), [changelog](CHANGELOG.md).
 
