@@ -87,6 +87,14 @@ talamus ingest ./notes && talamus ask "what should I remember?"
 
 Run `talamus` for the status dashboard, `talamus quickstart` for essential commands, or `talamus ui` for the local React workbench.
 
+Gemini CLI can install Talamus directly from its extension gallery or from this
+repository. The extension starts the pinned PyPI release through `uvx`, so it
+does not modify the cloned source tree:
+
+```bash
+gemini extensions install https://github.com/ampres-ai/talamus --auto-update
+```
+
 Containerized MCP (the brain remains in the mounted local folder):
 
 ```bash
