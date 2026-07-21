@@ -51,15 +51,20 @@ release:
 
 1. Update `version` in `pyproject.toml`.
 2. Run `python dev.py`.
-3. Commit and push the version change.
-4. Create a GitHub release tagged `vX.Y.Z`, matching the exact
-   `pyproject.toml` version.
+3. Commit, push, and merge the version change into `main`.
+4. Create a **draft** GitHub release tagged `vX.Y.Z` at the merged release
+   commit, matching the exact `pyproject.toml` version.
+5. Dispatch `Publish release` with that tag. Wait for its read-only quality
+   gate and draft-asset job to attach the wheel, source archive, checksums, and
+   commit-bound release manifest.
+6. Publish the draft. The `published` event uploads those exact checked files
+   to PyPI and then publishes `server.json` to the official MCP Registry.
 
-The `Publish release` workflow builds the package, checks the distributions,
-uploads them to PyPI through the `pypi` GitHub environment, and then publishes
-`server.json` to the official MCP Registry through GitHub OIDC. Configure the
-PyPI Trusted Publisher for project `talamus` with owner `ampres-ai`, repository
-`talamus`, workflow `publish.yml`, and environment `pypi`.
+The same workflow input safely recovers a published release: it compares
+existing PyPI hashes and MCP metadata before deciding whether either immutable
+version still needs publication. Configure the PyPI Trusted Publisher for
+project `talamus` with owner `ampres-ai`, repository `talamus`, workflow
+`publish.yml`, and environment `pypi`.
 
 ## Release checklist
 

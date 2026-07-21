@@ -6,16 +6,211 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Existing release tag to recover (for example, v1.0.3)
+        description: Draft release to prepare or published release to recover (for example, v1.1.0)
         required: true
         type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: talamus-release-publish
+  cancel-in-progress: false
+
 jobs:
-  publish:
-    name: Build and publish
+  validate:
+    name: Validate release source
+    runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.source.outputs.commit }}
+      is_draft: ${{ steps.release.outputs.is_draft }}
+      release_tag: ${{ steps.source.outputs.release_tag }}
+      version: ${{ steps.source.outputs.version }}
+
+    steps:
+      - name: Check out requested tag without credentials
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.release_tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Validate tag, version, and main ancestry
+        id: source
+        env:
+          REQUESTED_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must be a stable vMAJOR.MINOR.PATCH tag." >&2
+            exit 1
+          fi
+
+          tag_commit="$(git rev-parse "refs/tags/${REQUESTED_TAG}^{commit}")"
+          head_commit="$(git rev-parse HEAD)"
+          if [[ "$tag_commit" != "$head_commit" ]]; then
+            echo "Checked-out commit does not match ${REQUESTED_TAG}." >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          if ! git merge-base --is-ancestor "$head_commit" refs/remotes/origin/main; then
+            echo "Release commit is not reachable from origin/main." >&2
+            exit 1
+          fi
+
+          version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          if [[ "$REQUESTED_TAG" != "v${version}" ]]; then
+            echo "Release tag ${REQUESTED_TAG} does not match project version ${version}." >&2
+            exit 1
+          fi
+
+          echo "commit=${head_commit}" >> "$GITHUB_OUTPUT"
+          echo "release_tag=${REQUESTED_TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Inspect GitHub release
+        id: release
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.source.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          is_draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)"
+          is_prerelease="$(gh release view "$RELEASE_TAG" --json isPrerelease --jq .isPrerelease)"
+          if [[ "$is_prerelease" != "false" ]]; then
+            echo "Stable package publication does not accept a prerelease." >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_EVENT_NAME}" == "release" && "$is_draft" != "false" ]]; then
+            echo "A published release event must reference a published release." >&2
+            exit 1
+          fi
+          echo "is_draft=${is_draft}" >> "$GITHUB_OUTPUT"
+
+      - name: Install release and quality tools
+        run: python -m pip install --upgrade build twine ".[dev]"
+
+      - name: Run the quality gate
+        run: python dev.py
+
+      - name: Build draft distributions
+        if: github.event_name == 'workflow_dispatch' && steps.release.outputs.is_draft == 'true'
+        run: python -m build
+
+      - name: Check draft distributions
+        if: github.event_name == 'workflow_dispatch' && steps.release.outputs.is_draft == 'true'
+        env:
+          VERSION: ${{ steps.source.outputs.version }}
+        run: python -m twine check "dist/talamus-${VERSION}-py3-none-any.whl" "dist/talamus-${VERSION}.tar.gz"
+
+      - name: Create release manifest and checksums
+        if: github.event_name == 'workflow_dispatch' && steps.release.outputs.is_draft == 'true'
+        shell: python
+        env:
+          RELEASE_COMMIT: ${{ steps.source.outputs.commit }}
+          VERSION: ${{ steps.source.outputs.version }}
+        run: |
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          dist = Path("dist")
+          expected = {
+              dist / f"talamus-{version}-py3-none-any.whl",
+              dist / f"talamus-{version}.tar.gz",
+          }
+          actual = {path for path in dist.iterdir() if path.is_file()}
+          if actual != expected:
+              raise SystemExit(f"Unexpected distribution set: {sorted(str(path) for path in actual)}")
+
+          hashes = {
+              path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in sorted(expected)
+          }
+          manifest = {
+              "schema": 1,
+              "version": version,
+              "commit": os.environ["RELEASE_COMMIT"],
+              "files": hashes,
+          }
+          (dist / "RELEASE-MANIFEST.json").write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          (dist / "SHA256SUMS").write_text(
+              "".join(f"{digest}  {name}\n" for name, digest in sorted(hashes.items())),
+              encoding="utf-8",
+          )
+
+      - name: Preserve checked draft artifacts
+        if: github.event_name == 'workflow_dispatch' && steps.release.outputs.is_draft == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-distributions-${{ steps.source.outputs.version }}
+          path: |
+            dist/talamus-${{ steps.source.outputs.version }}-py3-none-any.whl
+            dist/talamus-${{ steps.source.outputs.version }}.tar.gz
+            dist/RELEASE-MANIFEST.json
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+
+  attach-assets:
+    name: Attach artifacts to draft release
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && needs.validate.outputs.is_draft == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download checked artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: release-distributions-${{ needs.validate.outputs.version }}
+          path: release-assets
+
+      - name: Attach without replacing existing bytes
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if [[ "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" != "true" ]]; then
+            echo "The release is no longer a draft; refusing to modify its assets." >&2
+            exit 1
+          fi
+
+          existing="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          mkdir -p existing-assets
+          for file in release-assets/*; do
+            name="$(basename "$file")"
+            if grep -Fqx "$name" <<<"$existing"; then
+              gh release download "$RELEASE_TAG" --pattern "$name" --dir existing-assets
+              if ! cmp -s "$file" "existing-assets/$name"; then
+                echo "Existing draft asset ${name} has different bytes; refusing to replace it." >&2
+                exit 1
+              fi
+              echo "Verified existing draft asset ${name}."
+            else
+              gh release upload "$RELEASE_TAG" "$file"
+            fi
+          done
+
+  publish-pypi:
+    name: Publish exact release assets to PyPI
+    needs: validate
+    if: needs.validate.outputs.is_draft == 'false'
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -23,77 +218,194 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    concurrency:
-      group: pypi-publish
-      cancel-in-progress: false
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
-      - name: Install release and quality tools
-        run: python -m pip install --upgrade build twine ".[dev]"
-
-      - name: Validate release tag
+      - name: Download canonical release assets
         env:
-          REQUESTED_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.release_tag }}
-        shell: python
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate.outputs.release_tag }}
+          VERSION: ${{ needs.validate.outputs.version }}
         run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          gh release download "$RELEASE_TAG" --dir release-assets \
+            --pattern "talamus-${VERSION}-py3-none-any.whl" \
+            --pattern "talamus-${VERSION}.tar.gz" \
+            --pattern "RELEASE-MANIFEST.json" \
+            --pattern "SHA256SUMS"
+
+      - name: Verify release provenance and hashes
+        shell: python
+        env:
+          RELEASE_COMMIT: ${{ needs.validate.outputs.commit }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          import hashlib
+          import json
           import os
-          import sys
-          import tomllib
+          import shutil
+          from pathlib import Path
 
-          with open("pyproject.toml", "rb") as fh:
-              version = tomllib.load(fh)["project"]["version"]
+          version = os.environ["VERSION"]
+          root = Path("release-assets")
+          expected_names = {
+              f"talamus-{version}-py3-none-any.whl",
+              f"talamus-{version}.tar.gz",
+          }
+          manifest = json.loads((root / "RELEASE-MANIFEST.json").read_text(encoding="utf-8"))
+          if manifest.get("schema") != 1:
+              raise SystemExit("Unsupported release manifest schema.")
+          if manifest.get("version") != version:
+              raise SystemExit("Release manifest version does not match the tag.")
+          if manifest.get("commit") != os.environ["RELEASE_COMMIT"]:
+              raise SystemExit("Release assets were not built from the validated tag commit.")
+          if set(manifest.get("files", {})) != expected_names:
+              raise SystemExit("Release manifest contains an unexpected distribution set.")
 
-          tag = os.environ["REQUESTED_TAG"]
-          expected = f"v{version}"
-          if tag != expected:
-              print(f"Requested release tag {tag!r} does not match pyproject version {version!r}.")
-              print(f"Use tag {expected!r}, or update pyproject.toml before publishing.")
-              sys.exit(1)
+          checksum_lines = (root / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
+          checksums = {
+              line.split(None, 1)[1].strip(): line.split(None, 1)[0]
+              for line in checksum_lines
+              if line.strip()
+          }
+          if checksums != manifest["files"]:
+              raise SystemExit("SHA256SUMS does not match the release manifest.")
 
-          if os.environ["GITHUB_EVENT_NAME"] == "release" and os.environ["GITHUB_REF_NAME"] != tag:
-              print(f"Release ref {os.environ['GITHUB_REF_NAME']!r} does not match {tag!r}.")
-              sys.exit(1)
+          dist = Path("dist")
+          dist.mkdir()
+          for name, expected_hash in manifest["files"].items():
+              source = root / name
+              actual_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+              if actual_hash != expected_hash:
+                  raise SystemExit(f"Hash mismatch for {name}.")
+              shutil.copy2(source, dist / name)
 
-      - name: Run the quality gate
-        run: python dev.py
+      - name: Check whether PyPI already has these exact files
+        id: pypi-preflight
+        shell: python
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          import hashlib
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
 
-      - name: Build distributions
-        run: python -m build
+          version = os.environ["VERSION"]
+          local = {
+              path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in Path("dist").iterdir()
+              if path.is_file()
+          }
+          request = urllib.request.Request(
+              f"https://pypi.org/pypi/talamus/{version}/json",
+              headers={"User-Agent": "talamus-release-workflow"},
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  payload = json.load(response)
+          except urllib.error.HTTPError as error:
+              if error.code != 404:
+                  raise
+              payload = None
 
-      - name: Check distributions
-        run: python -m twine check dist/*
+          publish = payload is None
+          if payload is not None:
+              remote = {item["filename"]: item["digests"]["sha256"] for item in payload["urls"]}
+              if remote != local:
+                  raise SystemExit(
+                      "PyPI already contains this version with a different file set or hash."
+                  )
+              print("PyPI already contains the exact canonical release files; skipping upload.")
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"publish={str(publish).lower()}\n")
+
+      - name: Publish to PyPI with Trusted Publishing
+        if: steps.pypi-preflight.outputs.publish == 'true'
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # release/v1
 
   publish-mcp:
     name: Publish to MCP Registry
-    needs: publish
+    needs:
+      - validate
+      - publish-pypi
+    if: needs.validate.outputs.is_draft == 'false'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
 
     steps:
-      - name: Check out repository
+      - name: Check out the validated commit without credentials
         uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.validate.outputs.commit }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Check whether MCP Registry already has the exact entry
+        id: mcp-preflight
+        shell: python
+        run: |
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          local = json.loads(Path("server.json").read_text(encoding="utf-8"))
+          name = urllib.parse.quote(local["name"], safe="")
+          version = urllib.parse.quote(local["version"], safe="")
+          request = urllib.request.Request(
+              f"https://registry.modelcontextprotocol.io/v0.1/servers/{name}/versions/{version}",
+              headers={"User-Agent": "talamus-release-workflow"},
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  registered = json.load(response)["server"]
+          except urllib.error.HTTPError as error:
+              if error.code != 404:
+                  raise
+              registered = None
+
+          publish = registered is None
+          if registered is not None:
+              if registered != local:
+                  raise SystemExit(
+                      "MCP Registry already contains this version with different metadata."
+                  )
+              print("MCP Registry already contains the exact server entry; skipping publication.")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"publish={str(publish).lower()}\n")
 
       - name: Install verified MCP publisher
+        if: steps.mcp-preflight.outputs.publish == 'true'
         run: |
-          curl -L https://github.com/modelcontextprotocol/registry/releases/download/v1.8.0/mcp-publisher_linux_amd64.tar.gz -o mcp-publisher.tar.gz
+          curl --fail --location \
+            https://github.com/modelcontextprotocol/registry/releases/download/v1.8.0/mcp-publisher_linux_amd64.tar.gz \
+            --output mcp-publisher.tar.gz
           echo "1370446bbe74d562608e8005a6ccce02d146a661fbd78674e11cc70b9618d6cf  mcp-publisher.tar.gz" | sha256sum -c -
           tar xzf mcp-publisher.tar.gz mcp-publisher
 
       - name: Authenticate to MCP Registry
+        if: steps.mcp-preflight.outputs.publish == 'true'
         run: ./mcp-publisher login github-oidc
 
       - name: Publish to MCP Registry
+        if: steps.mcp-preflight.outputs.publish == 'true'
         run: ./mcp-publisher publish

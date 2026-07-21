@@ -11,7 +11,7 @@ before any operation that can call an LLM, change memory, or capture a session.
 
 ## Runtime and safety contract
 
-- The plugin launches `talamus[mcp]==1.0.3` through `uvx` for the active project.
+- The plugin launches `talamus[mcp]==1.1.0` through `uvx` for the active project.
   The first start may download the pinned package into the local `uv` cache; it
   does not install Talamus persistently.
 - Never install a capture hook or read a transcript without explicit consent.
@@ -55,7 +55,7 @@ If the MCP tools report that no brain exists, ask whether memory should belong
 to the current project. After approval, initialize from the project root:
 
 ```bash
-uvx --from "talamus[mcp]==1.0.3" talamus setup --capture ask
+uvx --from "talamus[mcp]==1.1.0" talamus setup --capture ask
 ```
 
 Use `talamus init` through the same `uvx --from` prefix for minimal setup without
@@ -70,7 +70,7 @@ before calling a mutating MCP tool. For repository ingestion, use the CLI to
 preview first:
 
 ```bash
-uvx --from "talamus[mcp]==1.0.3" talamus scan . --dry-run --profile docs
+uvx --from "talamus[mcp]==1.1.0" talamus scan . --dry-run --profile docs
 ```
 
 Run the approved ingestion only after showing the preview. Never allow secrets
@@ -87,7 +87,7 @@ Before bulk curation, relocation, or destructive maintenance, create a portable
 backup with the CLI:
 
 ```bash
-uvx --from "talamus[mcp]==1.0.3" talamus export brain.zip
+uvx --from "talamus[mcp]==1.1.0" talamus export brain.zip
 ```
 
 End the workflow with the active project path, the tools or commands actually

@@ -4,6 +4,12 @@ This directory builds the local MCPB artifact published to Smithery. The bundle 
 the cross-platform UV runtime and installs the matching `talamus[mcp]` release from
 PyPI; it does not embed a private service or a second implementation.
 
+MCPB artifacts follow a separate post-release cycle. Each bundle pins a Talamus
+version that is already published on PyPI so `uv.lock` can record the registry's
+immutable hashes. A core source tag can therefore contain the previous MCPB release;
+the bundle is bumped, relocked, and republished immediately after the new core wheel
+is available.
+
 From the repository root:
 
 ```bash

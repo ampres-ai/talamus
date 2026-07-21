@@ -129,7 +129,7 @@ dependencies into an isolated cache on first use.
 Containerized MCP (the brain remains in the mounted local folder):
 
 ```bash
-docker run --rm -i -v "$PWD:/data" ghcr.io/ampres-ai/talamus:1.0.3
+docker run --rm -i -v "$PWD:/data" ghcr.io/ampres-ai/talamus:1.1.0
 ```
 
 ## Links

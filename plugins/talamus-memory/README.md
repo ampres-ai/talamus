@@ -41,13 +41,13 @@ If the project does not have a Talamus brain yet, review the change and run from
 the project root:
 
 ```bash
-uvx --from "talamus[mcp]==1.0.3" talamus setup --capture ask
+uvx --from "talamus[mcp]==1.1.0" talamus setup --capture ask
 ```
 
 For a minimal brain without agent configuration or a capture hook:
 
 ```bash
-uvx --from "talamus[mcp]==1.0.3" talamus init
+uvx --from "talamus[mcp]==1.1.0" talamus init
 ```
 
 Cursor's plugin does not provide MCP registration. Initialization and MCP setup
@@ -60,13 +60,13 @@ change, install the pinned package and configure Cursor from the initialized
 workspace root:
 
 ```bash
-uv tool install "talamus[mcp]==1.0.3"
+uv tool install "talamus[mcp]==1.1.0"
 talamus mcp install --agent cursor
 ```
 
 The skill reads `.cursor/mcp.json` before and after the command, preserves every
 existing server, and verifies that Talamus's `--root` is absolute and matches
-the workspace. Do not run the installer itself through `uvx`: version 1.0.3
+the workspace. Do not run the installer itself through `uvx`: version 1.1.0
 writes a bare `talamus-mcp` launcher, which must remain available after setup.
 
 ## Development validation
@@ -76,7 +76,7 @@ From the Talamus repository root:
 ```bash
 claude plugin validate ./plugins/talamus-memory --strict
 python -m unittest tests.test_agent_plugin_package -v
-uvx --from "talamus[mcp]==1.0.3" talamus-mcp --help
+uvx --from "talamus[mcp]==1.1.0" talamus-mcp --help
 ```
 
 The component bundle is designed for both the Claude Code plugin format and

@@ -6,20 +6,36 @@ semantic versioning once it reaches a public release.
 
 ## [Unreleased]
 
+No changes yet.
+
+## [1.1.0] - 2026-07-21
+
 ### Added
 
-- A dedicated OpenAI skills-only plugin bundle and deterministic reviewer
-  dossier for guarded, CLI-first local project memory.
-- A Cursor Marketplace plugin manifest that bundles a dedicated, consent-aware,
-  CLI-first memory skill.
-- A repository-level goose Open Plugin that installs the consent-aware Talamus
-  memory skill and starts the pinned local MCP server for the active project.
+- OpenClaw MCP registration support, a Gemini CLI extension, a tested container
+  distribution, and Smithery-compatible MCP bundle tooling.
+- Reusable, consent-aware Talamus memory skills and plugin bundles for Claude
+  Code, GitHub Copilot CLI, goose, Cursor, and OpenAI's skills-only directory.
+- Consent-safe onboarding for Cline and other stdio MCP clients, plus a
+  local-first agent-memory guide, deterministic reviewer fixtures, and package
+  validation tests.
 
 ### Fixed
 
 - The Cursor plugin no longer starts Talamus with the plugin cache as an
   ambiguous `--root .`. Optional MCP setup now requires an explicitly approved
   persistent tool install and verifies the workspace's absolute root.
+- The README again displays the reproducible terminal demo instead of a static
+  fallback, and package discovery now points users to verified install paths.
+
+### Changed
+
+- The quickstart, documentation landing page, benchmark summary, package
+  metadata, and repository artwork now present one consistent public release.
+- Release preparation validates tag ancestry and attaches commit-bound,
+  checksummed distributions to a draft; publication and recovery reuse those
+  exact bytes and compare existing PyPI and MCP Registry entries before upload.
+- Upgrading from 1.0.3 requires no cache migration or reindex.
 
 ### Security
 

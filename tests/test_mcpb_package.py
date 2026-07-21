@@ -16,17 +16,32 @@ class McpbPackageTests(unittest.TestCase):
     def _manifest(self) -> dict[str, Any]:
         return json.loads((MCPB_ROOT / "manifest.json").read_text(encoding="utf-8"))
 
-    def test_bundle_metadata_tracks_the_python_release(self) -> None:
-        with (ROOT / "pyproject.toml").open("rb") as handle:
-            project = tomllib.load(handle)["project"]
+    def test_bundle_metadata_is_internally_consistent(self) -> None:
         with (MCPB_ROOT / "pyproject.toml").open("rb") as handle:
             launcher = tomllib.load(handle)["project"]
         manifest = self._manifest()
 
-        version = project["version"]
+        version = launcher["version"]
         self.assertEqual(version, manifest["version"])
-        self.assertEqual(version, launcher["version"])
         self.assertEqual([f"talamus[mcp]=={version}"], launcher["dependencies"])
+
+        with (MCPB_ROOT / "uv.lock").open("rb") as handle:
+            locked_packages = tomllib.load(handle)["package"]
+        talamus = [package for package in locked_packages if package["name"] == "talamus"]
+        launcher_lock = next(
+            package for package in locked_packages if package["name"] == "talamus-mcpb-launcher"
+        )
+        self.assertEqual([version], [package["version"] for package in talamus])
+        self.assertEqual(
+            [
+                {
+                    "name": "talamus",
+                    "extras": ["mcp"],
+                    "specifier": f"=={version}",
+                }
+            ],
+            launcher_lock["metadata"]["requires-dist"],
+        )
 
     def test_manifest_references_files_inside_the_bundle(self) -> None:
         manifest = self._manifest()

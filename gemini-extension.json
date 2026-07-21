@@ -1,6 +1,6 @@
 {
   "name": "talamus",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Local-first, source-grounded memory for Gemini CLI and other AI agents.",
   "mcpServers": {
     "talamus": {
@@ -8,7 +8,7 @@
       "args": [
         "--with",
         "mcp>=1.0",
-        "talamus==1.0.3",
+        "talamus==1.1.0",
         "mcp",
         "serve"
       ]
