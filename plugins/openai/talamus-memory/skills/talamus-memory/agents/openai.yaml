@@ -1,0 +1,7 @@
+interface:
+  display_name: "Talamus Memory"
+  short_description: "Use cited, local-first memory with Talamus"
+  default_prompt: "Use $talamus-memory to retrieve cited context from this local project without changing its brain."
+
+policy:
+  allow_implicit_invocation: true

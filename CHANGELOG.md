@@ -8,6 +8,8 @@ semantic versioning once it reaches a public release.
 
 ### Added
 
+- A dedicated OpenAI skills-only plugin bundle and deterministic reviewer
+  dossier for guarded, CLI-first local project memory.
 - A Cursor Marketplace plugin manifest that bundles a dedicated, consent-aware,
   CLI-first memory skill.
 - A repository-level goose Open Plugin that installs the consent-aware Talamus
