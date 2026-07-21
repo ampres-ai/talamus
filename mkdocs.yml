@@ -13,6 +13,7 @@ theme:
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
+  - Local-first agent memory: local-first-agent-memory.md
   - Commands: commands.md
   - Configuration: configuration.md
   - Multi-brain: multi-brain.md

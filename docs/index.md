@@ -44,6 +44,8 @@ public number traced to a committed result artifact.
 ## Where to go next
 
 - **[Quickstart](quickstart.md)** — install and try it in 10 minutes.
+- **[Local-first agent memory](local-first-agent-memory.md)** — evaluate the
+  architecture, trade-offs, and no-LLM demo.
 - **[Agent install guide](https://github.com/ampres-ai/talamus/blob/main/llms-install.md)** — configure an agent without hidden side effects.
 - **[Commands](commands.md)** — browse the full `talamus` CLI reference.
 - **[Benchmarks](benchmarks.md)** — inspect the measured numbers and artifacts.
