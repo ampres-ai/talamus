@@ -10,7 +10,7 @@
     {
       "name": "talamus",
       "source": "./plugins/talamus-memory",
-      "description": "Durable, local-first agent memory with citations, provenance, history, and MCP tools."
+      "description": "Durable, local-first agent memory with cited recall, provenance, and a consent-aware CLI-first Cursor workflow."
     }
   ]
 }

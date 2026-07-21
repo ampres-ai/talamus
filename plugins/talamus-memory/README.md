@@ -1,16 +1,16 @@
 # Talamus Memory plugin
 
 Give Cursor, Claude Code, GitHub Copilot CLI, or goose durable, source-grounded
-memory for the current project. The plugin combines a consent-aware agent skill
-with Talamus's local MCP server.
+memory for the current project. Cursor receives a dedicated CLI-first skill;
+the other plugin formats keep the bundled skill and local MCP launcher.
 
 ## What installation does
 
-- Registers the bundled `talamus-memory` skill.
-- Starts the local Talamus MCP server for the active project when the plugin is
-  enabled.
-- Uses `uvx` to run the pinned PyPI package `talamus[mcp]==1.0.3` in an isolated
-  cache. The first start may download that package and its dependencies.
+- Registers the relevant `talamus-memory` skill for the host.
+- Cursor does not start an MCP server or install Talamus. Its skill uses
+  consented, pinned `uvx` commands for CLI access from the active workspace.
+- Claude Code, GitHub Copilot CLI, and goose retain their existing local MCP
+  launchers.
 - Does not install a session-capture hook, read transcripts, initialize a brain,
   or send project content anywhere by itself.
 
@@ -25,6 +25,15 @@ need an LLM. Smart search, cited answer generation, ingestion, verification,
 and memory writes can call the LLM provider configured by the user. The bundled
 skill requires explicit consent before those operations and before any session
 capture or hook installation.
+
+## Cursor: CLI-first access
+
+The Cursor skill first confirms the resolved brain with `talamus where --json`
+and keeps ordinary recall on read-only commands such as `search`, `recall`,
+`read`, and `history`. Before the first `uvx` run, it discloses that the pinned
+package may be downloaded into `uv`'s cache and asks for consent. It never runs
+`ask`, smart search, a write, or a persistent installation without explicit
+approval.
 
 ## Initialize a project brain
 
@@ -41,8 +50,24 @@ For a minimal brain without agent configuration or a capture hook:
 uvx --from "talamus[mcp]==1.0.3" talamus init
 ```
 
-The plugin itself already provides the MCP registration, so a separate
-`talamus mcp install` is not required.
+Cursor's plugin does not provide MCP registration. Initialization and MCP setup
+are separate, consented actions.
+
+## Cursor: optional project-scoped MCP
+
+After explicit approval for a persistent tool install and a workspace config
+change, install the pinned package and configure Cursor from the initialized
+workspace root:
+
+```bash
+uv tool install "talamus[mcp]==1.0.3"
+talamus mcp install --agent cursor
+```
+
+The skill reads `.cursor/mcp.json` before and after the command, preserves every
+existing server, and verifies that Talamus's `--root` is absolute and matches
+the workspace. Do not run the installer itself through `uvx`: version 1.0.3
+writes a bare `talamus-mcp` launcher, which must remain available after setup.
 
 ## Development validation
 
@@ -61,6 +86,7 @@ validators currently recognize different canonical locations; repository tests
 keep their content identical. goose uses the repository-level
 `.goose-plugin/plugin.json`, which points to this skill and supplies a
 project-relative MCP launcher without changing either compatible manifest.
-Cursor uses `.cursor-plugin/plugin.json` and `mcp.json` in this bundle; the
-repository-level `.cursor-plugin/marketplace.json` points Cursor at it. That MCP
-launcher is also project-relative and pins the same published Talamus version.
+Cursor uses `.cursor-plugin/plugin.json`; the repository-level
+`.cursor-plugin/marketplace.json` points Cursor at this bundle. Its manifest
+selects the dedicated `cursor-skills/` directory and intentionally contains no
+bundled MCP server, avoiding plugin-cache working-directory errors.
