@@ -2,46 +2,50 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://ampres-ai.github.io/talamus/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/agent-tool-calling/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/architecture/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/benchmarks/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/commands/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/configuration/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/design-principles/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/evaluation/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
+    </url>
+    <url>
+         <loc>https://ampres-ai.github.io/talamus/local-first-agent-memory/</loc>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/multi-brain/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/ontology/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
     <url>
          <loc>https://ampres-ai.github.io/talamus/quickstart/</loc>
-         <lastmod>2026-07-20</lastmod>
+         <lastmod>2026-07-21</lastmod>
     </url>
 </urlset>
