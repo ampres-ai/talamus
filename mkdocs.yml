@@ -23,6 +23,9 @@ nav:
   - For agents: agent-tool-calling.md
   - Architecture: architecture.md
   - Design principles: design-principles.md
+  - Legal:
+      - Privacy policy: privacy.md
+      - Terms of use: terms.md
 
 markdown_extensions:
   - admonition

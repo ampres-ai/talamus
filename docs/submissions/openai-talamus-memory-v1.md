@@ -13,6 +13,9 @@ a public production HTTPS MCP endpoint.
 - **Support:** https://github.com/ampres-ai/talamus/issues
 - **Security:** https://github.com/ampres-ai/talamus/security/advisories/new
 - **Repository:** https://github.com/ampres-ai/talamus
+- **Developer identity:** Individual — Angio Crapuzzi.
+- **Privacy:** https://ampres-ai.github.io/talamus/privacy/
+- **Terms:** https://ampres-ai.github.io/talamus/terms/
 - **Requirement:** A local project with terminal access and either `uv` or an
   existing Talamus 1.1.0 executable.
 
@@ -25,9 +28,9 @@ Long description:
 > it does not install Talamus, start an MCP server, read files, enable session
 > capture, or call an LLM.
 
-Before submission, add public Talamus-specific privacy and terms URLs that name
-the exact verified individual or business publisher selected in OpenAI. The
-manifest deliberately omits those URLs until that identity is confirmed.
+The public listing, manifest, privacy policy, and terms identify the verified
+individual publisher as Angio Crapuzzi. Ampres remains the open-source project
+name, not a separate verified business identity for this submission.
 
 ## Starter prompts
 

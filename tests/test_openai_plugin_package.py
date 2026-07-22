@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import struct
 import tomllib
 import unittest
 from pathlib import Path
@@ -12,6 +13,8 @@ MANIFEST = PLUGIN / ".codex-plugin" / "plugin.json"
 SKILL = PLUGIN / "skills" / "talamus-memory" / "SKILL.md"
 OPENAI_YAML = PLUGIN / "skills" / "talamus-memory" / "agents" / "openai.yaml"
 DOSSIER = ROOT / "docs" / "submissions" / "openai-talamus-memory-v1.md"
+PRIVACY = ROOT / "docs" / "privacy.md"
+TERMS = ROOT / "docs" / "terms.md"
 INJECTION_FIXTURE = ROOT / "tests" / "fixtures" / "openai-plugin" / "untrusted-runbook.md"
 
 
@@ -31,6 +34,28 @@ class OpenAIPluginPackageTests(unittest.TestCase):
         self.assertEqual(3, len(interface["defaultPrompt"]))
         self.assertTrue((PLUGIN / interface["composerIcon"]).is_file())
         self.assertTrue((PLUGIN / interface["logo"]).is_file())
+
+        icon = (PLUGIN / interface["logo"]).read_bytes()
+        self.assertEqual(b"\x89PNG\r\n\x1a\n", icon[:8])
+        width, height = struct.unpack(">II", icon[16:24])
+        self.assertEqual((512, 512), (width, height))
+
+    def test_manifest_identity_and_legal_links_match(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        interface = manifest["interface"]
+
+        self.assertEqual("Angio Crapuzzi", manifest["author"]["name"])
+        self.assertEqual("Angio Crapuzzi", interface["developerName"])
+        self.assertEqual(
+            "https://ampres-ai.github.io/talamus/privacy/",
+            interface["privacyPolicyURL"],
+        )
+        self.assertEqual(
+            "https://ampres-ai.github.io/talamus/terms/",
+            interface["termsOfServiceURL"],
+        )
+        self.assertIn("Publisher:** Angio Crapuzzi", PRIVACY.read_text(encoding="utf-8"))
+        self.assertIn("Publisher:** Angio Crapuzzi", TERMS.read_text(encoding="utf-8"))
 
     def test_skill_pins_the_release_and_defaults_to_read_only(self) -> None:
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))

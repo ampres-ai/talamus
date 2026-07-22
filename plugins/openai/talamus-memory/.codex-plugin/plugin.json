@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Consent-aware, local-first project memory with cited retrieval and provenance.",
   "author": {
-    "name": "Ampres",
-    "url": "https://github.com/ampres-ai"
+    "name": "Angio Crapuzzi",
+    "url": "https://ampres-ai.github.io/talamus/"
   },
   "homepage": "https://ampres-ai.github.io/talamus/",
   "repository": "https://github.com/ampres-ai/talamus",
@@ -20,12 +20,14 @@
     "displayName": "Talamus Memory",
     "shortDescription": "Cited local memory for agent projects",
     "longDescription": "Use Talamus through a consent-aware CLI workflow to search and recall local project notes, inspect provenance, history, graph links, and brain health. The plugin installs no package, MCP server, hook, or capture process.",
-    "developerName": "Ampres",
+    "developerName": "Angio Crapuzzi",
     "category": "Productivity",
     "capabilities": [
       "Read"
     ],
     "websiteURL": "https://ampres-ai.github.io/talamus/",
+    "privacyPolicyURL": "https://ampres-ai.github.io/talamus/privacy/",
+    "termsOfServiceURL": "https://ampres-ai.github.io/talamus/terms/",
     "defaultPrompt": [
       "Find a project decision in Talamus and cite the notes behind it.",
       "Show how a decision changed over time in this Talamus brain.",
