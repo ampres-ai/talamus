@@ -599,6 +599,121 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Legal
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Legal
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../privacy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms of use
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -678,18 +793,6 @@ and the whole screen re-renders with one free command:</p>
 <td>benchmarks/results/2026-07-08-token-efficiency.md</td>
 </tr>
 <tr>
-<td>Answers cited &amp; source-resolvable</td>
-<td>100%</td>
-<td>no competitor here has a provenance model</td>
-<td>benchmarks/profiler (book-brain profiler run)</td>
-</tr>
-<tr>
-<td>Marginal cost per answer</td>
-<td>EUR 0 (the LLM you already have)</td>
-<td>dense RAG pays embedding infrastructure per corpus</td>
-<td>benchmarks/profiler (book-brain profiler run)</td>
-</tr>
-<tr>
 <td>Cross-language + vague retrieval (book, hit@10)</td>
 <td>talamus-smart 0.971 (recall 0.929)</td>
 <td>BM25 0.829 - MiniLM vector DB 0.743</td>
@@ -699,7 +802,7 @@ and the whole screen re-renders with one free command:</p>
 <td>Retrieval quality tracks your engine (book, ranking)</td>
 <td>strong engine: talamus-smart nDCG 0.847 / MRR 0.865 - leads e5 (0.837 / 0.857)</td>
 <td>free engine: e5 leads ranking (0.837 vs 0.783); Talamus keeps best hit/recall</td>
-<td>benchmarks/results/2026-07-08-shootout-book.json (strong) + 2026-06-17-shootout-book.json (free)</td>
+<td>benchmarks/results/2026-07-08-shootout-book.json (strong) + benchmarks/results/2026-06-17-shootout-book.json (free)</td>
 </tr>
 <tr>
 <td>English-only turf (SciFact, after the adaptive-trigram fix)</td>
@@ -720,7 +823,7 @@ and the whole screen re-renders with one free command:</p>
 <td>benchmarks/results/2026-06-17-ask-ablation.json</td>
 </tr>
 <tr>
-<td>Fully local, EUR 0 (ollama gemma as generator AND judge)</td>
+<td>Fully local Ollama (Gemma as generator and judge)</td>
 <td>correctness 0.800</td>
 <td>0.857 with a cloud engine — a small, stated gap</td>
 <td>benchmarks/results/2026-06-17-ask-eval-ollama.json</td>
@@ -753,10 +856,10 @@ is that retrieval quality tracks the LLM you bring: with a strong expansion
 engine, talamus-smart leads even a strong multilingual dense model
 (multilingual-e5) on every metric including ranking; with a free/weak one, e5
 leads ranking while Talamus keeps the best hit and recall. Either way the trade
-is the same: the semantic power comes from the LLM you already have, so answers
-cost EUR 0 marginal, burn ~98% fewer tokens than loading the corpus into
-context, and every answer cites sources you can open — plus the time (as-of)
-and self-emerging-ontology moats no retrieval stack here has. Reproduce it:
+is the same: semantic quality follows the engine you configure, while the
+measured retrieval path burns ~98% fewer tokens than loading the corpus into
+context. Generated answers expose the sources they use, and Talamus adds
+as-of retrieval plus a versioned, self-emerging ontology. Reproduce it:
 every row's artifact is committed, with the command that generated it in its
 sibling .md report. Caveat: the book numbers are single runs and LLM query
 expansion is nondeterministic (repeat runs measured ~0.06 hit swings); latency

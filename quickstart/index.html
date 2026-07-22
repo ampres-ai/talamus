@@ -687,6 +687,121 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Legal
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Legal
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../privacy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms of use
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -835,9 +950,10 @@
 <h1 id="talamus-quickstart-10-minutes">Talamus — Quickstart (10 minutes)</h1>
 <p>Local-first knowledge that both you and your AI agents can read and write.</p>
 <h2 id="1-install">1. Install</h2>
-<div class="highlight"><pre><span></span><code>pipx<span class="w"> </span>install<span class="w"> </span>talamus<span class="w">            </span><span class="c1"># or: pip install talamus</span>
+<div class="highlight"><pre><span></span><code>pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;talamus[mcp]&quot;</span><span class="w">     </span><span class="c1"># or: pip install &quot;talamus[mcp]&quot;</span>
 </code></pre></div>
-<p>Optional: <code>pipx install "talamus[mcp]"</code> for the agent MCP server.</p>
+<p>The MCP extra powers the agent setup in step 5. If you only need the core CLI,
+install <code>talamus</code> without the extra instead.</p>
 <h2 id="2-try-it-instantly-no-setup-no-llm">2. Try it instantly (no setup, no LLM)</h2>
 <div class="highlight"><pre><span></span><code>talamus<span class="w"> </span>demo<span class="w">                    </span><span class="c1"># creates a small example brain here</span>
 talamus<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;embedding&quot;</span>
@@ -864,11 +980,22 @@ talamus<span class="w"> </span>ask<span class="w"> </span><span class="s2">&quot
 <p>(The old standalone <code>gemini-cli</code> still works if you have it installed, but
 Google has deprecated it — use <code>antigravity-cli</code> instead.)</p>
 <h2 id="5-use-it-from-agents-mcp">5. Use it from agents (MCP)</h2>
-<div class="highlight"><pre><span></span><code>talamus<span class="w"> </span>mcp<span class="w"> </span>install<span class="w">             </span><span class="c1"># one command: Claude Code + Cursor + codex (auto-detected)</span>
+<div class="highlight"><pre><span></span><code>talamus<span class="w"> </span>mcp<span class="w"> </span>install<span class="w">             </span><span class="c1"># Claude Code + detected Cursor/Codex/OpenCode/OpenClaw</span>
+talamus<span class="w"> </span>mcp<span class="w"> </span>install<span class="w"> </span>--agent<span class="w"> </span>openclaw<span class="w">  </span><span class="c1"># explicit OpenClaw registration</span>
 </code></pre></div>
 <p>Claude Code reads the project <code>.mcp.json</code>, Cursor its <code>.cursor/mcp.json</code>,
 and codex gets one global registration (<code>codex mcp add talamus</code>) that resolves
-the right brain from whatever project codex runs in.</p>
+the right brain from whatever project codex runs in. OpenClaw gets a global
+<code>mcp.servers.talamus</code> definition pinned to this project brain, with a
+read-oriented tool filter by default; enable LLM-backed or mutating tools only
+when you intend to use them.</p>
+<p>goose uses the repository's Open Plugin instead of <code>talamus mcp install</code>. With
+<code>uv</code> available on <code>PATH</code>, install the plugin once and start a new goose session
+from the project whose memory you want to use:</p>
+<div class="highlight"><pre><span></span><code>goose<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>https://github.com/ampres-ai/talamus.git
+</code></pre></div>
+<p>The plugin imports the bundled <code>talamus-memory</code> skill and runs the pinned PyPI
+MCP server with the current project as its brain root.</p>
 <p>Agents can then <code>search</code> / <code>read_note</code> / <code>recall</code> / <code>overview</code> / <code>neighbors</code> / <code>remember</code>
 against your brain. To capture your work sessions automatically:</p>
 <div class="highlight"><pre><span></span><code>talamus<span class="w"> </span>hook<span class="w"> </span>--install<span class="w">          </span><span class="c1"># writes the Claude Code SessionEnd hook (asks nothing else)</span>
