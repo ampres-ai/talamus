@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "talamus"
-version = "1.1.0"
+version = "1.1.1"
 description = "Local-first, source-grounded memory for AI agents with citations, bitemporal history, and MCP."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,7 +15,10 @@ keywords = [
   "ai-agents",
   "knowledge-graph",
   "local-first",
+  "long-term-memory",
   "mcp",
+  "model-context-protocol",
+  "persistent-memory",
   "rag",
   "second-brain",
 ]

@@ -16,7 +16,7 @@ ships without measurements, and the free/local core is never weakened.
 
 ## Launch foundation (shipped)
 
-- **PyPI release** — `talamus` 1.0.2 is published through Trusted Publishing,
+- **PyPI release** — `talamus` 1.1.1 is published through Trusted Publishing,
   with wheel and source artifacts attached to the matching GitHub release.
 - **Official MCP Registry** — `io.github.ampres-ai/talamus` is active with a
   PyPI/`uvx` stdio definition and GitHub OIDC publishing.

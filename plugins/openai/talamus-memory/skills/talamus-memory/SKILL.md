@@ -37,12 +37,12 @@ enable capture, or call an LLM.
 ## Select the CLI without changing the machine
 
 Check whether `talamus` is already available and run `talamus --version`. Use
-it when it is version `1.1.0`. If it is absent or a different version is needed,
+it when it is version `1.1.1`. If it is absent or a different version is needed,
 explain that the command below can download the pinned package into the local
 `uv` cache, then wait for consent before the first invocation:
 
 ```text
-uvx --from "talamus==1.1.0" talamus
+uvx --from "talamus==1.1.1" talamus
 ```
 
 Do not fall back to `pip`, `pipx`, `uv tool install`, or another persistent

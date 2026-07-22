@@ -1,6 +1,6 @@
 {
   "name": "talamus",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Local-first, source-grounded memory for AI agents with citations, provenance, and history.",
   "skills": {
     "paths": [

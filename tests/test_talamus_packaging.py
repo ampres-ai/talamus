@@ -8,6 +8,7 @@ import talamus
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN_PATTERN = re.compile(r"(?:talamus(?:\[mcp\])?==|ghcr\.io/ampres-ai/talamus:)(\d+\.\d+\.\d+)")
+MARKDOWN_DESTINATION_PATTERN = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 
 
 class PackagingTests(unittest.TestCase):
@@ -18,6 +19,16 @@ class PackagingTests(unittest.TestCase):
 
     def test_version_is_exposed(self) -> None:
         self.assertTrue(talamus.__version__)
+
+    def test_pypi_readme_uses_portable_links(self) -> None:
+        """PyPI renders the README away from the GitHub repository root."""
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        relative = []
+        for destination in MARKDOWN_DESTINATION_PATTERN.findall(readme):
+            destination = destination.strip().strip("<>")
+            if not destination.startswith(("https://", "http://", "mailto:", "#")):
+                relative.append(destination)
+        self.assertEqual([], relative)
 
     def test_release_metadata_is_consistent(self) -> None:
         with (ROOT / "pyproject.toml").open("rb") as handle:

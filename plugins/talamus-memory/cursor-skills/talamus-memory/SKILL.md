@@ -28,7 +28,7 @@ project data.
 Use this exact prefix for ephemeral CLI access:
 
 ```text
-uvx --from "talamus[mcp]==1.1.0" talamus
+uvx --from "talamus[mcp]==1.1.1" talamus
 ```
 
 ## Confirm the workspace brain
@@ -36,8 +36,8 @@ uvx --from "talamus[mcp]==1.1.0" talamus
 Run from the active workspace root:
 
 ```bash
-uvx --from "talamus[mcp]==1.1.0" talamus where --json
-uvx --from "talamus[mcp]==1.1.0" talamus status --json
+uvx --from "talamus[mcp]==1.1.1" talamus where --json
+uvx --from "talamus[mcp]==1.1.1" talamus status --json
 ```
 
 Require the reported absolute root to match the active workspace, or an
@@ -51,16 +51,16 @@ the workspace root.
 Choose only the commands needed for the request:
 
 ```bash
-uvx --from "talamus[mcp]==1.1.0" talamus search "query" --json
-uvx --from "talamus[mcp]==1.1.0" talamus recall "question" --json
-uvx --from "talamus[mcp]==1.1.0" talamus read "note title" --json
-uvx --from "talamus[mcp]==1.1.0" talamus history "note title" --json
-uvx --from "talamus[mcp]==1.1.0" talamus timeline "note title" --json
-uvx --from "talamus[mcp]==1.1.0" talamus neighbors "concept" --json
-uvx --from "talamus[mcp]==1.1.0" talamus relations --json
-uvx --from "talamus[mcp]==1.1.0" talamus ontology status --json
-uvx --from "talamus[mcp]==1.1.0" talamus review list --json
-uvx --from "talamus[mcp]==1.1.0" talamus doctor
+uvx --from "talamus[mcp]==1.1.1" talamus search "query" --json
+uvx --from "talamus[mcp]==1.1.1" talamus recall "question" --json
+uvx --from "talamus[mcp]==1.1.1" talamus read "note title" --json
+uvx --from "talamus[mcp]==1.1.1" talamus history "note title" --json
+uvx --from "talamus[mcp]==1.1.1" talamus timeline "note title" --json
+uvx --from "talamus[mcp]==1.1.1" talamus neighbors "concept" --json
+uvx --from "talamus[mcp]==1.1.1" talamus relations --json
+uvx --from "talamus[mcp]==1.1.1" talamus ontology status --json
+uvx --from "talamus[mcp]==1.1.1" talamus review list --json
+uvx --from "talamus[mcp]==1.1.1" talamus doctor
 ```
 
 Do not add `--smart` to search. Run `overview` only when diagnostics say an
@@ -82,7 +82,7 @@ existing `.cursor/mcp.json` first and record its server names.
 From a terminal with `uv` available, install the pinned tool persistently:
 
 ```bash
-uv tool install "talamus[mcp]==1.1.0"
+uv tool install "talamus[mcp]==1.1.1"
 ```
 
 Then, from the initialized workspace root, verify `talamus where --json`
@@ -98,7 +98,7 @@ Re-read `.cursor/mcp.json` and verify all of the following:
 - `mcpServers.talamus.command` is `talamus-mcp`;
 - its `--root` argument is absolute and matches the confirmed workspace.
 
-Do not use `uvx --from "talamus[mcp]==1.1.0" talamus mcp install --agent
+Do not use `uvx --from "talamus[mcp]==1.1.1" talamus mcp install --agent
 cursor`: the temporary environment can leave the generated bare
 `talamus-mcp` launcher unavailable later. Stop and report any version, path, or
 merge mismatch instead of rewriting the configuration by hand.

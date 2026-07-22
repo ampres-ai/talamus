@@ -86,17 +86,16 @@ In Talamus, `supersede`, `history`, `timeline`, and `--as-of` expose that model
 directly. The details are documented in the
 [architecture guide](architecture.md).
 
-## A five-minute evaluation without an LLM
+## A local evaluation without an LLM
 
-Install the local core and MCP extra, create the built-in example brain, and
-inspect it:
+With `uv` available, create the built-in example in an isolated folder and
+inspect it without a persistent install:
 
 ```bash
-pipx install "talamus[mcp]"
-talamus demo
-talamus search "embedding"
-talamus neighbors "Embedding"
-talamus read "Embedding"
+uvx --from talamus talamus demo --root ./talamus-demo
+uvx --from talamus talamus search "embedding" --root ./talamus-demo
+uvx --from talamus talamus neighbors "Embedding" --root ./talamus-demo
+uvx --from talamus talamus read "Embedding" --root ./talamus-demo
 ```
 
 You can also reproduce the launch story without an API key or model call:

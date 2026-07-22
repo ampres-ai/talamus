@@ -2,14 +2,26 @@
 
 All notable changes to Talamus are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims to follow
-semantic versioning once it reaches a public release.
+semantic versioning.
 
 ## [Unreleased]
+
+## [1.1.1] - 2026-07-22
 
 ### Changed
 
 - The MCPB and Smithery bundle now pin the published Talamus 1.1.0 package and
   document the exact versioned build and publication commands.
+- The first-run path now separates an isolated, no-install evaluation from
+  adoption, and the README's star action works on GitHub and PyPI.
+- Marketplace, MCPB, and plugin surfaces now use a compact Talamus icon that
+  remains legible at avatar size.
+
+### Fixed
+
+- README images and documentation links are now absolute, so the PyPI project
+  page renders the demo and navigation instead of broken repository-relative
+  URLs. A packaging test prevents the regression.
 
 ## [1.1.0] - 2026-07-21
 

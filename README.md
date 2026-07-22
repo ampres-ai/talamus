@@ -4,34 +4,36 @@
 
 [![CI](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml/badge.svg)](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/talamus)](https://pypi.org/project/talamus/) [![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-5b5bd6)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.ampres-ai%2Ftalamus) [![Smithery](https://img.shields.io/badge/Smithery-install-111827)](https://smithery.ai/servers/ampres-ai/talamus) [![skills.sh](https://skills.sh/b/ampres-ai/talamus)](https://skills.sh/ampres-ai/talamus) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 
-**Your AI agent forgets why a decision was made as soon as the session ends.**
+**Your coding agent forgets why a decision was made as soon as the session ends.**
 
-Talamus turns agent sessions, documents, notes, repos, and URLs into local,
-source-grounded Markdown memory that the next session can search and cite.
+Talamus keeps the decisions, evidence, and corrections worth remembering as
+ordinary Markdown, then gives Claude Code, Codex, Cursor, Gemini CLI, and any
+MCP agent cited recall in the next session.
 
-**Markdown stays the source of truth. Search and graph stay on your machine. No
-hosted account or required embeddings.**
+**No hosted account. No telemetry. No required embeddings. Plain search stays
+on your machine; LLM-backed actions use only the engine you choose.**
 
-Try the whole local retrieval loop first — no setup, account, LLM, or hook:
+Try the whole local retrieval loop first — no persistent install, account,
+LLM, or hook, and no files written outside `./talamus-demo`:
 
 ```bash
-pipx install "talamus[mcp]"
-talamus demo
-talamus search "embedding"
-talamus read "Embedding"
+uvx --from talamus talamus demo --root ./talamus-demo
+uvx --from talamus talamus search "embedding" --root ./talamus-demo
+uvx --from talamus talamus read "Embedding" --root ./talamus-demo
 ```
 
-If local, inspectable agent memory should stay discoverable, click **Star** at
-the top of this page. It is the clearest signal that Talamus is worth
-maintaining in public.
+If local, inspectable agent memory is useful to you,
+[star Talamus on GitHub](https://github.com/ampres-ai/talamus) — it helps other
+builders discover a local-first alternative.
 
-![Talamus demo — a completed agent session becomes cited, local memory for the next one.](docs/assets/talamus-demo.gif)
+![Talamus demo — a completed agent session becomes cited, local memory for the next one.](https://raw.githubusercontent.com/ampres-ai/talamus/main/docs/assets/talamus-demo.gif)
 
 Talamus is an open-source project by [Ampres](https://ampres.io), an independent AI and open-source lab.
 
-## Connect an agent in 60 seconds
+## Connect an agent
 
-Copy-pasteable arc, with the reproducible version in [`scripts/demo/run_magic.py`](scripts/demo/run_magic.py):
+Copy-pasteable arc, with the reproducible version in
+[`scripts/demo/run_magic.py`](https://github.com/ampres-ai/talamus/blob/main/scripts/demo/run_magic.py):
 
 1. Set up the project brain. `talamus setup` initializes the brain, chooses an engine, installs MCP for Claude Code, Cursor, Codex, OpenCode, and OpenClaw when detected, asks once before installing the session-capture hook, and can probe the engine with one tiny live call.
 
@@ -65,7 +67,11 @@ Copy-pasteable arc, with the reproducible version in [`scripts/demo/run_magic.py
 
 ## Measured comparison
 
-The one-screen benchmark is rendered at [`docs/benchmarks.md`](docs/benchmarks.md) and committed at [`benchmarks/results/one-screen.md`](benchmarks/results/one-screen.md). Every number below traces to a committed artifact under [`benchmarks/results/`](benchmarks/results/).
+The one-screen benchmark is rendered in the
+[benchmark guide](https://ampres-ai.github.io/talamus/benchmarks/) and committed
+as [`one-screen.md`](https://github.com/ampres-ai/talamus/blob/main/benchmarks/results/one-screen.md).
+Every number below traces to a
+[committed result artifact](https://github.com/ampres-ai/talamus/tree/main/benchmarks/results).
 
 | corpus | metric | Talamus | BM25 | MiniLM vector DB |
 |---|---:|---:|---:|---:|
@@ -129,14 +135,14 @@ dependencies into an isolated cache on first use.
 Containerized MCP (the brain remains in the mounted local folder):
 
 ```bash
-docker run --rm -i -v "$PWD:/data" ghcr.io/ampres-ai/talamus:1.1.0
+docker run --rm -i -v "$PWD:/data" ghcr.io/ampres-ai/talamus:1.1.1
 ```
 
 ## Links
 
-Docs: [quickstart](docs/quickstart.md), [local-first agent memory](docs/local-first-agent-memory.md), [agent install guide](llms-install.md), [commands](docs/commands.md), [agent tool calling](docs/agent-tool-calling.md), [configuration](docs/configuration.md), [benchmarks](docs/benchmarks.md), [architecture](docs/architecture.md), [design principles](docs/design-principles.md), [evaluation](docs/evaluation.md), [multi-brain](docs/multi-brain.md), [ontology](docs/ontology.md).
+Docs: [quickstart](https://ampres-ai.github.io/talamus/quickstart/), [local-first agent memory](https://ampres-ai.github.io/talamus/local-first-agent-memory/), [agent install guide](https://github.com/ampres-ai/talamus/blob/main/llms-install.md), [commands](https://ampres-ai.github.io/talamus/commands/), [agent tool calling](https://ampres-ai.github.io/talamus/agent-tool-calling/), [configuration](https://ampres-ai.github.io/talamus/configuration/), [benchmarks](https://ampres-ai.github.io/talamus/benchmarks/), [architecture](https://ampres-ai.github.io/talamus/architecture/), [design principles](https://ampres-ai.github.io/talamus/design-principles/), [evaluation](https://ampres-ai.github.io/talamus/evaluation/), [multi-brain](https://ampres-ai.github.io/talamus/multi-brain/), [ontology](https://ampres-ai.github.io/talamus/ontology/).
 
-Project: [security](SECURITY.md), [contributing](CONTRIBUTING.md), [roadmap](ROADMAP.md), [changelog](CHANGELOG.md).
+Project: [security](https://github.com/ampres-ai/talamus/blob/main/SECURITY.md), [contributing](https://github.com/ampres-ai/talamus/blob/main/CONTRIBUTING.md), [roadmap](https://github.com/ampres-ai/talamus/blob/main/ROADMAP.md), [changelog](https://github.com/ampres-ai/talamus/blob/main/CHANGELOG.md).
 
 Maintained by [Ampres](https://ampres.io). Source code and issue tracking live at [ampres-ai/talamus](https://github.com/ampres-ai/talamus).
 

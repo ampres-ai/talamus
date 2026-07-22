@@ -8,8 +8,8 @@ Talamus turns documents, repositories, URLs, and consented agent sessions into
 durable Markdown knowledge. It retrieves that knowledge with citations and
 bitemporal history, on your machine and with the LLM engine you already use.
 
-[Install in 60 seconds](quickstart.md){ .md-button .md-button--primary }
-[View on GitHub](https://github.com/ampres-ai/talamus){ .md-button }
+[Install and connect](quickstart.md){ .md-button .md-button--primary }
+[Star Talamus on GitHub](https://github.com/ampres-ai/talamus){ .md-button }
 
 ```bash
 pipx install "talamus[mcp]"
@@ -23,9 +23,9 @@ free; operations that invoke an LLM remain explicit.
 
 ![A completed agent session becomes cited, local memory for the next one.](assets/talamus-demo.gif)
 
-Talamus exposes 16 MCP tools for Claude Code, Cursor, Codex, OpenCode, and OpenClaw, while
-the same brain stays readable as ordinary Markdown plus a local SQLite/FTS5
-index.
+Talamus gives Claude Code, Cursor, Codex, OpenCode, and OpenClaw cited search,
+recall, history, provenance, and consent-gated writes, while the same brain
+stays readable as ordinary Markdown plus a local SQLite/FTS5 index.
 
 ## What makes it different
 

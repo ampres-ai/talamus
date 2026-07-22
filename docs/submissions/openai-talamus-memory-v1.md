@@ -17,7 +17,7 @@ a public production HTTPS MCP endpoint.
 - **Privacy:** https://ampres-ai.github.io/talamus/privacy/
 - **Terms:** https://ampres-ai.github.io/talamus/terms/
 - **Requirement:** A local project with terminal access and either `uv` or an
-  existing Talamus 1.1.0 executable.
+  existing Talamus 1.1.1 executable.
 
 Long description:
 
@@ -45,7 +45,7 @@ name, not a separate verified business identity for this submission.
 Create the deterministic fixture outside the repository under review:
 
 ```text
-uvx --from "talamus==1.1.0" talamus demo --root <ABSOLUTE_FIXTURE_ROOT>
+uvx --from "talamus==1.1.1" talamus demo --root <ABSOLUTE_FIXTURE_ROOT>
 ```
 
 The command creates three local notes — `Retrieval-Augmented Generation`,
@@ -130,7 +130,7 @@ credentials are **None**.
 ## Release notes
 
 > Initial public skills-only submission of Talamus Memory v1.0.0. Adds one
-> consent-aware, CLI-first skill for Talamus 1.1.0 covering active-brain
+> consent-aware, CLI-first skill for Talamus 1.1.1 covering active-brain
 > verification, local lexical search and recall, note provenance, history,
 > graph inspection, and health diagnostics. The bundle contains no MCP server
 > or connector, starts no process, installs nothing at plugin-install time, and

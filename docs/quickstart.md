@@ -1,8 +1,21 @@
-# Talamus — Quickstart (10 minutes)
+# Talamus — Quickstart
 
 Local-first knowledge that both you and your AI agents can read and write.
 
-## 1. Install
+## 1. Evaluate without installing
+
+With `uv` available, create the built-in example in an isolated folder. These
+commands do not create an account, call an LLM, or write outside
+`./talamus-demo`:
+
+```bash
+uvx --from talamus talamus demo --root ./talamus-demo
+uvx --from talamus talamus search "embedding" --root ./talamus-demo
+uvx --from talamus talamus neighbors "Embedding" --root ./talamus-demo
+uvx --from talamus talamus read "Embedding" --root ./talamus-demo
+```
+
+## 2. Install and adopt
 
 ```bash
 pipx install "talamus[mcp]"     # or: pip install "talamus[mcp]"
@@ -10,15 +23,6 @@ pipx install "talamus[mcp]"     # or: pip install "talamus[mcp]"
 
 The MCP extra powers the agent setup in step 5. If you only need the core CLI,
 install `talamus` without the extra instead.
-
-## 2. Try it instantly (no setup, no LLM)
-
-```bash
-talamus demo                    # creates a small example brain here
-talamus search "embedding"
-talamus neighbors "Embedding"
-talamus read "Embedding"
-```
 
 ## 3. Your own brain
 

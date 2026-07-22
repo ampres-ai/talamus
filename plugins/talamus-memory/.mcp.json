@@ -4,7 +4,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "talamus[mcp]==1.1.0",
+        "talamus[mcp]==1.1.1",
         "talamus-mcp",
         "--root",
         "${CLAUDE_PROJECT_DIR}"
