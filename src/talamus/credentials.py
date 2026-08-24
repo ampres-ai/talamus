@@ -248,12 +248,19 @@ def credential_file_is_owner_only(path: Path) -> bool:
 def _harden_before_write(path: Path, fd: int) -> None:
     if os.name == "nt":
         _set_windows_owner_only(path)
+        actual_dacl = _windows_dacl_sddl(path)
+        user_sid = _current_windows_user_sid()
+        if not _windows_dacl_is_owner_only_sddl(actual_dacl, user_sid):
+            raise OSError(
+                "owner-only permission verification failed: "
+                f"Windows returned DACL {actual_dacl!r} for current-user SID {user_sid!r}"
+            )
     else:
         fchmod = getattr(os, "fchmod", None)
         if fchmod is None:
             raise OSError("fchmod is unavailable on this POSIX platform")
         fchmod(fd, _OWNER_ONLY_MODE)
-    if not credential_file_is_owner_only(path):
+    if os.name != "nt" and not credential_file_is_owner_only(path):
         raise OSError("owner-only permission verification failed")
 
 
