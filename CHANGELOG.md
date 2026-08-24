@@ -6,6 +6,15 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- The MCPB and Smithery artifacts now pin the published Talamus 1.1.2 release
+  and MCP SDK 2.0 lock, with a verified 16-tool launcher smoke test.
+- A concise engineering case study now connects Talamus's architecture,
+  evaluation evidence, security trade-offs, and release engineering to its
+  creator's role; public documentation emphasizes technical evaluation over
+  star-count calls to action.
+
 ## [1.1.2] - 2026-08-24
 
 ### Fixed

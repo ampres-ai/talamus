@@ -7,9 +7,11 @@
 Talamus turns documents, repositories, URLs, and consented agent sessions into
 durable Markdown knowledge. It retrieves that knowledge with citations and
 bitemporal history, on your machine and with the LLM engine you already use.
+The [engineering case study](case-study.md) documents the architecture,
+measurements, trade-offs, and engineering role behind the project.
 
 [Install and connect](quickstart.md){ .md-button .md-button--primary }
-[Star Talamus on GitHub](https://github.com/ampres-ai/talamus){ .md-button }
+[Read the case study](case-study.md){ .md-button }
 
 ```bash
 pipx install "talamus[mcp]"
@@ -50,7 +52,7 @@ public number traced to a committed result artifact.
 - **[Commands](commands.md)** — browse the full `talamus` CLI reference.
 - **[Benchmarks](benchmarks.md)** — inspect the measured numbers and artifacts.
 - **[Architecture](architecture.md)** — see how the local-first pieces fit together.
-- **[GitHub](https://github.com/ampres-ai/talamus)** — report an issue, contribute, or star the project.
+- **[GitHub](https://github.com/ampres-ai/talamus)** — inspect the source, report an issue, or contribute.
 
 Talamus was created and is maintained by
 [Giovanni “Angio” Crapuzzi](https://github.com/GCrapuzzi) under the Ampres

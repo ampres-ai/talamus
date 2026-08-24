@@ -2,7 +2,7 @@
 
 <!-- mcp-name: io.github.ampres-ai/talamus -->
 
-[![CI](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml/badge.svg)](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/talamus)](https://pypi.org/project/talamus/) [![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-5b5bd6)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.ampres-ai%2Ftalamus) [![Smithery](https://img.shields.io/badge/Smithery-install-111827)](https://smithery.ai/servers/ampres-ai/talamus) [![skills.sh](https://skills.sh/b/ampres-ai/talamus)](https://skills.sh/ampres-ai/talamus) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
+[![CI](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml/badge.svg)](https://github.com/ampres-ai/talamus/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/talamus)](https://pypi.org/project/talamus/) [![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-5b5bd6)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.ampres-ai%2Ftalamus) [![Smithery](https://img.shields.io/badge/Smithery-install-111827)](https://smithery.ai/servers/ampres-ai/talamus) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 
 **Your coding agent forgets why a decision was made as soon as the session ends.**
 
@@ -22,15 +22,17 @@ uvx --from talamus talamus search "embedding" --root ./talamus-demo
 uvx --from talamus talamus read "Embedding" --root ./talamus-demo
 ```
 
-If local, inspectable agent memory is useful to you,
-[star Talamus on GitHub](https://github.com/ampres-ai/talamus) — it helps other
-builders discover a local-first alternative.
+For a technical evaluation, read the
+[architecture](https://ampres-ai.github.io/talamus/architecture/) and the
+[measured benchmarks](https://ampres-ai.github.io/talamus/benchmarks/).
 
 ![Talamus demo — a completed agent session becomes cited, local memory for the next one.](https://raw.githubusercontent.com/ampres-ai/talamus/main/docs/assets/talamus-demo.gif)
 
 Talamus was created and is maintained by
 [Giovanni “Angio” Crapuzzi](https://github.com/GCrapuzzi) under
 [Ampres](https://ampres.io), an independent AI and open-source project.
+The [engineering case study](https://ampres-ai.github.io/talamus/case-study/)
+documents the architecture, measurements, and trade-offs behind the project.
 
 ## Connect an agent
 

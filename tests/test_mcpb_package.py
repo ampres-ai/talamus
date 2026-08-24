@@ -1,12 +1,13 @@
 import json
-import subprocess
-import sys
 import tempfile
 import tomllib
 import unittest
 import zipfile
 from pathlib import Path
 from typing import Any
+from unittest import mock
+
+from scripts.build_smithery_mcpb import _validate_locked_runtime, build_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
 MCPB_ROOT = ROOT / "packaging" / "mcpb"
@@ -81,17 +82,7 @@ class McpbPackageTests(unittest.TestCase):
     def test_smithery_bundle_contains_runtime_tool_schemas(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "talamus-smithery.mcpb"
-            subprocess.run(
-                [
-                    sys.executable,
-                    str(ROOT / "scripts" / "build_smithery_mcpb.py"),
-                    str(output),
-                ],
-                cwd=ROOT,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+            build_bundle(MCPB_ROOT, output)
             with zipfile.ZipFile(output) as archive:
                 manifest = json.loads(archive.read("manifest.json"))
 
@@ -101,6 +92,14 @@ class McpbPackageTests(unittest.TestCase):
         for tool in manifest["tools"]:
             self.assertEqual("object", tool["inputSchema"]["type"])
             self.assertEqual("object", tool["outputSchema"]["type"])
+
+    def test_smithery_builder_rejects_an_unlocked_schema_runtime(self) -> None:
+        with mock.patch(
+            "scripts.build_smithery_mcpb.importlib_metadata.version",
+            return_value="0.0.0",
+        ):
+            with self.assertRaisesRegex(RuntimeError, "bundle locks"):
+                _validate_locked_runtime(MCPB_ROOT)
 
 
 if __name__ == "__main__":
