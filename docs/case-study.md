@@ -130,8 +130,8 @@ users. Tests cover host and origin checks, traversal, symlink exfiltration,
 zip-slip, and secret redaction.
 
 The same document keeps unresolved debt public. Current work includes
-owner-only saved credentials, read-only MCP defaults, PDF/DOCX secret detection,
-and sub-100 ms search at 100k notes. These limitations matter because
+read-only MCP defaults, PDF/DOCX secret detection, YAML-safe frontmatter, and
+sub-100 ms search at 100k notes. These limitations matter because
 local-first software moves operational responsibility onto the user's machine.
 
 A recent maintenance example was the MCP Python SDK 2.0 API change. Instead of

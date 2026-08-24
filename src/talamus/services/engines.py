@@ -187,6 +187,8 @@ def _probe_failure(
 
 
 def save_anthropic_api_key(api_key: str) -> ServiceResult[dict[str, object]]:
+    from talamus.errors import CredentialStoreError
+
     secret = api_key.strip()
     if not secret:
         return ServiceResult(
@@ -195,7 +197,15 @@ def save_anthropic_api_key(api_key: str) -> ServiceResult[dict[str, object]]:
             code="anthropic_api_key_empty",
             data={"credential": "anthropic_api_key", "saved": False},
         )
-    save_credential("anthropic_api_key", secret)
+    try:
+        save_credential("anthropic_api_key", secret)
+    except CredentialStoreError as exc:
+        return ServiceResult(
+            success=False,
+            message=str(exc),
+            code="credential_permissions_failed",
+            data={"credential": "anthropic_api_key", "saved": False},
+        )
     return ServiceResult(
         success=True,
         message="Anthropic API key saved",

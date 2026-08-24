@@ -20,6 +20,10 @@ class ConfigError(TalamusError):
     """The config file is missing or invalid."""
 
 
+class CredentialStoreError(TalamusError):
+    """A credential could not be persisted with owner-only permissions."""
+
+
 class EngineNotFound(TalamusError):
     """The configured LLM engine executable is not on PATH."""
 

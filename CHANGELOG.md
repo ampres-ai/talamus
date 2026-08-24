@@ -6,6 +6,13 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Security
+
+- Credentials saved from Workbench Settings are now written atomically only
+  after owner-only access is established and verified (`0600` on Linux/macOS,
+  a protected current-user DACL on Windows); saves fail before secret bytes are
+  written when the guarantee cannot be established.
+
 ### Changed
 
 - The MCPB and Smithery artifacts now pin the published Talamus 1.1.3 release,
