@@ -7,9 +7,9 @@ package does NOT depend on `mcp`: this module is imported only when the MCP is u
 from __future__ import annotations
 
 import argparse
+from importlib import import_module
 from pathlib import Path
-
-from mcp.server.fastmcp import FastMCP
+from typing import Any
 
 from talamus.config import load_or_default
 from talamus.paths import TalamusPaths
@@ -34,7 +34,15 @@ from talamus.services.review import (
 )
 from talamus.services.verification import verify_single_note
 
-server = FastMCP("talamus")
+# MCP SDK 2.x renamed FastMCP to MCPServer and removed the old symbol. Resolve
+# the class dynamically so one package can remain compatible with both maintained
+# major lines without making either import path mandatory at type-check time.
+_mcp_server_module = import_module("mcp.server")
+_MCPServer: Any = getattr(_mcp_server_module, "MCPServer", None)
+if _MCPServer is None:  # MCP SDK 1.x
+    _MCPServer = _mcp_server_module.FastMCP
+
+server = _MCPServer("talamus")
 
 _root: Path = Path(".").resolve()
 
@@ -299,14 +307,26 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _run_http(host: str, port: int) -> None:
+    """Run HTTP on MCP SDK 1.x or 2.x without changing the public CLI."""
+    settings = server.settings
+    if hasattr(settings, "host"):
+        # MCP 1.x stores transport configuration on the server settings object.
+        settings.host = host
+        settings.port = port
+        server.run(transport="streamable-http")
+        return
+
+    # MCP 2.x moved transport configuration to ``run``.
+    server.run(transport="streamable-http", host=host, port=port)
+
+
 def main(argv: list[str] | None = None) -> None:
     global _root
     args = _build_parser().parse_args(argv)
     _root = Path(args.root).resolve()
     if args.http:
-        server.settings.host = args.host
-        server.settings.port = args.port
-        server.run(transport="streamable-http")
+        _run_http(args.host, args.port)
     else:
         server.run()
 

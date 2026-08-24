@@ -44,3 +44,16 @@ jobs:
         run: mypy src
       - name: Tests (no optional-dep skips)
         run: python -m unittest discover -s tests
+
+  mcp-v1:
+    name: MCP SDK 1.x compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install against the maintained MCP 1.x line
+        run: pip install -e ".[dev]" "mcp>=1.29,<2"
+      - name: Tests
+        run: python -m unittest discover -s tests

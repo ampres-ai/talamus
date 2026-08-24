@@ -19,7 +19,7 @@ class GeminiExtensionTests(unittest.TestCase):
                 "command": "uvx",
                 "args": [
                     "--with",
-                    "mcp>=1.0",
+                    "mcp>=1.29,<3",
                     f"talamus=={version}",
                     "mcp",
                     "serve",

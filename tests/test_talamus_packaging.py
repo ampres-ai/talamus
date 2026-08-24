@@ -32,7 +32,9 @@ class PackagingTests(unittest.TestCase):
 
     def test_release_metadata_is_consistent(self) -> None:
         with (ROOT / "pyproject.toml").open("rb") as handle:
-            version = tomllib.load(handle)["project"]["version"]
+            project = tomllib.load(handle)["project"]
+        version = project["version"]
+        mcp_requirement = project["optional-dependencies"]["mcp"][0]
 
         server = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
         goose = json.loads((ROOT / ".goose-plugin" / "plugin.json").read_text(encoding="utf-8"))
@@ -50,6 +52,9 @@ class PackagingTests(unittest.TestCase):
         self.assertEqual(version, goose["version"])
         self.assertEqual(version, gemini["version"])
         self.assertIn(f"talamus=={version}", gemini["mcpServers"]["talamus"]["args"])
+        self.assertEqual("mcp>=1.29,<3", mcp_requirement)
+        self.assertIn(mcp_requirement, gemini["mcpServers"]["talamus"]["args"])
+        self.assertEqual(mcp_requirement, server["packages"][0]["runtimeArguments"][0]["value"])
         expected_mcp_pin = f"talamus[mcp]=={version}"
         self.assertIn(expected_mcp_pin, claude_mcp["mcpServers"]["talamus"]["args"])
         self.assertIn(expected_mcp_pin, goose_mcp["mcpServers"]["talamus"]["args"])
@@ -73,6 +78,14 @@ class PackagingTests(unittest.TestCase):
                 pins = PIN_PATTERN.findall(path.read_text(encoding="utf-8"))
                 self.assertTrue(pins)
                 self.assertEqual({version}, set(pins))
+
+        container_workflow = (ROOT / ".github" / "workflows" / "container.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(f'python -m pip install "{mcp_requirement}"', container_workflow)
+
+        ci_workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        self.assertIn('"mcp>=1.29,<2"', ci_workflow)
 
 
 if __name__ == "__main__":
