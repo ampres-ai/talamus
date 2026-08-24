@@ -47,8 +47,23 @@ class PackagingTests(unittest.TestCase):
         )
 
         self.assertEqual(version, talamus.__version__)
+        self.assertEqual([{"name": 'Giovanni "Angio" Crapuzzi'}], project["authors"])
+        self.assertEqual("https://github.com/GCrapuzzi", project["urls"]["Creator"])
         self.assertEqual(version, server["version"])
         self.assertEqual(version, server["packages"][0]["version"])
+        self.assertEqual(
+            [
+                {
+                    "src": (
+                        "https://raw.githubusercontent.com/ampres-ai/talamus/"
+                        f"v{version}/docs/assets/talamus-mcp-icon.png"
+                    ),
+                    "mimeType": "image/png",
+                    "sizes": ["512x512"],
+                }
+            ],
+            server["icons"],
+        )
         self.assertEqual(version, goose["version"])
         self.assertEqual(version, gemini["version"])
         self.assertIn(f"talamus=={version}", gemini["mcpServers"]["talamus"]["args"])
@@ -86,6 +101,18 @@ class PackagingTests(unittest.TestCase):
 
         ci_workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
         self.assertIn('"mcp>=1.29,<2"', ci_workflow)
+
+    def test_release_workflow_pins_the_verified_mcp_publisher(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
+        self.assertIn(
+            "modelcontextprotocol/registry/releases/download/v1.8.1/"
+            "mcp-publisher_linux_amd64.tar.gz",
+            workflow,
+        )
+        self.assertIn(
+            "a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc",
+            workflow,
+        )
 
 
 if __name__ == "__main__":

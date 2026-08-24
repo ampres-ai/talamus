@@ -6,11 +6,29 @@ semantic versioning.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-08-24
+
 ### Fixed
 
 - Fresh MCP installs no longer break when the official Python SDK resolves to
   2.x. Talamus now supports both maintained MCP SDK lines and tests 1.x
   compatibility explicitly in CI.
+
+### Changed
+
+- MCP Registry metadata now publishes the versioned 512 px Talamus icon so
+  downstream catalogs can display the product identity instead of an account
+  avatar or generic fallback.
+- Versioned GHCR images are now published only from a validated GitHub release;
+  ordinary pushes still build and smoke-test the container without overwriting
+  released image tags. The MCP publisher is updated to the verified 1.8.1 binary.
+- Package and project metadata now identify creator and lead maintainer Giovanni
+  “Angio” Crapuzzi explicitly while retaining Ampres as the project publisher.
+
+### Security
+
+- Updated the bundled MCP runtime to `cryptography` 50.0.0 and the web build to
+  PostCSS 8.5.25, resolving the open high- and medium-severity dependency alerts.
 
 ## [1.1.1] - 2026-07-22
 
