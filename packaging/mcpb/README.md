@@ -107,8 +107,8 @@ uv lock --upgrade-package talamus --directory packaging/mcpb
 uv lock --check --directory packaging/mcpb
 mkdir -p dist/mcpb
 npx --yes @anthropic-ai/mcpb@2.1.2 validate packaging/mcpb/manifest.json
-npx --yes @anthropic-ai/mcpb@2.1.2 pack packaging/mcpb dist/mcpb/talamus-1.1.2.mcpb
-npx --yes @anthropic-ai/mcpb@2.1.2 info dist/mcpb/talamus-1.1.2.mcpb
+npx --yes @anthropic-ai/mcpb@2.1.2 pack packaging/mcpb dist/mcpb/talamus-1.1.3.mcpb
+npx --yes @anthropic-ai/mcpb@2.1.2 info dist/mcpb/talamus-1.1.3.mcpb
 ```
 
 Before publishing, smoke-test the launcher against a temporary brain directory.
@@ -119,8 +119,8 @@ the equivalent compatibility artifact with:
 
 ```bash
 uv run --frozen --project packaging/mcpb \
-  python scripts/build_smithery_mcpb.py dist/mcpb/talamus-1.1.2-smithery.mcpb
-npx --yes @anthropic-ai/mcpb@2.1.2 info dist/mcpb/talamus-1.1.2-smithery.mcpb
+  python scripts/build_smithery_mcpb.py dist/mcpb/talamus-1.1.3-smithery.mcpb
+npx --yes @anthropic-ai/mcpb@2.1.2 info dist/mcpb/talamus-1.1.3-smithery.mcpb
 ```
 
 That artifact labels the registry runtime as Python, keeps `uv` as the actual
@@ -133,5 +133,5 @@ publish the compatibility artifact only once for each version:
 
 ```bash
 npx --yes smithery@1.2.0 auth whoami
-npx --yes smithery@1.2.0 mcp publish dist/mcpb/talamus-1.1.2-smithery.mcpb -n ampres-ai/talamus
+npx --yes smithery@1.2.0 mcp publish dist/mcpb/talamus-1.1.3-smithery.mcpb -n ampres-ai/talamus
 ```
