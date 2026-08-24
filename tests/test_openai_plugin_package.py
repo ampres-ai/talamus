@@ -45,6 +45,7 @@ class OpenAIPluginPackageTests(unittest.TestCase):
         interface = manifest["interface"]
 
         self.assertEqual("Angio Crapuzzi", manifest["author"]["name"])
+        self.assertEqual("https://github.com/GCrapuzzi", manifest["author"]["url"])
         self.assertEqual("Angio Crapuzzi", interface["developerName"])
         self.assertEqual(
             "https://ampres-ai.github.io/talamus/privacy/",

@@ -5,8 +5,8 @@
   "version": "1.0.0",
   "description": "Durable, local-first agent memory with cited retrieval, provenance, history, and MCP tools.",
   "author": {
-    "name": "Ampres",
-    "url": "https://github.com/ampres-ai"
+    "name": "Angio Crapuzzi",
+    "url": "https://github.com/GCrapuzzi"
   },
   "homepage": "https://ampres-ai.github.io/talamus/",
   "repository": "https://github.com/ampres-ai/talamus",

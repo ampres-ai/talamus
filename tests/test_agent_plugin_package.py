@@ -27,6 +27,10 @@ class AgentPluginPackageTests(unittest.TestCase):
         claude = json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
 
         self.assertEqual(copilot, claude)
+        self.assertEqual(
+            {"name": "Angio Crapuzzi", "url": "https://github.com/GCrapuzzi"},
+            claude["author"],
+        )
 
     def test_mcp_launcher_pins_the_current_package_version(self) -> None:
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))

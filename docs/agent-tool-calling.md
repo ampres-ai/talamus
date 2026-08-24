@@ -32,6 +32,23 @@ talamus-mcp --http --host 127.0.0.1 --port 8000
 | `review_apply(item_id)` | Apply a review item while preserving history. |
 | `review_reject(item_id, reason="")` | Reject a review item and keep the decision logged. |
 
+Every runtime tool includes MCP `ToolAnnotations` for display title, read-only,
+destructive, idempotent, and open-world behavior. The hints are deliberately
+conservative:
+
+| Behavior | Tools |
+| --- | --- |
+| Read-only, local, repeatable | `read_note`, `recall`, `overview`, `neighbors`, `history`, `sources`, `ontology_status`, `review_list` |
+| Read-only but may call the configured engine | `ask`, `verify` |
+| May update cache and call the configured engine | `search` when `smart=True` |
+| Writes or merges notes through the configured engine | `remember`, `ingest_text` |
+| Adds a local review proposal | `propose_note` |
+| Resolves local review state | `review_apply`, `review_reject` |
+
+Because MCP annotations apply to a tool rather than one argument combination,
+`search` advertises the most capable `smart=True` path even though its default
+lexical path is local and read-only.
+
 ## CLI equivalents
 
 When MCP is unavailable, wrap these commands as tools:

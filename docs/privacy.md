@@ -5,8 +5,9 @@
 **Publisher:** Angio Crapuzzi, publishing Talamus Memory under the Ampres
 open-source project name.
 
-This policy describes data handling by the Talamus Memory plugin and the
-Talamus software distributed from the official
+This policy describes data handling by the Talamus Memory skills-only plugin,
+the local Talamus MCP server and MCPB bundle, and the Talamus software
+distributed from the official
 [ampres-ai/talamus](https://github.com/ampres-ai/talamus) repository. It does
 not replace the privacy terms of OpenAI, GitHub, PyPI, an operating system, or
 another service that a user chooses to use with Talamus.
@@ -22,6 +23,33 @@ The public plugin is intentionally limited to read-only workflows. It can guide
 an agent to search and recall local notes, inspect provenance and history,
 explore graph relationships, check brain health, and preview a repository scan.
 It instructs the agent not to change memory or configuration.
+
+## Local MCP server and MCPB bundle
+
+The MCP server is a separate, local integration with read and write tools. The
+MCPB installer asks the user to choose a brain folder, and the server uses that
+folder as its project memory root. Its standard read tools search notes, return
+context, inspect provenance and history, and explore the local graph. Write
+tools can add or merge notes, append items to the review queue, and apply or
+reject reviewed changes. Talamus preserves note history when an existing note
+is updated.
+
+On first launch, the bundle uses UV to download its pinned `talamus[mcp]`
+release and dependencies from PyPI into UV's isolated cache. This package
+download is distinct from Talamus memory processing; PyPI and UV apply their own
+terms and data practices.
+
+Some MCP tools can use the language-model engine configured by the user:
+`search` in smart mode, `ask`, `verify`, `remember`, and `ingest_text`. Depending
+on that configuration, queries, selected note or source content, or text chosen
+for ingestion may be sent to a local model, a locally installed third-party
+CLI, or the Anthropic API. Talamus does not silently substitute a publisher
+service. The MCP annotations identify these tools as open-world operations so
+compatible clients can surface the boundary before execution.
+
+The MCP server does not send brain contents, prompts, tool results, or usage
+analytics to the Talamus publisher. The publisher operates no Talamus account,
+memory backend, or telemetry endpoint.
 
 ## Data processed locally
 
@@ -57,7 +85,8 @@ LLM operations, or ingest URLs.
 
 The publisher does not receive or collect a user's prompts, local files, notes,
 citations, Talamus brain contents, command output, or credentials through the
-plugin. The plugin contains no publisher-operated analytics or telemetry.
+plugin, MCP server, or MCPB bundle. These packages contain no
+publisher-operated analytics or telemetry.
 
 If a user chooses to open a GitHub issue, discussion, pull request, or security
 report, the publisher receives the information that the user submits there.
@@ -67,11 +96,13 @@ controls storage and retention for information submitted through GitHub.
 
 ## Security
 
-The plugin treats retrieved notes, files, URLs, and command output as untrusted
-data rather than instructions. It requires explicit consent before a pinned
-package download, keeps the published workflow read-only, and tells agents to
-avoid secrets and unrelated directories. No software can be guaranteed secure;
-users should keep dependencies current and review commands before approval.
+The skills-only plugin treats retrieved notes, files, URLs, and command output
+as untrusted data rather than instructions. It requires explicit consent before
+a pinned package download, keeps its published workflow read-only, and tells
+agents to avoid secrets and unrelated directories. The MCP server separately
+declares each tool's read, write, destructive, idempotent, and open-world hints.
+No software can be guaranteed secure; users should keep dependencies current
+and review commands before approval.
 
 Report a suspected vulnerability privately through
 [GitHub Security Advisories](https://github.com/ampres-ai/talamus/security/advisories/new).

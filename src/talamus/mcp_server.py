@@ -11,6 +11,8 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
+from mcp.types import ToolAnnotations
+
 from talamus.config import load_or_default
 from talamus.paths import TalamusPaths
 from talamus.routing import EngineRouter
@@ -47,6 +49,29 @@ server = _MCPServer("talamus")
 _root: Path = Path(".").resolve()
 
 
+def _tool_annotations(
+    title: str,
+    *,
+    read_only: bool,
+    destructive: bool,
+    idempotent: bool,
+    open_world: bool,
+) -> ToolAnnotations:
+    """Describe a tool's real side effects for MCP clients and reviewers."""
+    # MCP 1.x accepts the protocol's camelCase aliases at construction time,
+    # while MCP 2.x type checkers expose the Python field names. Validating the
+    # wire-format object preserves the same values on both maintained majors.
+    return ToolAnnotations.model_validate(
+        {
+            "title": title,
+            "readOnlyHint": read_only,
+            "destructiveHint": destructive,
+            "idempotentHint": idempotent,
+            "openWorldHint": open_world,
+        }
+    )
+
+
 def _paths() -> TalamusPaths:
     return TalamusPaths(_root)
 
@@ -67,7 +92,15 @@ def _router() -> EngineRouter:
     return EngineRouter(load_or_default(_paths().config_path))
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Search brain",
+        read_only=False,
+        destructive=False,
+        idempotent=False,
+        open_world=True,
+    )
+)
 def search(query: str, smart: bool = False) -> str:
     """Search the Talamus brain for notes relevant to a query; returns titles and summaries.
 
@@ -87,7 +120,15 @@ def search(query: str, smart: bool = False) -> str:
     return "\n".join(f"- {hit.title}: {hit.summary}" for hit in result.data.hits)
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Read note",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+        open_world=False,
+    )
+)
 def read_note(title: str, as_of: str = "") -> str:
     """Read the full Markdown content of a Talamus note given its title.
 
@@ -109,7 +150,15 @@ def read_note(title: str, as_of: str = "") -> str:
     return f"Note not found: {title}"
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Ask brain",
+        read_only=True,
+        destructive=False,
+        idempotent=False,
+        open_world=True,
+    )
+)
 def ask(question: str) -> str:
     """Ask the brain and get a written answer WITH CITATIONS to the exact notes
     used. Spends LLM calls on the user's configured engine (cheap tier for the
@@ -125,7 +174,15 @@ def ask(question: str) -> str:
     return data.answer
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Verify note",
+        read_only=True,
+        destructive=False,
+        idempotent=False,
+        open_world=True,
+    )
+)
 def verify(title: str) -> str:
     """Check whether a note is still faithful to its ORIGINAL source (Talamus
     preserves the source of every note). Returns ok, a proposed correction, or
@@ -145,7 +202,15 @@ def verify(title: str) -> str:
     return f"{title}: MISMATCH with its source — proposed correction: {correction}"
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Recall context",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+        open_world=False,
+    )
+)
 def recall(question: str) -> str:
     """Recall from the Talamus brain the context relevant to a question (real notes).
     Reason over the context yourself to answer."""
@@ -153,7 +218,15 @@ def recall(question: str) -> str:
     return result.data.context if result.success and result.data is not None else result.message
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Brain overview",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+        open_world=False,
+    )
+)
 def overview() -> str:
     """Show the Talamus brain's domain map (name, description, note count): an
     overview to get oriented before searching. Read-only, no LLM cost."""
@@ -172,7 +245,15 @@ def overview() -> str:
     return "\n".join(lines)
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Concept neighbors",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+        open_world=False,
+    )
+)
 def neighbors(concept: str, include_inferred: bool = True) -> str:
     """Show concepts connected to a concept in the brain, with relation types.
 
@@ -193,7 +274,15 @@ def neighbors(concept: str, include_inferred: bool = True) -> str:
     return "\n".join(lines)
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Note history",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+        open_world=False,
+    )
+)
 def history(title: str) -> str:
     """The past versions of a brain note (transaction time), oldest first: when
     Talamus changed that record and how."""
@@ -206,7 +295,15 @@ def history(title: str) -> str:
     return "\n".join(f"[{v.get('updated_at', '?')}] {v.get('summary', '')}" for v in versions)
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Note sources",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+        open_world=False,
+    )
+)
 def sources(title: str) -> str:
     """The sources (provenance) of a note: where each statement comes from."""
     result = get_library_note(_root, title)
@@ -218,7 +315,15 @@ def sources(title: str) -> str:
     return "\n".join(f"- {s['normalized_path']} ({s['locator']})" for s in note_sources)
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Ontology status",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+        open_world=False,
+    )
+)
 def ontology_status() -> str:
     """The state of the emergent type system: schema version, active/candidate types,
     and the coverage of typed edges."""
@@ -235,7 +340,15 @@ def ontology_status() -> str:
     return "\n".join(lines)
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Remember insight",
+        read_only=False,
+        destructive=True,
+        idempotent=False,
+        open_world=True,
+    )
+)
 def remember(text: str, scope: str = "project") -> str:
     """Save into the Talamus brain an important insight or decision that emerged in
     the session, turning it into a note. scope: 'project' (default) or 'central' for
@@ -246,7 +359,15 @@ def remember(text: str, scope: str = "project") -> str:
     return f"Remembered in [{scope}]: {result.data.notes_written} notes saved."
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Ingest text",
+        read_only=False,
+        destructive=True,
+        idempotent=False,
+        open_world=True,
+    )
+)
 def ingest_text(text: str, name: str = "insight", scope: str = "project") -> str:
     """Compile a text into brain notes (without the 'worth remembering' gate: use it
     for already-selected content). scope: 'project' (default) or 'central'."""
@@ -256,7 +377,15 @@ def ingest_text(text: str, name: str = "insight", scope: str = "project") -> str
     return f"Ingested in [{scope}]: {result.data.notes_written} notes."
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Propose note",
+        read_only=False,
+        destructive=False,
+        idempotent=False,
+        open_world=False,
+    )
+)
 def propose_note(text: str, reason: str = "") -> str:
     """Propose UNCERTAIN knowledge: it lands in the brain's review queue, not directly
     in the notes (F10.4). A human will apply or reject it."""
@@ -266,7 +395,15 @@ def propose_note(text: str, reason: str = "") -> str:
     return f"In review: {result.data.item_id} (decide with `talamus review`)."
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "List review queue",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+        open_world=False,
+    )
+)
 def review_list() -> str:
     """The decisions pending in the brain's review queue."""
     result = list_review_items(_root, status="pending")
@@ -277,7 +414,15 @@ def review_list() -> str:
     return "\n".join(f"- {i.item_id} [{i.kind}] {i.title}" for i in result.data)
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Apply review item",
+        read_only=False,
+        destructive=True,
+        idempotent=False,
+        open_world=False,
+    )
+)
 def review_apply(item_id: str) -> str:
     """Apply an item from the review queue (corrections are written to the brain while
     preserving history)."""
@@ -285,7 +430,15 @@ def review_apply(item_id: str) -> str:
     return f"Applied: {item_id}" if result.success else result.message
 
 
-@server.tool()
+@server.tool(
+    annotations=_tool_annotations(
+        "Reject review item",
+        read_only=False,
+        destructive=True,
+        idempotent=False,
+        open_world=False,
+    )
+)
 def review_reject(item_id: str, reason: str = "") -> str:
     """Reject an item from the review queue (the decision stays recorded)."""
     result = reject_review_item(_root, item_id, reason)
