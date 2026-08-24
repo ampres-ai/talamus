@@ -144,6 +144,41 @@ def _owner_only_windows_sddl() -> str:
     return f"D:P(A;;FA;;;{_current_windows_user_sid()})"
 
 
+def _canonicalize_windows_sddl(sddl: str) -> str:
+    advapi32, kernel32 = _windows_libraries()
+    descriptor = ctypes.c_void_p()
+    if not advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+        sddl,
+        _SECURITY_DESCRIPTOR_REVISION,
+        ctypes.byref(descriptor),
+        None,
+    ):
+        raise _windows_error("Could not build the Windows security descriptor")
+    rendered = wintypes.LPWSTR()
+    try:
+        if not advapi32.ConvertSecurityDescriptorToStringSecurityDescriptorW(
+            descriptor,
+            _SECURITY_DESCRIPTOR_REVISION,
+            _DACL_SECURITY_INFORMATION,
+            ctypes.byref(rendered),
+            None,
+        ):
+            raise _windows_error("Could not canonicalize the Windows security descriptor")
+        return rendered.value or ""
+    finally:
+        if rendered:
+            kernel32.LocalFree(rendered)
+        kernel32.LocalFree(descriptor)
+
+
+def _canonical_windows_user_trustee(user_sid: str) -> str:
+    canonical = _canonicalize_windows_sddl(f"D:P(A;;FA;;;{user_sid})")
+    marker = canonical.rfind(";;;")
+    if marker < 0 or not canonical.endswith(")"):
+        raise OSError("Canonical Windows credential ACL has an unexpected format")
+    return canonical[marker + 3 : -1]
+
+
 def _set_windows_owner_only(path: Path) -> None:
     advapi32, kernel32 = _windows_libraries()
     descriptor = ctypes.c_void_p()
@@ -193,7 +228,7 @@ def _windows_dacl_sddl(path: Path) -> str:
         kernel32.LocalFree(sddl)
 
 
-def _windows_dacl_is_owner_only_sddl(sddl: str, user_sid: str) -> bool:
+def _windows_dacl_is_owner_only_sddl(sddl: str, expected_trustee: str) -> bool:
     """Validate the effective policy while ignoring Windows ACL bookkeeping flags."""
     if not sddl.startswith("D:"):
         return False
@@ -231,16 +266,17 @@ def _windows_dacl_is_owner_only_sddl(sddl: str, user_sid: str) -> bool:
         and rights.casefold() in {"fa", "0x1f01ff", "0x001f01ff"}
         and not object_guid
         and not inherited_guid
-        and sid == user_sid
+        and sid == expected_trustee
     )
 
 
 def credential_file_is_owner_only(path: Path) -> bool:
     """Return whether *path* has the exact credential-store permission policy."""
     if os.name == "nt":
+        user_sid = _current_windows_user_sid()
         return _windows_dacl_is_owner_only_sddl(
             _windows_dacl_sddl(path),
-            _current_windows_user_sid(),
+            _canonical_windows_user_trustee(user_sid),
         )
     return stat.S_IMODE(path.stat().st_mode) == _OWNER_ONLY_MODE
 
@@ -250,10 +286,12 @@ def _harden_before_write(path: Path, fd: int) -> None:
         _set_windows_owner_only(path)
         actual_dacl = _windows_dacl_sddl(path)
         user_sid = _current_windows_user_sid()
-        if not _windows_dacl_is_owner_only_sddl(actual_dacl, user_sid):
+        expected_trustee = _canonical_windows_user_trustee(user_sid)
+        if not _windows_dacl_is_owner_only_sddl(actual_dacl, expected_trustee):
             raise OSError(
                 "owner-only permission verification failed: "
-                f"Windows returned DACL {actual_dacl!r} for current-user SID {user_sid!r}"
+                f"Windows returned DACL {actual_dacl!r} for current-user SID {user_sid!r} "
+                f"(canonical trustee {expected_trustee!r})"
             )
     else:
         fchmod = getattr(os, "fchmod", None)

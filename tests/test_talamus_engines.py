@@ -69,6 +69,7 @@ class CredentialStoreTests(unittest.TestCase):
         sid = "S-1-5-21-1-2-3-1001"
         self.assertTrue(_windows_dacl_is_owner_only_sddl(f"D:P(A;;FA;;;{sid})", sid))
         self.assertTrue(_windows_dacl_is_owner_only_sddl(f"D:PAI(A;;FA;;;{sid})", sid))
+        self.assertTrue(_windows_dacl_is_owner_only_sddl("D:P(A;;FA;;;LA)", "LA"))
         self.assertTrue(_windows_dacl_is_owner_only_sddl(f"D:AIP(A;;0x001f01ff;;;{sid})", sid))
         self.assertFalse(_windows_dacl_is_owner_only_sddl(f"D:AI(A;;FA;;;{sid})", sid))
         self.assertFalse(_windows_dacl_is_owner_only_sddl(f"D:P(A;CI;FA;;;{sid})", sid))
