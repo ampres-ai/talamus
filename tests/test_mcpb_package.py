@@ -100,6 +100,15 @@ class McpbPackageTests(unittest.TestCase):
         self.assertIn("https://ampres-ai.github.io/talamus/privacy/", readme)
         self.assertGreaterEqual(readme.count("Expected behavior:"), 3)
 
+    def test_canonical_bundle_keeps_the_user_readme(self) -> None:
+        ignored = {
+            line.strip()
+            for line in (MCPB_ROOT / ".mcpbignore").read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        }
+
+        self.assertNotIn("README.md", ignored)
+
     def test_smithery_bundle_contains_runtime_tool_schemas(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "talamus-smithery.mcpb"

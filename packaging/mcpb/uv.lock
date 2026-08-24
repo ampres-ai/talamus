@@ -685,11 +685,11 @@ wheels = [
 
 [[package]]
 name = "talamus"
-version = "1.1.2"
+version = "1.1.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e3/9a/064056c980fab2050dbe525c998788a3f3a34cc718fa51790c5a6983cde2/talamus-1.1.2.tar.gz", hash = "sha256:a47c28981c06e6a63e058697c1aae1b5139057e2989ea03dbbdfa425f4e2d228", size = 398742, upload-time = "2026-08-24T14:44:49.668Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c2/e4/07ef259e848f1757f6d165206d2d35cabbc171975c71bfc24287034a98d3/talamus-1.1.3.tar.gz", hash = "sha256:b63b822894a78753418b4c20697fef18c6d213b377ac6341c09dab0df9646cbd", size = 399942, upload-time = "2026-08-24T16:21:20.866Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/04/00/8031cab5b32b39aa2c3c2a3a3f3bc7abdf4ff86b5d232ee8ec70ae697f7b/talamus-1.1.2-py3-none-any.whl", hash = "sha256:f5437645d1da8f7fb93ae6e3b7ad54230a23ab7515cb719a8bf35c3aaf195a42", size = 319949, upload-time = "2026-08-24T14:44:47.868Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/b4/5b80e6c26e6d2232398dad09e033617fb70a3638559876e3c9fd12fb90d7/talamus-1.1.3-py3-none-any.whl", hash = "sha256:5e42d8e4bb6d446cccfa0119ca725740c453180a3f42f493732d2c1b5bc3e6d4", size = 320468, upload-time = "2026-08-24T16:21:19.073Z" },
 ]
 
 [package.optional-dependencies]
@@ -699,14 +699,14 @@ mcp = [
 
 [[package]]
 name = "talamus-mcpb-launcher"
-version = "1.1.2"
+version = "1.1.3"
 source = { virtual = "." }
 dependencies = [
     { name = "talamus", extra = ["mcp"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "talamus", extras = ["mcp"], specifier = "==1.1.2" }]
+requires-dist = [{ name = "talamus", extras = ["mcp"], specifier = "==1.1.3" }]
 
 [[package]]
 name = "truststore"

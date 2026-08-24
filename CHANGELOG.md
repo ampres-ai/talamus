@@ -6,6 +6,12 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- The MCPB and Smithery artifacts now pin the published Talamus 1.1.3 release,
+  including exact tool behavior annotations and the directory-ready README and
+  privacy metadata.
+
 ## [1.1.3] - 2026-08-24
 
 ### Changed
