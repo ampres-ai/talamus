@@ -246,6 +246,20 @@ class EngineSetupServiceTests(unittest.TestCase):
         self.assertEqual("sk-secret-value", stored["anthropic_api_key"])
         self.assertNotIn("sk-secret-value", json.dumps(result.to_dict()))
 
+    def test_save_anthropic_api_key_reports_permission_failure(self) -> None:
+        from talamus.errors import CredentialStoreError
+        from talamus.services.engines import save_anthropic_api_key
+
+        with mock.patch(
+            "talamus.services.engines.save_credential",
+            side_effect=CredentialStoreError("owner-only permissions unavailable"),
+        ):
+            result = save_anthropic_api_key("sk-never-return-this")
+        self.assertFalse(result.success)
+        self.assertEqual("credential_permissions_failed", result.code)
+        self.assertEqual(False, result.data["saved"])
+        self.assertNotIn("sk-never-return-this", str(result))
+
 
 if __name__ == "__main__":
     unittest.main()

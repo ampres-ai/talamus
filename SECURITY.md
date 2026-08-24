@@ -38,15 +38,16 @@ cannot defend the machine from its owner's attacker.
   before extraction.
 - **Scan secrets gate** — repository scans detect likely secrets, redact them
   before any LLM call, and stop for explicit approval (`--allow-secrets`).
+- **Owner-only credential store** — keys saved from Workbench Settings are
+  written atomically only after owner-only permissions are established and
+  verified: mode `0600` on Linux/macOS, or a protected DACL granting access
+  only to the current user on Windows. A save fails explicitly before any
+  secret byte is written if the guarantee cannot be established.
 
 ## Known debt (honest, tracked, non-blocking)
 
 These are real and scheduled for the first releases after launch:
 
-- **Credentials file permissions** — a key saved from the workbench Settings
-  is written to `TALAMUS_HOME/credentials.json` in plaintext with default file
-  permissions. Until it is created owner-only, prefer environment variables
-  for engine credentials on shared machines.
 - **MCP write tools are on by default** — `remember`, `ingest_text`,
   `propose_note` and the review tools are reachable by any agent connected to
   the server. A read-only default with an explicit `--enable-writes` (and a
@@ -68,9 +69,9 @@ These are real and scheduled for the first releases after launch:
   built, will be **authenticated and read-only** (see [ROADMAP.md](ROADMAP.md)).
 - **Engine CLIs run sandboxed.** codex runs with a read-only sandbox, gemini in
   plan mode — Talamus never loosens those flags.
-- **Secrets.** Prefer environment variables for engine credentials; they are
-  never written to notes or logs (see the known-debt note on
-  `credentials.json` if you use the Settings UI instead).
+- **Secrets.** Prefer environment variables for a zero-persistence engine
+  credential path. Keys saved through Settings remain local in the owner-only
+  `TALAMUS_HOME/credentials.json`; they are never written to notes or logs.
 - **Your data is yours.** Deleting the project directory deletes the brain.
 
 ## Reporting a vulnerability

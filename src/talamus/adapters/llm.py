@@ -375,7 +375,8 @@ def stored_credential_present(name: str) -> bool:
 
 
 def save_credential(name: str, value: str) -> None:
-    """Persist a credential machine-wide (used by the Settings view)."""
+    """Persist a credential machine-wide with owner-only access."""
+    from talamus.credentials import write_owner_only_text
     from talamus.registry import talamus_home
 
     home = talamus_home()
@@ -388,7 +389,7 @@ def save_credential(name: str, value: str) -> None:
         except (json.JSONDecodeError, OSError):
             data = {}
     data[name] = value
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    write_owner_only_text(path, json.dumps(data, indent=2))
 
 
 def build_provider(provider: str, model: str = "") -> LLMProvider:

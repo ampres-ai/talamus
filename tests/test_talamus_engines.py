@@ -74,6 +74,61 @@ class CredentialStoreTests(unittest.TestCase):
                 data = json.loads((Path(home) / "credentials.json").read_text(encoding="utf-8"))
                 self.assertEqual(data["anthropic_api_key"], "sk-test-123")
 
+                from talamus.credentials import credential_file_is_owner_only
+
+                self.assertTrue(credential_file_is_owner_only(Path(home) / "credentials.json"))
+
+    def test_save_tightens_existing_file_and_preserves_values(self) -> None:
+        from talamus.credentials import credential_file_is_owner_only
+
+        with tempfile.TemporaryDirectory() as home:
+            path = Path(home) / "credentials.json"
+            path.write_text(json.dumps({"existing": "keep-me"}), encoding="utf-8")
+            if os.name != "nt":
+                path.chmod(0o666)
+            with mock.patch.dict(os.environ, {"TALAMUS_HOME": home}):
+                save_credential("anthropic_api_key", "sk-new")
+            self.assertEqual(
+                json.loads(path.read_text(encoding="utf-8")),
+                {"existing": "keep-me", "anthropic_api_key": "sk-new"},
+            )
+            self.assertTrue(credential_file_is_owner_only(path))
+
+    def test_permission_failure_writes_no_credential(self) -> None:
+        from talamus.errors import CredentialStoreError
+
+        with tempfile.TemporaryDirectory() as home:
+            with (
+                mock.patch.dict(os.environ, {"TALAMUS_HOME": home}),
+                mock.patch(
+                    "talamus.credentials._harden_before_write",
+                    side_effect=OSError("permission denied"),
+                ),
+            ):
+                with self.assertRaisesRegex(CredentialStoreError, "not saved"):
+                    save_credential("anthropic_api_key", "sk-must-not-land")
+            self.assertFalse((Path(home) / "credentials.json").exists())
+            self.assertEqual(list(Path(home).glob(".credentials.json.*.tmp")), [])
+
+    def test_permission_failure_leaves_existing_credentials_unchanged(self) -> None:
+        from talamus.errors import CredentialStoreError
+
+        with tempfile.TemporaryDirectory() as home:
+            path = Path(home) / "credentials.json"
+            original = json.dumps({"existing": "keep-me"})
+            path.write_text(original, encoding="utf-8")
+            with (
+                mock.patch.dict(os.environ, {"TALAMUS_HOME": home}),
+                mock.patch(
+                    "talamus.credentials._harden_before_write",
+                    side_effect=OSError("permission denied"),
+                ),
+            ):
+                with self.assertRaises(CredentialStoreError):
+                    save_credential("anthropic_api_key", "sk-must-not-land")
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+            self.assertEqual(list(Path(home).glob(".credentials.json.*.tmp")), [])
+
     def test_env_var_wins_over_stored_credential(self) -> None:
         from talamus.adapters.llm import AnthropicApiProvider
 

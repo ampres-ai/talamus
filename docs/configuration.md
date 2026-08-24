@@ -31,6 +31,14 @@ Every engine goes through per-task **model+effort tiering** (`task_tiers` and
 `provider_models` in `talamus.json` override the cost-minimizing defaults);
 `TALAMUS_ENGINE_TIMEOUT` caps a single engine call in seconds (default 600).
 
+Workbench Settings can save the Anthropic key locally in
+`TALAMUS_HOME/credentials.json`. Talamus creates or replaces that file only
+after verifying owner-only access: mode `0600` on Linux/macOS, or a protected
+DACL for the current user on Windows. The save fails before credential bytes
+are written if that policy cannot be established. Prefer `ANTHROPIC_API_KEY`
+when you want no credential persisted on disk; environment variables take
+precedence over the saved value.
+
 ## Language support (honest status)
 
 Talamus is built to be language-agnostic, and the parts that involve the LLM
