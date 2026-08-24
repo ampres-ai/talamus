@@ -6,6 +6,8 @@ semantic versioning.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-08-24
+
 ### Changed
 
 - The MCPB and Smithery artifacts now pin the published Talamus 1.1.2 release
@@ -14,6 +16,11 @@ semantic versioning.
   evaluation evidence, security trade-offs, and release engineering to its
   creator's role; public documentation emphasizes technical evaluation over
   star-count calls to action.
+- MCP tools now declare exact read-only, destructive, idempotent, and
+  open-world behavior so clients can present accurate consent and safety UI.
+- The MCP bundle now identifies Angio Crapuzzi as its author, links its privacy
+  policy, documents realistic installation prompts and permissions, and ships
+  the same user-facing README in the Smithery compatibility artifact.
 
 ## [1.1.2] - 2026-08-24
 
