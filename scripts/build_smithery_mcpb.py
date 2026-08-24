@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import asyncio
 import hashlib
+import importlib.metadata as importlib_metadata
 import json
-import sys
+import tomllib
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -21,9 +22,31 @@ ARCHIVE_FILES = (
 )
 
 
+def _validate_locked_runtime(source: Path) -> None:
+    """Fail if schema generation is not using the bundle's locked runtime."""
+    with (source / "uv.lock").open("rb") as handle:
+        packages = tomllib.load(handle)["package"]
+
+    for package_name in ("talamus", "mcp"):
+        locked = [
+            str(package["version"]) for package in packages if package["name"] == package_name
+        ]
+        if len(locked) != 1:
+            raise RuntimeError(f"expected one locked {package_name} version, found {locked}")
+        try:
+            actual = importlib_metadata.version(package_name)
+        except importlib_metadata.PackageNotFoundError as exc:
+            raise RuntimeError(f"{package_name} is not installed in the schema runtime") from exc
+        if actual != locked[0]:
+            raise RuntimeError(
+                f"schema runtime has {package_name} {actual}, but the bundle locks "
+                f"{locked[0]}; run this builder with "
+                "'uv run --frozen --project packaging/mcpb python'"
+            )
+
+
 def _runtime_tools() -> list[dict[str, Any]]:
     """Return the exact schemas FastMCP exposes at runtime."""
-    sys.path.insert(0, str(ROOT / "src"))
     from talamus.mcp_server import server
 
     tools = asyncio.run(server.list_tools())
@@ -91,6 +114,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = _parser().parse_args()
+    _validate_locked_runtime(args.source.resolve())
     digest = build_bundle(args.source, args.output)
     print(f"bundle: {args.output.resolve()}")
     print(f"sha256: {digest}")

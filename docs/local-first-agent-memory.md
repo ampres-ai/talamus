@@ -163,6 +163,5 @@ Start with the [quickstart](quickstart.md), inspect the
 [GitHub](https://github.com/ampres-ai/talamus). Talamus is Apache-2.0 and does
 not require an account or hosted service for its local core.
 
-If this is the kind of agent memory you want to see developed in public,
-[star Talamus on GitHub](https://github.com/ampres-ai/talamus) so other builders
-can find it.
+For the engineering decisions, evidence, and current trade-offs behind the
+implementation, read the [Talamus case study](case-study.md).

@@ -12,6 +12,7 @@ theme:
 
 nav:
   - Home: index.md
+  - Engineering case study: case-study.md
   - Quickstart: quickstart.md
   - Local-first agent memory: local-first-agent-memory.md
   - Commands: commands.md
