@@ -7,7 +7,7 @@
       "command": "uvx",
       "args": [
         "--with",
-        "mcp>=1.0",
+        "mcp>=1.29,<3",
         "talamus==1.1.1",
         "mcp",
         "serve"
