@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://ampres-ai.github.io/talamus/quickstart/">
+        <link rel="canonical" href="https://ampres-ai.github.io/talamus/case-study/">
       
       
-        <link rel="prev" href="../case-study/">
+        <link rel="prev" href="..">
       
       
-        <link rel="next" href="../local-first-agent-memory/">
+        <link rel="next" href="../quickstart/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Quickstart - Talamus</title>
+        <title>Engineering case study - Talamus</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#talamus-quickstart" class="md-skip">
+        <a href="#engineering-case-study-talamus" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Quickstart
+              Engineering case study
             
           </span>
         </div>
@@ -248,33 +248,6 @@
       
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../case-study/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Engineering case study
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
     
   
   
@@ -294,7 +267,7 @@
   <span class="md-ellipsis">
     
   
-    Quickstart
+    Engineering case study
   
 
     
@@ -312,7 +285,7 @@
   <span class="md-ellipsis">
     
   
-    Quickstart
+    Engineering case study
   
 
     
@@ -338,10 +311,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-evaluate-without-installing" class="md-nav__link">
+  <a href="#the-problem" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Evaluate without installing
+        The problem
       
     </span>
   </a>
@@ -349,10 +322,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-install-and-adopt" class="md-nav__link">
+  <a href="#constraints-that-shaped-the-design" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Install and adopt
+        Constraints that shaped the design
       
     </span>
   </a>
@@ -360,10 +333,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-your-own-brain" class="md-nav__link">
+  <a href="#three-engineering-decisions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Your own brain
+        Three engineering decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Three engineering decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-separate-human-truth-from-derived-machine-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Separate human truth from derived machine state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-build-retrieval-without-required-embeddings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Build retrieval without required embeddings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-treat-time-and-provenance-as-first-class-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Treat time and provenance as first-class data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evidence-and-quality-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence and quality controls
       
     </span>
   </a>
@@ -371,10 +394,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-choose-your-engine" class="md-nav__link">
+  <a href="#security-trade-offs-and-current-work" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Choose your engine
+        Security, trade-offs, and current work
       
     </span>
   </a>
@@ -382,54 +405,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-use-it-from-agents-mcp" class="md-nav__link">
+  <a href="#outcome" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Use it from agents (MCP)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-browse-like-a-wiki-obsidian" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Browse like a wiki (Obsidian)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#coming-from-obsidian-or-notion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Coming from Obsidian or Notion?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#global-vs-project-brains" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Global vs project brains
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#move-or-back-up-a-brain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Move or back up a brain
+        Outcome
       
     </span>
   </a>
@@ -440,6 +419,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -856,10 +862,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-evaluate-without-installing" class="md-nav__link">
+  <a href="#the-problem" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Evaluate without installing
+        The problem
       
     </span>
   </a>
@@ -867,10 +873,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-install-and-adopt" class="md-nav__link">
+  <a href="#constraints-that-shaped-the-design" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Install and adopt
+        Constraints that shaped the design
       
     </span>
   </a>
@@ -878,10 +884,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-your-own-brain" class="md-nav__link">
+  <a href="#three-engineering-decisions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Your own brain
+        Three engineering decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Three engineering decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-separate-human-truth-from-derived-machine-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Separate human truth from derived machine state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-build-retrieval-without-required-embeddings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Build retrieval without required embeddings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-treat-time-and-provenance-as-first-class-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Treat time and provenance as first-class data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evidence-and-quality-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence and quality controls
       
     </span>
   </a>
@@ -889,10 +945,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-choose-your-engine" class="md-nav__link">
+  <a href="#security-trade-offs-and-current-work" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Choose your engine
+        Security, trade-offs, and current work
       
     </span>
   </a>
@@ -900,54 +956,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-use-it-from-agents-mcp" class="md-nav__link">
+  <a href="#outcome" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Use it from agents (MCP)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-browse-like-a-wiki-obsidian" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Browse like a wiki (Obsidian)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#coming-from-obsidian-or-notion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Coming from Obsidian or Notion?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#global-vs-project-brains" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Global vs project brains
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#move-or-back-up-a-brain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Move or back up a brain
+        Outcome
       
     </span>
   </a>
@@ -974,98 +986,129 @@
   
 
 
-<h1 id="talamus-quickstart">Talamus — Quickstart</h1>
-<p>Local-first knowledge that both you and your AI agents can read and write.</p>
-<h2 id="1-evaluate-without-installing">1. Evaluate without installing</h2>
-<p>With <code>uv</code> available, create the built-in example in an isolated folder. These
-commands do not create an account, call an LLM, or write outside
-<code>./talamus-demo</code>:</p>
-<div class="highlight"><pre><span></span><code>uvx<span class="w"> </span>--from<span class="w"> </span>talamus<span class="w"> </span>talamus<span class="w"> </span>demo<span class="w"> </span>--root<span class="w"> </span>./talamus-demo
-uvx<span class="w"> </span>--from<span class="w"> </span>talamus<span class="w"> </span>talamus<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;embedding&quot;</span><span class="w"> </span>--root<span class="w"> </span>./talamus-demo
-uvx<span class="w"> </span>--from<span class="w"> </span>talamus<span class="w"> </span>talamus<span class="w"> </span>neighbors<span class="w"> </span><span class="s2">&quot;Embedding&quot;</span><span class="w"> </span>--root<span class="w"> </span>./talamus-demo
-uvx<span class="w"> </span>--from<span class="w"> </span>talamus<span class="w"> </span>talamus<span class="w"> </span><span class="nb">read</span><span class="w"> </span><span class="s2">&quot;Embedding&quot;</span><span class="w"> </span>--root<span class="w"> </span>./talamus-demo
-</code></pre></div>
-<h2 id="2-install-and-adopt">2. Install and adopt</h2>
-<div class="highlight"><pre><span></span><code>pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;talamus[mcp]&quot;</span><span class="w">     </span><span class="c1"># or: pip install &quot;talamus[mcp]&quot;</span>
-</code></pre></div>
-<p>The MCP extra powers the agent setup in step 5. If you only need the core CLI,
-install <code>talamus</code> without the extra instead.</p>
-<h2 id="3-your-own-brain">3. Your own brain</h2>
-<div class="highlight"><pre><span></span><code>talamus<span class="w"> </span>init<span class="w">                    </span><span class="c1"># detects your LLM engine, creates a brain here</span>
-talamus<span class="w"> </span>ingest<span class="w"> </span>report.pdf<span class="w">       </span><span class="c1"># PDF / DOCX / HTML / Markdown / URL -&gt; linked concept-notes</span>
-talamus<span class="w"> </span>overview<span class="w">                </span><span class="c1"># induce the domain map (handy as the brain grows)</span>
-talamus<span class="w"> </span>ask<span class="w"> </span><span class="s2">&quot;how does X work?&quot;</span><span class="w">  </span><span class="c1"># cited answer from your brain</span>
-</code></pre></div>
-<p><code>talamus</code> (no args) shows brain status and next steps. <code>talamus doctor</code> runs a health check.</p>
-<h2 id="4-choose-your-engine">4. Choose your engine</h2>
-<p>Talamus runs on what you already have — set it in <code>talamus.json</code> (or <code>TALAMUS_LLM_PROVIDER</code>):</p>
+<h1 id="engineering-case-study-talamus">Engineering case study: Talamus</h1>
+<blockquote>
+<p>Can an AI agent retain durable, cited, time-aware memory without giving a
+hosted service ownership of the user's context?</p>
+</blockquote>
 <ul>
-<li><code>claude-cli</code> — your Claude subscription (default if <code>claude</code> is on PATH)</li>
-<li><code>codex-cli</code> — your ChatGPT subscription through Codex</li>
-<li><code>antigravity-cli</code> — Google Antigravity (<code>agy</code>), your Gemini subscription</li>
-<li><code>opencode</code> — opencode, with whatever providers you configured in it</li>
-<li><code>ollama</code> — a local model (<code>TALAMUS_LLM_MODEL=llama3</code>), fully offline</li>
-<li><code>anthropic-api</code> — the Anthropic API (<code>ANTHROPIC_API_KEY</code>)</li>
+<li><strong>Role:</strong> Creator and lead engineer — Giovanni “Angio” Crapuzzi</li>
+<li><strong>Project:</strong> <a href="https://github.com/ampres-ai/talamus">Talamus</a>, under the Ampres
+  open-source project</li>
+<li><strong>Period:</strong> May 2026–present</li>
+<li><strong>Primary stack:</strong> Python 3.11+, SQLite/FTS5, MCP, TypeScript/React, GitHub
+  Actions</li>
 </ul>
-<p>(The old standalone <code>gemini-cli</code> still works if you have it installed, but
-Google has deprecated it — use <code>antigravity-cli</code> instead.)</p>
-<h2 id="5-use-it-from-agents-mcp">5. Use it from agents (MCP)</h2>
-<div class="highlight"><pre><span></span><code>talamus<span class="w"> </span>mcp<span class="w"> </span>install<span class="w">             </span><span class="c1"># Claude Code + detected Cursor/Codex/OpenCode/OpenClaw</span>
-talamus<span class="w"> </span>mcp<span class="w"> </span>install<span class="w"> </span>--agent<span class="w"> </span>openclaw<span class="w">  </span><span class="c1"># explicit OpenClaw registration</span>
+<p><img alt="A completed agent session becomes cited, local memory for the next one." src="../assets/talamus-demo.gif" /></p>
+<h2 id="the-problem">The problem</h2>
+<p>Coding agents are effective inside one session but usually lose the reasoning
+behind decisions when it ends. Many memory approaches add a hosted account,
+remote database, required embeddings, or an opaque store that users cannot
+inspect and correct directly.</p>
+<p>I created Talamus to explore another design: keep durable memory in ordinary
+files, make answers traceable to sources, preserve how facts change, and expose
+consistent behavior to humans and agents. The result is a local-first Python
+application with a CLI, SDK, MCP server, and optional React workbench.</p>
+<p>My work spans product definition, architecture, retrieval, temporal and
+provenance models, agent integrations, evaluation, security, documentation,
+and release automation. The repository history links this work to my
+<a href="https://github.com/GCrapuzzi">GCrapuzzi</a> account.</p>
+<h2 id="constraints-that-shaped-the-design">Constraints that shaped the design</h2>
+<p>Four constraints are documented in the
+<a href="../design-principles/">design principles</a>:</p>
+<ul>
+<li>The core works without a hosted service, vector database, or required
+  embedding API.</li>
+<li>User-editable Markdown is the human source of truth; indexes are rebuildable.</li>
+<li>Multi-call LLM operations show an estimate and require explicit consent.</li>
+<li>Retrieval changes are measured on multiple corpora, with negative results
+  retained.</li>
+</ul>
+<h2 id="three-engineering-decisions">Three engineering decisions</h2>
+<h3 id="1-separate-human-truth-from-derived-machine-state">1. Separate human truth from derived machine state</h3>
+<p>A Talamus brain stores notes as Obsidian-compatible Markdown. Provenance,
+relations, retrieval text, and structured fields live in canonical JSON
+records. SQLite/FTS5, JSON postings, graph data, domains, and ontology files are
+derived caches.</p>
+<p>This hybrid model lets people edit and back up meaningful content with normal
+filesystem tools while preserving machine metadata. <code>talamus reindex</code> merges
+human edits and rebuilds the indexes. Deleting the cache does not delete the
+notes. The model and migration behavior are specified in the
+<a href="../architecture/">architecture document</a>.</p>
+<h3 id="2-build-retrieval-without-required-embeddings">2. Build retrieval without required embeddings</h3>
+<p>Plain retrieval blends field-weighted BM25 with character trigrams over titles,
+aliases, summaries, and bilingual retrieval text. Trigrams provide a
+lightweight bridge for cognates and cross-language queries. At answer time, an
+optional user-selected LLM can expand a question into corpus vocabulary; it is
+not required for local search.</p>
+<p>The ask pipeline routes by stable domain identifiers, ranks through the
+persistent index, retains global escape-hatch results for routing errors, fits
+evidence to a context budget, and requires citations. Shared services support
+the CLI, MCP interface, SDK, and workbench, reducing behavioral drift between
+front ends.</p>
+<h3 id="3-treat-time-and-provenance-as-first-class-data">3. Treat time and provenance as first-class data</h3>
+<p>Talamus keeps note versions and fact-validity records append-only. A correction
+closes the old validity window and opens a new one instead of deleting the
+past. Superseding information becomes the default for current answers, while
+<code>--as-of</code>, history, and timeline operations retain earlier states.</p>
+<p>Notes record source locators and content hashes. Verification compares a note
+with preserved source material and sends uncertain corrections to a review
+queue rather than applying them silently. “What did the system know then?” and
+“what evidence supports this answer?” are therefore data-model concerns, not
+presentation features.</p>
+<div class="highlight"><pre><span></span><code>files, URLs, repositories, consented sessions
+                    │
+                    ▼
+        extraction + provenance
+                    │
+        ┌───────────┴───────────┐
+        ▼                       ▼
+ human-editable Markdown   canonical machine records
+        │                       │
+        └───────────┬───────────┘
+                    ▼
+     rebuildable FTS5 / graph / ontology
+                    │
+                    ▼
+       cited recall through CLI, MCP, SDK, UI
 </code></pre></div>
-<p>Claude Code reads the project <code>.mcp.json</code>, Cursor its <code>.cursor/mcp.json</code>,
-and codex gets one global registration (<code>codex mcp add talamus</code>) that resolves
-the right brain from whatever project codex runs in. OpenClaw gets a global
-<code>mcp.servers.talamus</code> definition pinned to this project brain, with a
-read-oriented tool filter by default; enable LLM-backed or mutating tools only
-when you intend to use them.</p>
-<p>goose uses the repository's Open Plugin instead of <code>talamus mcp install</code>. With
-<code>uv</code> available on <code>PATH</code>, install the plugin once and start a new goose session
-from the project whose memory you want to use:</p>
-<div class="highlight"><pre><span></span><code>goose<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>https://github.com/ampres-ai/talamus.git
-</code></pre></div>
-<p>The plugin imports the bundled <code>talamus-memory</code> skill and runs the pinned PyPI
-MCP server with the current project as its brain root.</p>
-<p>Agents can then <code>search</code> / <code>read_note</code> / <code>recall</code> / <code>overview</code> / <code>neighbors</code> / <code>remember</code>
-against your brain. To capture your work sessions automatically:</p>
-<div class="highlight"><pre><span></span><code>talamus<span class="w"> </span>hook<span class="w"> </span>--install<span class="w">          </span><span class="c1"># writes the Claude Code SessionEnd hook (asks nothing else)</span>
-talamus<span class="w"> </span>hook<span class="w">                    </span><span class="c1"># or just print the snippet to add by hand</span>
-</code></pre></div>
-<p>The hook sends Talamus the session transcript and the git diff when a session
-ends; only sessions that pass the worth-remembering gate become notes, and every
-decision is logged to <code>.talamus/logs/capture.log</code>. <code>talamus setup</code> proposes this
-hook and installs it only if you consent (<code>--capture yes|no|ask</code>).</p>
-<p>A session is never lost to engine trouble: if your LLM hits its usage limit
-during a capture, the session is parked locally and <code>talamus hook --retry</code>
-replays it once the limit resets (<code>talamus doctor</code> reminds you when captures
-are waiting).</p>
-<h2 id="6-browse-like-a-wiki-obsidian">6. Browse like a wiki (Obsidian)</h2>
-<p>Open the <code>notes/</code> folder as an Obsidian vault: notes cross-link with <code>[[wikilinks]]</code>,
-so you can navigate the knowledge by hovering and clicking.</p>
-<p>Prefer a dedicated app? Install the UI extra and launch the local React web
-workbench. It opens in a pywebview window by default; use <code>--web</code> for a browser.
-The workbench has 10 views: Home, Ask, Graph, Library, Import, Ontology, Review,
-Brains, Connect, and System.</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;talamus[ui]&quot;</span>
-talamus<span class="w"> </span>ui<span class="w">                      </span><span class="c1"># pywebview window</span>
-talamus<span class="w"> </span>ui<span class="w"> </span>--web<span class="w"> </span>--port<span class="w"> </span><span class="m">8760</span><span class="w">    </span><span class="c1"># browser, custom port</span>
-</code></pre></div>
-<h2 id="coming-from-obsidian-or-notion">Coming from Obsidian or Notion?</h2>
-<p>Import your existing vault 1:1 — instant, free, no LLM call:</p>
-<div class="highlight"><pre><span></span><code>talamus<span class="w"> </span>import-vault<span class="w"> </span>~/my-vault
-</code></pre></div>
-<p>Titles, tags, aliases and <code>[[wikilinks]]</code> are preserved (links become graph
-edges), and re-running skips unchanged notes. A Notion <strong>markdown export</strong>
-imports the same way. Your notes are searchable immediately.</p>
-<h2 id="global-vs-project-brains">Global vs project brains</h2>
-<p>By default Talamus uses the nearest <strong>project</strong> brain (a folder with <code>talamus.json</code>,
-searched upward), else a personal <strong>global</strong> brain under <code>~/talamus</code> (<code>TALAMUS_HOME</code>).
-Force one with <code>--global</code> or <code>--brain &lt;name&gt;</code>; <code>talamus where</code> shows the active brain,
-<code>talamus brains</code> lists the global ones.</p>
-<h2 id="move-or-back-up-a-brain">Move or back up a brain</h2>
-<div class="highlight"><pre><span></span><code>talamus<span class="w"> </span><span class="nb">export</span><span class="w"> </span>brain.zip
-talamus<span class="w"> </span>import<span class="w"> </span>brain.zip<span class="w"> </span>--root<span class="w"> </span>./restored
-</code></pre></div>
+<h2 id="evidence-and-quality-controls">Evidence and quality controls</h2>
+<p>The <a href="../benchmarks/">benchmark guide</a> links public numbers to committed result
+artifacts. The one-screen comparison records recall@10 of 0.797 and nDCG of
+0.664 on English SciFact, and hit@10 of 0.971 with recall@10 of 0.929 on the
+cross-language book corpus. The documentation also reports cases where a dense
+multilingual model ranks better with a weak expansion engine. Losses stay
+visible because the benchmark is an engineering control, not a marketing
+leaderboard.</p>
+<p>CI runs linting, formatting, type checking, and the full unittest suite on
+Linux, macOS, and Windows across Python 3.11–3.13. Optional UI and PDF
+dependencies have an all-extras job. MCP SDK 1.x compatibility is tested
+explicitly while the default dependency range supports 2.x.</p>
+<p>The release workflow reruns the quality gate, builds the wheel and source
+archive, records their hashes in a commit-bound manifest, and verifies those
+assets before trusted publication to PyPI and the official MCP Registry. It
+fails closed on tag, version, or artifact mismatches.</p>
+<h2 id="security-trade-offs-and-current-work">Security, trade-offs, and current work</h2>
+<p>The <a href="https://github.com/ampres-ai/talamus/blob/main/SECURITY.md">security policy</a>
+defines concrete local threats: browser access to the workbench, malicious
+ingested content, prompt-injected agents using MCP writes, and same-machine
+users. Tests cover host and origin checks, traversal, symlink exfiltration,
+zip-slip, and secret redaction.</p>
+<p>The same document keeps unresolved debt public. Current work includes
+owner-only saved credentials, read-only MCP defaults, PDF/DOCX secret detection,
+and sub-100 ms search at 100k notes. These limitations matter because
+local-first software moves operational responsibility onto the user's machine.</p>
+<p>A recent maintenance example was the MCP Python SDK 2.0 API change. Instead of
+excluding the new major version, the server resolves maintained 1.x and 2.x
+APIs through a compatibility boundary and handles their HTTP configuration
+differences explicitly. A dedicated 1.x CI job guards backward compatibility.</p>
+<h2 id="outcome">Outcome</h2>
+<p>Talamus is a public Apache-2.0 project with versioned releases, reproducible
+documentation, a typed Python core with no mandatory runtime dependencies,
+optional agent and UI integrations, and traceable release artifacts. It records
+how I approach engineering: state constraints before implementation, keep user
+data inspectable, measure changes, expose known debt, and make operational
+behavior reproducible.</p>
 
 
 

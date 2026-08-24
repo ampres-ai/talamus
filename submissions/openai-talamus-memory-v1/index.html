@@ -247,6 +247,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../case-study/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering case study
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../quickstart/" class="md-nav__link">
         
   
@@ -557,10 +584,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
         
           
-          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
             
   
   
@@ -578,8 +605,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_13">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -892,7 +919,7 @@ a public production HTTPS MCP endpoint.</p>
 <li><strong>Privacy:</strong> https://ampres-ai.github.io/talamus/privacy/</li>
 <li><strong>Terms:</strong> https://ampres-ai.github.io/talamus/terms/</li>
 <li><strong>Requirement:</strong> A local project with terminal access and either <code>uv</code> or an
-  existing Talamus 1.1.0 executable.</li>
+  existing Talamus 1.1.2 executable.</li>
 </ul>
 <p>Long description:</p>
 <blockquote>
@@ -916,7 +943,7 @@ name, not a separate verified business identity for this submission.</p>
 </ol>
 <h2 id="reviewer-fixture">Reviewer fixture</h2>
 <p>Create the deterministic fixture outside the repository under review:</p>
-<div class="highlight"><pre><span></span><code>uvx --from &quot;talamus==1.1.0&quot; talamus demo --root &lt;ABSOLUTE_FIXTURE_ROOT&gt;
+<div class="highlight"><pre><span></span><code>uvx --from &quot;talamus==1.1.2&quot; talamus demo --root &lt;ABSOLUTE_FIXTURE_ROOT&gt;
 </code></pre></div>
 <p>The command creates three local notes — <code>Retrieval-Augmented Generation</code>,
 <code>Embedding</code>, and <code>Reranking</code> — without an account, API key, or LLM call. Run
@@ -997,7 +1024,7 @@ credentials are <strong>None</strong>.</p>
 <h2 id="release-notes">Release notes</h2>
 <blockquote>
 <p>Initial public skills-only submission of Talamus Memory v1.0.0. Adds one
-consent-aware, CLI-first skill for Talamus 1.1.0 covering active-brain
+consent-aware, CLI-first skill for Talamus 1.1.2 covering active-brain
 verification, local lexical search and recall, note provenance, history,
 graph inspection, and health diagnostics. The bundle contains no MCP server
 or connector, starts no process, installs nothing at plugin-install time, and

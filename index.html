@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="quickstart/">
+        <link rel="next" href="case-study/">
       
       
         
@@ -318,6 +318,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="case-study/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering case study
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -639,10 +666,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
         
           
-          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
             
   
   
@@ -660,8 +687,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_13">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -818,9 +845,11 @@
 <p><strong>Local-first, source-grounded memory that you and your AI agents share.</strong></p>
 <p>Talamus turns documents, repositories, URLs, and consented agent sessions into
 durable Markdown knowledge. It retrieves that knowledge with citations and
-bitemporal history, on your machine and with the LLM engine you already use.</p>
-<p><a class="md-button md-button--primary" href="quickstart/">Install in 60 seconds</a>
-<a class="md-button" href="https://github.com/ampres-ai/talamus">View on GitHub</a></p>
+bitemporal history, on your machine and with the LLM engine you already use.
+The <a href="case-study/">engineering case study</a> documents the architecture,
+measurements, trade-offs, and engineering role behind the project.</p>
+<p><a class="md-button md-button--primary" href="quickstart/">Install and connect</a>
+<a class="md-button" href="case-study/">Read the case study</a></p>
 <div class="highlight"><pre><span></span><code>pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;talamus[mcp]&quot;</span>
 talamus<span class="w"> </span>setup
 </code></pre></div>
@@ -828,9 +857,9 @@ talamus<span class="w"> </span>setup
 free; operations that invoke an LLM remain explicit.</p>
 <h2 id="see-memory-survive-a-fresh-session">See memory survive a fresh session</h2>
 <p><img alt="A completed agent session becomes cited, local memory for the next one." src="assets/talamus-demo.gif" /></p>
-<p>Talamus exposes 16 MCP tools for Claude Code, Cursor, Codex, OpenCode, and OpenClaw, while
-the same brain stays readable as ordinary Markdown plus a local SQLite/FTS5
-index.</p>
+<p>Talamus gives Claude Code, Cursor, Codex, OpenCode, and OpenClaw cited search,
+recall, history, provenance, and consent-gated writes, while the same brain
+stays readable as ordinary Markdown plus a local SQLite/FTS5 index.</p>
 <h2 id="what-makes-it-different">What makes it different</h2>
 <ul>
 <li><strong>Time</strong> — inspect what the brain knew at an earlier date with <code>--as-of</code>,
@@ -853,9 +882,11 @@ public number traced to a committed result artifact.</p>
 <li><strong><a href="commands/">Commands</a></strong> — browse the full <code>talamus</code> CLI reference.</li>
 <li><strong><a href="benchmarks/">Benchmarks</a></strong> — inspect the measured numbers and artifacts.</li>
 <li><strong><a href="architecture/">Architecture</a></strong> — see how the local-first pieces fit together.</li>
-<li><strong><a href="https://github.com/ampres-ai/talamus">GitHub</a></strong> — report an issue, contribute, or star the project.</li>
+<li><strong><a href="https://github.com/ampres-ai/talamus">GitHub</a></strong> — inspect the source, report an issue, or contribute.</li>
 </ul>
-<p>Talamus Memory is published by Angio Crapuzzi under the Ampres project name.
+<p>Talamus was created and is maintained by
+<a href="https://github.com/GCrapuzzi">Giovanni “Angio” Crapuzzi</a> under the Ampres
+project name.
 See the <a href="privacy/">privacy policy</a> and <a href="terms/">terms of use</a>.</p>
 
 

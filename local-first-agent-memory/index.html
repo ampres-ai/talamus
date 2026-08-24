@@ -251,6 +251,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../case-study/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering case study
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../quickstart/" class="md-nav__link">
         
   
@@ -382,10 +409,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#a-five-minute-evaluation-without-an-llm" class="md-nav__link">
+  <a href="#a-local-evaluation-without-an-llm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        A five-minute evaluation without an LLM
+        A local evaluation without an LLM
       
     </span>
   </a>
@@ -696,10 +723,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
         
           
-          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
             
   
   
@@ -717,8 +744,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_13">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -862,10 +889,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#a-five-minute-evaluation-without-an-llm" class="md-nav__link">
+  <a href="#a-local-evaluation-without-an-llm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        A five-minute evaluation without an LLM
+        A local evaluation without an LLM
       
     </span>
   </a>
@@ -1022,14 +1049,13 @@ successor while historical queries still reach the earlier state.</p>
 <p>In Talamus, <code>supersede</code>, <code>history</code>, <code>timeline</code>, and <code>--as-of</code> expose that model
 directly. The details are documented in the
 <a href="../architecture/">architecture guide</a>.</p>
-<h2 id="a-five-minute-evaluation-without-an-llm">A five-minute evaluation without an LLM</h2>
-<p>Install the local core and MCP extra, create the built-in example brain, and
-inspect it:</p>
-<div class="highlight"><pre><span></span><code>pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;talamus[mcp]&quot;</span>
-talamus<span class="w"> </span>demo
-talamus<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;embedding&quot;</span>
-talamus<span class="w"> </span>neighbors<span class="w"> </span><span class="s2">&quot;Embedding&quot;</span>
-talamus<span class="w"> </span><span class="nb">read</span><span class="w"> </span><span class="s2">&quot;Embedding&quot;</span>
+<h2 id="a-local-evaluation-without-an-llm">A local evaluation without an LLM</h2>
+<p>With <code>uv</code> available, create the built-in example in an isolated folder and
+inspect it without a persistent install:</p>
+<div class="highlight"><pre><span></span><code>uvx<span class="w"> </span>--from<span class="w"> </span>talamus<span class="w"> </span>talamus<span class="w"> </span>demo<span class="w"> </span>--root<span class="w"> </span>./talamus-demo
+uvx<span class="w"> </span>--from<span class="w"> </span>talamus<span class="w"> </span>talamus<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;embedding&quot;</span><span class="w"> </span>--root<span class="w"> </span>./talamus-demo
+uvx<span class="w"> </span>--from<span class="w"> </span>talamus<span class="w"> </span>talamus<span class="w"> </span>neighbors<span class="w"> </span><span class="s2">&quot;Embedding&quot;</span><span class="w"> </span>--root<span class="w"> </span>./talamus-demo
+uvx<span class="w"> </span>--from<span class="w"> </span>talamus<span class="w"> </span>talamus<span class="w"> </span><span class="nb">read</span><span class="w"> </span><span class="s2">&quot;Embedding&quot;</span><span class="w"> </span>--root<span class="w"> </span>./talamus-demo
 </code></pre></div>
 <p>You can also reproduce the launch story without an API key or model call:</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ampres-ai/talamus
@@ -1082,9 +1108,8 @@ right memory system is the one whose failure modes you can see and accept.</p>
 <a href="../agent-tool-calling/">16 MCP tools</a>, or read the source on
 <a href="https://github.com/ampres-ai/talamus">GitHub</a>. Talamus is Apache-2.0 and does
 not require an account or hosted service for its local core.</p>
-<p>If this is the kind of agent memory you want to see developed in public,
-<a href="https://github.com/ampres-ai/talamus">star Talamus on GitHub</a> so other builders
-can find it.</p>
+<p>For the engineering decisions, evidence, and current trade-offs behind the
+implementation, read the <a href="../case-study/">Talamus case study</a>.</p>
 
 
 
