@@ -193,10 +193,55 @@ def _windows_dacl_sddl(path: Path) -> str:
         kernel32.LocalFree(sddl)
 
 
+def _windows_dacl_is_owner_only_sddl(sddl: str, user_sid: str) -> bool:
+    """Validate the effective policy while ignoring Windows ACL bookkeeping flags."""
+    if not sddl.startswith("D:"):
+        return False
+    ace_start = sddl.find("(")
+    if ace_start < 0:
+        return False
+
+    flags = sddl[2:ace_start]
+    protected = False
+    while flags:
+        if flags.startswith("AI") or flags.startswith("AR"):
+            # Windows Server may retain these auto-inheritance bookkeeping bits
+            # even after the DACL has been protected. They do not grant access.
+            flags = flags[2:]
+        elif flags.startswith("P"):
+            protected = True
+            flags = flags[1:]
+        else:
+            return False
+    if not protected:
+        return False
+
+    ace_block = sddl[ace_start:]
+    if not ace_block.startswith("(") or not ace_block.endswith(")"):
+        return False
+    aces = ace_block[1:-1].split(")(")
+    if len(aces) != 1:
+        return False
+    ace_type, ace_flags, rights, object_guid, inherited_guid, sid = (
+        aces[0].split(";") if aces[0].count(";") == 5 else ("",) * 6
+    )
+    return (
+        ace_type == "A"
+        and not ace_flags
+        and rights.casefold() in {"fa", "0x1f01ff", "0x001f01ff"}
+        and not object_guid
+        and not inherited_guid
+        and sid == user_sid
+    )
+
+
 def credential_file_is_owner_only(path: Path) -> bool:
     """Return whether *path* has the exact credential-store permission policy."""
     if os.name == "nt":
-        return _windows_dacl_sddl(path) == _owner_only_windows_sddl()
+        return _windows_dacl_is_owner_only_sddl(
+            _windows_dacl_sddl(path),
+            _current_windows_user_sid(),
+        )
     return stat.S_IMODE(path.stat().st_mode) == _OWNER_ONLY_MODE
 
 
