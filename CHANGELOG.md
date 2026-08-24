@@ -6,6 +6,12 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fresh MCP installs no longer break when the official Python SDK resolves to
+  2.x. Talamus now supports both maintained MCP SDK lines and tests 1.x
+  compatibility explicitly in CI.
+
 ## [1.1.1] - 2026-07-22
 
 ### Changed

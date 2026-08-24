@@ -50,7 +50,7 @@ Documentation = "https://ampres-ai.github.io/talamus/"
 
 [project.optional-dependencies]
 docling = ["docling>=2.0"]
-mcp = ["mcp>=1.0"]
+mcp = ["mcp>=1.29,<3"]
 dev = ["ruff>=0.6", "mypy>=1.11"]
 bench = [
     "tiktoken>=0.7",

@@ -20,7 +20,7 @@
         {
           "type": "named",
           "name": "--with",
-          "value": "mcp>=1.0"
+          "value": "mcp>=1.29,<3"
         }
       ],
       "packageArguments": [

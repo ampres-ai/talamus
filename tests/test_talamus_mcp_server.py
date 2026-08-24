@@ -13,12 +13,15 @@ except ImportError:
 
 @unittest.skipUnless(HAS_MCP, "mcp not installed (optional extra talamus[mcp])")
 class McpServerTests(unittest.TestCase):
-    def test_module_builds_a_fastmcp_server(self) -> None:
-        from mcp.server.fastmcp import FastMCP
+    def test_module_builds_an_mcp_server(self) -> None:
+        try:
+            from mcp.server import MCPServer as ServerClass
+        except ImportError:
+            from mcp.server import FastMCP as ServerClass
 
         from talamus import mcp_server
 
-        self.assertIsInstance(mcp_server.server, FastMCP)
+        self.assertIsInstance(mcp_server.server, ServerClass)
 
     def test_registers_the_full_tool_set(self) -> None:
         """F10.2/F10.3: every read and write tool has a schema."""
@@ -60,6 +63,49 @@ class McpServerTests(unittest.TestCase):
         self.assertTrue(args.http)
         self.assertEqual(9000, args.port)
         self.assertEqual("x", args.root)
+
+    def test_http_transport_supports_both_mcp_sdk_configuration_models(self) -> None:
+        from talamus import mcp_server
+
+        class _V1Settings:
+            host = "127.0.0.1"
+            port = 8000
+
+        class _V1Server:
+            settings = _V1Settings()
+            calls: list[dict[str, object]] = []
+
+            def run(self, **kwargs: object) -> None:
+                self.calls.append(kwargs)
+
+        class _V2Settings:
+            pass
+
+        class _V2Server:
+            settings = _V2Settings()
+            calls: list[dict[str, object]] = []
+
+            def run(self, **kwargs: object) -> None:
+                self.calls.append(kwargs)
+
+        original = mcp_server.server
+        try:
+            v1 = _V1Server()
+            mcp_server.server = v1
+            mcp_server._run_http("0.0.0.0", 9101)
+            self.assertEqual("0.0.0.0", v1.settings.host)
+            self.assertEqual(9101, v1.settings.port)
+            self.assertEqual([{"transport": "streamable-http"}], v1.calls)
+
+            v2 = _V2Server()
+            mcp_server.server = v2
+            mcp_server._run_http("0.0.0.0", 9102)
+            self.assertEqual(
+                [{"transport": "streamable-http", "host": "0.0.0.0", "port": 9102}],
+                v2.calls,
+            )
+        finally:
+            mcp_server.server = original
 
 
 @unittest.skipUnless(HAS_MCP, "mcp not installed (optional extra talamus[mcp])")
