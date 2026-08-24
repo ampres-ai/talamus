@@ -25,6 +25,17 @@ class ContainerPackageTests(unittest.TestCase):
         self.assertLess(smoke, push)
         self.assertIn("scripts/smoke_mcp_stdio.py", workflow)
 
+    def test_versioned_container_is_published_only_from_a_release(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "container.yml").read_text(encoding="utf-8")
+        self.assertIn("release:\n    types: [published]", workflow)
+        self.assertNotIn("github.ref == 'refs/heads/main'", workflow)
+        publish = workflow[workflow.index("- name: Publish versioned container") :]
+        self.assertIn(
+            "github.event_name == 'release' && github.event.action == 'published'",
+            publish,
+        )
+        self.assertIn("Release commit is not reachable from origin/main.", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()

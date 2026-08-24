@@ -52,5 +52,7 @@ public number traced to a committed result artifact.
 - **[Architecture](architecture.md)** — see how the local-first pieces fit together.
 - **[GitHub](https://github.com/ampres-ai/talamus)** — report an issue, contribute, or star the project.
 
-Talamus Memory is published by Angio Crapuzzi under the Ampres project name.
+Talamus was created and is maintained by
+[Giovanni “Angio” Crapuzzi](https://github.com/GCrapuzzi) under the Ampres
+project name.
 See the [privacy policy](privacy.md) and [terms of use](terms.md).

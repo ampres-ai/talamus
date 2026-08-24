@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "talamus"
-version = "1.1.1"
+version = "1.1.2"
 description = "Local-first, source-grounded memory for AI agents with citations, bitemporal history, and MCP."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -35,7 +35,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 authors = [
-  { name = "Talamus Contributors" }
+  { name = "Giovanni \"Angio\" Crapuzzi" }
 ]
 maintainers = [
   { name = "Ampres" }
@@ -47,6 +47,7 @@ Homepage = "https://ampres-ai.github.io/talamus/"
 Repository = "https://github.com/ampres-ai/talamus"
 Issues = "https://github.com/ampres-ai/talamus/issues"
 Documentation = "https://ampres-ai.github.io/talamus/"
+Creator = "https://github.com/GCrapuzzi"
 
 [project.optional-dependencies]
 docling = ["docling>=2.0"]

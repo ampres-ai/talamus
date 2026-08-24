@@ -28,7 +28,9 @@ builders discover a local-first alternative.
 
 ![Talamus demo — a completed agent session becomes cited, local memory for the next one.](https://raw.githubusercontent.com/ampres-ai/talamus/main/docs/assets/talamus-demo.gif)
 
-Talamus is an open-source project by [Ampres](https://ampres.io), an independent AI and open-source lab.
+Talamus was created and is maintained by
+[Giovanni “Angio” Crapuzzi](https://github.com/GCrapuzzi) under
+[Ampres](https://ampres.io), an independent AI and open-source project.
 
 ## Connect an agent
 
@@ -135,7 +137,7 @@ dependencies into an isolated cache on first use.
 Containerized MCP (the brain remains in the mounted local folder):
 
 ```bash
-docker run --rm -i -v "$PWD:/data" ghcr.io/ampres-ai/talamus:1.1.1
+docker run --rm -i -v "$PWD:/data" ghcr.io/ampres-ai/talamus:1.1.2
 ```
 
 ## Links
@@ -144,7 +146,8 @@ Docs: [quickstart](https://ampres-ai.github.io/talamus/quickstart/), [local-firs
 
 Project: [security](https://github.com/ampres-ai/talamus/blob/main/SECURITY.md), [contributing](https://github.com/ampres-ai/talamus/blob/main/CONTRIBUTING.md), [roadmap](https://github.com/ampres-ai/talamus/blob/main/ROADMAP.md), [changelog](https://github.com/ampres-ai/talamus/blob/main/CHANGELOG.md).
 
-Maintained by [Ampres](https://ampres.io). Source code and issue tracking live at [ampres-ai/talamus](https://github.com/ampres-ai/talamus).
+Source code, issue tracking, and release history live at
+[ampres-ai/talamus](https://github.com/ampres-ai/talamus).
 
 ## Development
 
