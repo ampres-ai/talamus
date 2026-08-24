@@ -58,12 +58,17 @@ def _tool_annotations(
     open_world: bool,
 ) -> ToolAnnotations:
     """Describe a tool's real side effects for MCP clients and reviewers."""
-    return ToolAnnotations(
-        title=title,
-        readOnlyHint=read_only,
-        destructiveHint=destructive,
-        idempotentHint=idempotent,
-        openWorldHint=open_world,
+    # MCP 1.x accepts the protocol's camelCase aliases at construction time,
+    # while MCP 2.x type checkers expose the Python field names. Validating the
+    # wire-format object preserves the same values on both maintained majors.
+    return ToolAnnotations.model_validate(
+        {
+            "title": title,
+            "readOnlyHint": read_only,
+            "destructiveHint": destructive,
+            "idempotentHint": idempotent,
+            "openWorldHint": open_world,
+        }
     )
 
 
