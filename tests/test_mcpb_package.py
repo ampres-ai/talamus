@@ -51,8 +51,21 @@ class McpbPackageTests(unittest.TestCase):
         self.assertEqual("uv", server["type"])
         self.assertTrue((MCPB_ROOT / server["entry_point"]).is_file())
         self.assertTrue((MCPB_ROOT / manifest["icon"]).is_file())
+        self.assertTrue((MCPB_ROOT / "README.md").is_file())
         self.assertTrue((MCPB_ROOT / "uv.lock").is_file())
         self.assertIn("${user_config.brain_directory}", server["mcp_config"]["args"])
+
+    def test_manifest_identifies_the_publisher_and_privacy_policy(self) -> None:
+        manifest = self._manifest()
+
+        self.assertEqual(
+            {"name": "Angio Crapuzzi", "url": "https://github.com/GCrapuzzi"},
+            manifest["author"],
+        )
+        self.assertEqual(
+            ["https://ampres-ai.github.io/talamus/privacy/"],
+            manifest["privacy_policies"],
+        )
 
     def test_manifest_declares_the_full_mcp_tool_set(self) -> None:
         manifest = self._manifest()
@@ -79,19 +92,30 @@ class McpbPackageTests(unittest.TestCase):
             names,
         )
 
+    def test_readme_documents_install_privacy_and_real_examples(self) -> None:
+        readme = (MCPB_ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn("## Install", readme)
+        self.assertIn("## Permissions and privacy", readme)
+        self.assertIn("https://ampres-ai.github.io/talamus/privacy/", readme)
+        self.assertGreaterEqual(readme.count("Expected behavior:"), 3)
+
     def test_smithery_bundle_contains_runtime_tool_schemas(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "talamus-smithery.mcpb"
             build_bundle(MCPB_ROOT, output)
             with zipfile.ZipFile(output) as archive:
                 manifest = json.loads(archive.read("manifest.json"))
+                archive_names = archive.namelist()
 
         self.assertEqual("python", manifest["server"]["type"])
         self.assertEqual("uv", manifest["server"]["mcp_config"]["command"])
+        self.assertIn("README.md", archive_names)
         self.assertEqual(16, len(manifest["tools"]))
         for tool in manifest["tools"]:
             self.assertEqual("object", tool["inputSchema"]["type"])
             self.assertEqual("object", tool["outputSchema"]["type"])
+            self.assertIn("annotations", tool)
 
     def test_smithery_builder_rejects_an_unlocked_schema_runtime(self) -> None:
         with mock.patch(

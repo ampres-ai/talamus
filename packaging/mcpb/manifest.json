@@ -6,8 +6,8 @@
   "description": "Local-first, source-grounded memory with bitemporal history and provenance for AI agents.",
   "long_description": "Talamus gives AI agents a durable local memory stored as readable Markdown. It preserves source provenance and bitemporal history, offers zero-cost lexical recall, and gates uncertain corrections through a review queue.",
   "author": {
-    "name": "Ampres",
-    "url": "https://ampres-ai.github.io/talamus/"
+    "name": "Angio Crapuzzi",
+    "url": "https://github.com/GCrapuzzi"
   },
   "repository": {
     "type": "git",
@@ -117,6 +117,9 @@
     "retrieval"
   ],
   "license": "Apache-2.0",
+  "privacy_policies": [
+    "https://ampres-ai.github.io/talamus/privacy/"
+  ],
   "compatibility": {
     "platforms": [
       "darwin",

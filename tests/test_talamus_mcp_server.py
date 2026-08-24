@@ -51,8 +51,41 @@ class McpServerTests(unittest.TestCase):
             "review_reject",
         }
         self.assertEqual(expected, names)
+        expected_annotations = {
+            "search": (False, False, False, True),
+            "read_note": (True, False, True, False),
+            "ask": (True, False, False, True),
+            "verify": (True, False, False, True),
+            "recall": (True, False, True, False),
+            "overview": (True, False, True, False),
+            "neighbors": (True, False, True, False),
+            "history": (True, False, True, False),
+            "sources": (True, False, True, False),
+            "ontology_status": (True, False, True, False),
+            "remember": (False, True, False, True),
+            "ingest_text": (False, True, False, True),
+            "propose_note": (False, False, False, False),
+            "review_list": (True, False, True, False),
+            "review_apply": (False, True, False, False),
+            "review_reject": (False, True, False, False),
+        }
         for tool in tools:
             self.assertTrue(tool.description, f"{tool.name} has no description")
+            self.assertIsNotNone(tool.annotations, f"{tool.name} has no annotations")
+            annotations = tool.annotations
+            assert annotations is not None
+            annotation_data = annotations.model_dump(by_alias=True)
+            self.assertTrue(annotation_data["title"], f"{tool.name} has no display title")
+            self.assertEqual(
+                expected_annotations[tool.name],
+                (
+                    annotation_data["readOnlyHint"],
+                    annotation_data["destructiveHint"],
+                    annotation_data["idempotentHint"],
+                    annotation_data["openWorldHint"],
+                ),
+                f"{tool.name} annotations do not match its behavior",
+            )
 
     def test_http_flag_is_parsed(self) -> None:
         from talamus import mcp_server

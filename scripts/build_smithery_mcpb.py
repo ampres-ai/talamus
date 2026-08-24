@@ -15,6 +15,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT / "packaging" / "mcpb"
 ARCHIVE_FILES = (
+    "README.md",
     "icon.png",
     "pyproject.toml",
     "src/server.py",
