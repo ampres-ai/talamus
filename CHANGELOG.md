@@ -8,6 +8,13 @@ semantic versioning.
 
 ### Security
 
+- MCP servers are now read-only by default. Project mutations require the
+  explicit `--enable-writes` capability, central-brain mutations additionally
+  require `--enable-central-writes`, and rejected calls return structured
+  results before any service or filesystem mutation.
+- MCP write scopes and review item identifiers are validated strictly, closing
+  alias/fallback and path-traversal routes; a missing central brain never falls
+  back to the project brain.
 - Credentials saved from Workbench Settings are now written atomically only
   after owner-only access is established and verified (`0600` on Linux/macOS,
   a protected current-user DACL on Windows); saves fail before secret bytes are
@@ -15,6 +22,9 @@ semantic versioning.
 
 ### Changed
 
+- `talamus mcp install` writes an explicit `--read-only` capability into every
+  generated client config. Existing write-enabled integrations must be
+  regenerated with `--enable-writes`; central writes need both capability flags.
 - The MCPB and Smithery artifacts now pin the published Talamus 1.1.3 release,
   including exact tool behavior annotations and the directory-ready README and
   privacy metadata.

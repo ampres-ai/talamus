@@ -54,6 +54,7 @@ class McpbPackageTests(unittest.TestCase):
         self.assertTrue((MCPB_ROOT / "README.md").is_file())
         self.assertTrue((MCPB_ROOT / "uv.lock").is_file())
         self.assertIn("${user_config.brain_directory}", server["mcp_config"]["args"])
+        self.assertIn("--read-only", server["mcp_config"]["args"])
 
     def test_manifest_identifies_the_publisher_and_privacy_policy(self) -> None:
         manifest = self._manifest()
@@ -91,6 +92,15 @@ class McpbPackageTests(unittest.TestCase):
             },
             names,
         )
+        mutation_descriptions = {
+            tool["name"]: tool["description"]
+            for tool in manifest["tools"]
+            if tool["name"]
+            in {"remember", "ingest_text", "propose_note", "review_apply", "review_reject"}
+        }
+        self.assertTrue(mutation_descriptions)
+        for description in mutation_descriptions.values():
+            self.assertIn("--enable-writes", description)
 
     def test_readme_documents_install_privacy_and_real_examples(self) -> None:
         readme = (MCPB_ROOT / "README.md").read_text(encoding="utf-8")

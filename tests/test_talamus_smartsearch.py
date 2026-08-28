@@ -62,6 +62,18 @@ class SmartSearchTests(unittest.TestCase):
             self.assertEqual(out, "una domanda")  # never worse than plain search
             self.assertFalse(_cache_path(paths).is_file())  # nothing cached on failure
 
+    def test_expansion_can_skip_cache_persistence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = _brain(tmp)
+            out = expand_query(
+                paths,
+                "il modello inventa",
+                StaticRouter(FakeLLMProvider(["hallucination makes things up"])),
+                persist_cache=False,
+            )
+            self.assertIn("hallucination", out)
+            self.assertFalse(_cache_path(paths).exists())
+
     def test_empty_query_is_returned_untouched(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             paths = _brain(tmp)

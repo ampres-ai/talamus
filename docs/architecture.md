@@ -250,7 +250,10 @@ interfaces, so behaviour stays identical across CLI, MCP, UI and SDK.
 - **MCP** (`mcp_server.py`, optional extra): read tools (search, read_note,
   recall, ask, verify, neighbors, overview, history, sources,
   ontology_status) + write tools (remember, ingest_text with scope,
-  propose_note → review, review_list/apply/reject). Local stdio; optional
+  propose_note → review, review_list/apply/reject). The server is read-only by
+  default; project writes require `--enable-writes`, and central writes require
+  the additional `--enable-central-writes`. Every denial happens before the
+  service boundary and returns a structured result. Local stdio; optional
   localhost HTTP. See [For agents](agent-tool-calling.md).
 - **SDK** (`recall.py`): read-side functions for embedding in agent code.
 - **Web workbench** (`webapi/` + the `webui/` React app, optional `ui`

@@ -31,9 +31,16 @@ cannot defend the machine from its owner's attacker.
   symlinked files and directories and require every resolved path to stay
   under the scanned root, so a vault containing `Notes.md -> ~/.ssh/id_ed25519`
   never gets the target read, copied, or sent to the LLM.
-- **MCP path traversal blocked** — `ingest_text(name=...)` is slug-sanitized
-  and containment-checked, so an injected agent cannot write outside the
-  brain's raw directory with a crafted name.
+- **MCP is read-only by default** — project mutations fail before reaching a
+  service unless the server starts with `--enable-writes`; central-brain writes
+  require the additional `--enable-central-writes` capability. Generated
+  client configs state the granted capability explicitly, and rejected calls
+  return structured error codes and the required flags. Smart search also skips
+  expansion-cache persistence while the server is read-only.
+- **MCP path and scope traversal blocked** — `ingest_text(name=...)` is
+  slug-sanitized and containment-checked, write scopes accept only exact
+  `project`/`central` values, and review item IDs cannot escape their queue.
+  A missing central brain fails closed instead of falling back to the project.
 - **Zip-slip blocked** — brain archive import rejects path-traversal entries
   before extraction.
 - **Scan secrets gate** — repository scans detect likely secrets, redact them
@@ -48,10 +55,6 @@ cannot defend the machine from its owner's attacker.
 
 These are real and scheduled for the first releases after launch:
 
-- **MCP write tools are on by default** — `remember`, `ingest_text`,
-  `propose_note` and the review tools are reachable by any agent connected to
-  the server. A read-only default with an explicit `--enable-writes` (and a
-  separate gate for central-brain writes) is planned.
 - **Secret detection does not cover PDF/DOCX text** — secrets embedded in
   binary-document text are not yet flagged or redacted during scans.
 - **YAML frontmatter escaping** — hostile characters in a note title can

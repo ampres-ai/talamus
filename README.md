@@ -102,6 +102,11 @@ talamus ingest ./notes && talamus ask "what should I remember?"
 
 Run `talamus` for the status dashboard, `talamus quickstart` for essential commands, or `talamus ui` for the local React workbench.
 
+Agent MCP connections are read-only by default. To let an agent deliberately
+update this project brain, regenerate its configuration with `talamus mcp
+install --enable-writes`; central-brain writes require the additional
+`--enable-central-writes` flag.
+
 Install the consent-aware Talamus agent skill from [skills.sh](https://skills.sh):
 
 ```bash

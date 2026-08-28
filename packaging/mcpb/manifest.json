@@ -28,7 +28,8 @@
         "${__dirname}",
         "src/server.py",
         "--root",
-        "${user_config.brain_directory}"
+        "${user_config.brain_directory}",
+        "--read-only"
       ]
     }
   },
@@ -36,7 +37,7 @@
     "brain_directory": {
       "type": "directory",
       "title": "Talamus brain folder",
-      "description": "Choose the local folder where Talamus should read and store this agent's memory.",
+      "description": "Choose the local folder Talamus may read. This bundle starts read-only; writes require an explicit server capability.",
       "required": true,
       "default": "${DOCUMENTS}/Talamus"
     }
@@ -84,15 +85,15 @@
     },
     {
       "name": "remember",
-      "description": "Save an important insight or decision into the brain."
+      "description": "Save an important insight or decision; disabled unless the server has --enable-writes."
     },
     {
       "name": "ingest_text",
-      "description": "Compile selected text into brain notes."
+      "description": "Compile selected text into notes; disabled unless the server has --enable-writes."
     },
     {
       "name": "propose_note",
-      "description": "Put uncertain knowledge into the human review queue."
+      "description": "Put uncertain knowledge into review; disabled unless the server has --enable-writes."
     },
     {
       "name": "review_list",
@@ -100,11 +101,11 @@
     },
     {
       "name": "review_apply",
-      "description": "Apply an approved review item while preserving history."
+      "description": "Apply a review item; disabled unless the server has --enable-writes."
     },
     {
       "name": "review_reject",
-      "description": "Reject a review item and retain the decision record."
+      "description": "Reject a review item; disabled unless the server has --enable-writes."
     }
   ],
   "keywords": [

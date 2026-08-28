@@ -56,6 +56,11 @@ talamus mcp install             # Claude Code + detected Cursor/Codex/OpenCode/O
 talamus mcp install --agent openclaw  # explicit OpenClaw registration
 ```
 
+Generated connections are explicitly `--read-only`. If you want an agent to
+update this project brain, rerun with `--enable-writes`. Add
+`--enable-central-writes` only when that same connection should also mutate the
+separately registered central brain; it is invalid without `--enable-writes`.
+
 Claude Code reads the project `.mcp.json`, Cursor its `.cursor/mcp.json`,
 and codex gets one global registration (`codex mcp add talamus`) that resolves
 the right brain from whatever project codex runs in. OpenClaw gets a global

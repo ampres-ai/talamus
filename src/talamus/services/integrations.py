@@ -35,6 +35,7 @@ class McpInstallResult:
     server_name: str
     command: str
     args: list[str]
+    capability: str = "read-only"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -84,23 +85,77 @@ def inspect_integrations(root: str | Path) -> ServiceResult[IntegrationReport]:
     )
 
 
-def install_mcp_config(root: str | Path) -> ServiceResult[McpInstallResult]:
+def _mcp_capability_args(*, enable_writes: bool, enable_central_writes: bool) -> list[str]:
+    if enable_central_writes and not enable_writes:
+        raise ValueError("central MCP writes require project writes")
+    if enable_central_writes:
+        return ["--enable-writes", "--enable-central-writes"]
+    if enable_writes:
+        return ["--enable-writes"]
+    return ["--read-only"]
+
+
+def _mcp_capability_label(*, enable_writes: bool, enable_central_writes: bool) -> str:
+    if enable_central_writes:
+        return "project+central writes"
+    if enable_writes:
+        return "project writes"
+    return "read-only"
+
+
+def install_mcp_config(
+    root: str | Path,
+    *,
+    enable_writes: bool = False,
+    enable_central_writes: bool = False,
+) -> ServiceResult[McpInstallResult]:
     """Claude Code reads the project-level `.mcp.json` (Cursor has its own path)."""
     root_path = Path(root)
-    return _install_mcp_json(_mcp_config_path(root_path), root_path)
+    return _install_mcp_json(
+        _mcp_config_path(root_path),
+        root_path,
+        enable_writes=enable_writes,
+        enable_central_writes=enable_central_writes,
+    )
 
 
-def install_mcp_config_cursor(root: str | Path) -> ServiceResult[McpInstallResult]:
+def install_mcp_config_cursor(
+    root: str | Path,
+    *,
+    enable_writes: bool = False,
+    enable_central_writes: bool = False,
+) -> ServiceResult[McpInstallResult]:
     """Cursor reads `<project>/.cursor/mcp.json` — same shape as `.mcp.json`."""
     root_path = Path(root)
-    return _install_mcp_json(root_path / ".cursor" / "mcp.json", root_path)
+    return _install_mcp_json(
+        root_path / ".cursor" / "mcp.json",
+        root_path,
+        enable_writes=enable_writes,
+        enable_central_writes=enable_central_writes,
+    )
 
 
-def install_mcp_config_opencode(root: str | Path) -> ServiceResult[McpInstallResult]:
+def install_mcp_config_opencode(
+    root: str | Path,
+    *,
+    enable_writes: bool = False,
+    enable_central_writes: bool = False,
+) -> ServiceResult[McpInstallResult]:
     """opencode reads `<project>/opencode.json`; its `mcp` section registers
     local servers. Merge-not-clobber and idempotent, like every installer here."""
     root_path = Path(root)
     path = root_path / "opencode.json"
+    try:
+        args = _mcp_capability_args(
+            enable_writes=enable_writes,
+            enable_central_writes=enable_central_writes,
+        )
+    except ValueError as exc:
+        return _integration_error(exc)
+    capability = _mcp_capability_label(
+        enable_writes=enable_writes,
+        enable_central_writes=enable_central_writes,
+    )
     data: dict[str, Any] = {}
     if path.is_file():
         try:
@@ -121,19 +176,34 @@ def install_mcp_config_opencode(root: str | Path) -> ServiceResult[McpInstallRes
             message=f"{path.name} has a non-object `mcp` section — fix it first",
             code="opencode_config_invalid",
         )
-    mcp["talamus"] = {"type": "local", "command": ["talamus-mcp"], "enabled": True}
+    mcp["talamus"] = {
+        "type": "local",
+        "command": ["talamus-mcp", *args],
+        "enabled": True,
+    }
     path.write_text(json.dumps(data, indent=2) + chr(10), encoding="utf-8")
     return ServiceResult(
         success=True,
-        message=f"registered talamus in {path.name} (opencode reads it per project)",
+        message=(
+            f"registered talamus in {path.name} "
+            f"(opencode reads it per project; capability: {capability})"
+        ),
         code="mcp_config_installed_opencode",
         data=McpInstallResult(
-            config_path=str(path), server_name="talamus", command="talamus-mcp", args=[]
+            config_path=str(path),
+            server_name="talamus",
+            command="talamus-mcp",
+            args=args,
+            capability=capability,
         ),
     )
 
 
-def install_mcp_config_codex() -> ServiceResult[McpInstallResult]:
+def install_mcp_config_codex(
+    *,
+    enable_writes: bool = False,
+    enable_central_writes: bool = False,
+) -> ServiceResult[McpInstallResult]:
     """Codex registers MCP servers GLOBALLY via its own CLI (`codex mcp add`).
 
     Registered without `--root` on purpose: `talamus-mcp` then resolves the
@@ -147,11 +217,15 @@ def install_mcp_config_codex() -> ServiceResult[McpInstallResult]:
             code="codex_not_found",
         )
     try:
+        args = _mcp_capability_args(
+            enable_writes=enable_writes,
+            enable_central_writes=enable_central_writes,
+        )
         subprocess.run(  # a stale entry is fine to drop; failure here is not an error
             [codex, "mcp", "remove", "talamus"], capture_output=True, text=True, timeout=30
         )
         added = subprocess.run(
-            [codex, "mcp", "add", "talamus", "--", "talamus-mcp"],
+            [codex, "mcp", "add", "talamus", "--", "talamus-mcp", *args],
             capture_output=True,
             text=True,
             timeout=30,
@@ -165,15 +239,23 @@ def install_mcp_config_codex() -> ServiceResult[McpInstallResult]:
             message=f"codex mcp add failed: {detail}",
             code="codex_mcp_add_failed",
         )
+    capability = _mcp_capability_label(
+        enable_writes=enable_writes,
+        enable_central_writes=enable_central_writes,
+    )
     return ServiceResult(
         success=True,
-        message="registered talamus with codex (global; the brain resolves per project)",
+        message=(
+            "registered talamus with codex "
+            f"(global; the brain resolves per project; capability: {capability})"
+        ),
         code="mcp_config_installed_codex",
         data=McpInstallResult(
             config_path="codex mcp (~/.codex/config.toml)",
             server_name="talamus",
             command="talamus-mcp",
-            args=[],
+            args=args,
+            capability=capability,
         ),
     )
 
@@ -189,9 +271,21 @@ _OPENCLAW_DEFAULT_TOOLS = (
     "ontology_status",
     "review_list",
 )
+_OPENCLAW_WRITE_TOOLS = (
+    "remember",
+    "ingest_text",
+    "propose_note",
+    "review_apply",
+    "review_reject",
+)
 
 
-def install_mcp_config_openclaw(root: str | Path) -> ServiceResult[McpInstallResult]:
+def install_mcp_config_openclaw(
+    root: str | Path,
+    *,
+    enable_writes: bool = False,
+    enable_central_writes: bool = False,
+) -> ServiceResult[McpInstallResult]:
     """Register Talamus in OpenClaw's global MCP registry via its own CLI.
 
     OpenClaw owns the config format and validation, so use ``openclaw mcp set``
@@ -209,12 +303,26 @@ def install_mcp_config_openclaw(root: str | Path) -> ServiceResult[McpInstallRes
             code="openclaw_not_found",
         )
     root_path = Path(root)
-    args = ["--root", str(root_path)]
+    try:
+        capability_args = _mcp_capability_args(
+            enable_writes=enable_writes,
+            enable_central_writes=enable_central_writes,
+        )
+    except ValueError as exc:
+        return _integration_error(exc)
+    args = ["--root", str(root_path), *capability_args]
+    capability = _mcp_capability_label(
+        enable_writes=enable_writes,
+        enable_central_writes=enable_central_writes,
+    )
+    included_tools = list(_OPENCLAW_DEFAULT_TOOLS)
+    if enable_writes:
+        included_tools.extend(_OPENCLAW_WRITE_TOOLS)
     server_config = {
         "command": "talamus-mcp",
         "args": args,
         "transport": "stdio",
-        "toolFilter": {"include": list(_OPENCLAW_DEFAULT_TOOLS)},
+        "toolFilter": {"include": included_tools},
     }
     try:
         configured = subprocess.run(
@@ -242,7 +350,7 @@ def install_mcp_config_openclaw(root: str | Path) -> ServiceResult[McpInstallRes
         success=True,
         message=(
             "registered talamus with openclaw "
-            "(global definition, project brain pinned by --root, read-oriented tools by default)"
+            f"(global definition, project brain pinned by --root, capability: {capability})"
         ),
         code="mcp_config_installed_openclaw",
         data=McpInstallResult(
@@ -250,6 +358,7 @@ def install_mcp_config_openclaw(root: str | Path) -> ServiceResult[McpInstallRes
             server_name="talamus",
             command="talamus-mcp",
             args=args,
+            capability=capability,
         ),
     )
 
@@ -258,7 +367,13 @@ _MCP_AGENTS = ("auto", "claude", "cursor", "codex", "opencode", "openclaw", "all
 _OPTIONAL_MISSING_CODES = {"codex_not_found", "openclaw_not_found"}
 
 
-def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResult[dict[str, Any]]:
+def install_mcp_for_agent(
+    root: str | Path,
+    agent: str = "auto",
+    *,
+    enable_writes: bool = False,
+    enable_central_writes: bool = False,
+) -> ServiceResult[dict[str, Any]]:
     """One call, every agent (D7.2, the UI side of `talamus mcp install`):
     Claude always, Cursor when named or the project has `.cursor/`, and agent
     CLIs when named or found on PATH. A missing optional CLI is a skip under
@@ -266,6 +381,12 @@ def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResul
     requested — the same contract as the CLI."""
     root_path = Path(root)
     choice = (agent or "auto").strip().lower()
+    if enable_central_writes and not enable_writes:
+        return ServiceResult(
+            success=False,
+            message="central MCP writes require project writes",
+            code="mcp_capability_invalid",
+        )
     if choice not in _MCP_AGENTS:
         return ServiceResult(
             success=False,
@@ -277,15 +398,59 @@ def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResul
         )
     installs: list[tuple[str, Callable[[], ServiceResult[McpInstallResult]]]] = []
     if choice in ("auto", "claude", "all"):
-        installs.append(("claude", lambda: install_mcp_config(root_path)))
+        installs.append(
+            (
+                "claude",
+                lambda: install_mcp_config(
+                    root_path,
+                    enable_writes=enable_writes,
+                    enable_central_writes=enable_central_writes,
+                ),
+            )
+        )
     if choice in ("cursor", "all") or (choice == "auto" and (root_path / ".cursor").is_dir()):
-        installs.append(("cursor", lambda: install_mcp_config_cursor(root_path)))
+        installs.append(
+            (
+                "cursor",
+                lambda: install_mcp_config_cursor(
+                    root_path,
+                    enable_writes=enable_writes,
+                    enable_central_writes=enable_central_writes,
+                ),
+            )
+        )
     if choice in ("codex", "all") or (choice == "auto" and shutil.which("codex") is not None):
-        installs.append(("codex", install_mcp_config_codex))
+        installs.append(
+            (
+                "codex",
+                lambda: install_mcp_config_codex(
+                    enable_writes=enable_writes,
+                    enable_central_writes=enable_central_writes,
+                ),
+            )
+        )
     if choice in ("opencode", "all") or (choice == "auto" and shutil.which("opencode") is not None):
-        installs.append(("opencode", lambda: install_mcp_config_opencode(root_path)))
+        installs.append(
+            (
+                "opencode",
+                lambda: install_mcp_config_opencode(
+                    root_path,
+                    enable_writes=enable_writes,
+                    enable_central_writes=enable_central_writes,
+                ),
+            )
+        )
     if choice in ("openclaw", "all") or (choice == "auto" and shutil.which("openclaw") is not None):
-        installs.append(("openclaw", lambda: install_mcp_config_openclaw(root_path)))
+        installs.append(
+            (
+                "openclaw",
+                lambda: install_mcp_config_openclaw(
+                    root_path,
+                    enable_writes=enable_writes,
+                    enable_central_writes=enable_central_writes,
+                ),
+            )
+        )
     results: dict[str, ServiceResult[McpInstallResult]] = {}
     for name, run in installs:
         results[name] = run()
@@ -315,9 +480,19 @@ def install_mcp_for_agent(root: str | Path, agent: str = "auto") -> ServiceResul
     )
 
 
-def _install_mcp_json(config_path: Path, root_path: Path) -> ServiceResult[McpInstallResult]:
-    args = ["--root", str(root_path)]
+def _install_mcp_json(
+    config_path: Path,
+    root_path: Path,
+    *,
+    enable_writes: bool,
+    enable_central_writes: bool,
+) -> ServiceResult[McpInstallResult]:
     try:
+        capability_args = _mcp_capability_args(
+            enable_writes=enable_writes,
+            enable_central_writes=enable_central_writes,
+        )
+        args = ["--root", str(root_path), *capability_args]
         data = _read_json_object(config_path)
         servers = data.get("mcpServers")
         if not isinstance(servers, dict):
@@ -331,15 +506,20 @@ def _install_mcp_json(config_path: Path, root_path: Path) -> ServiceResult[McpIn
         config_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     except (OSError, TypeError, ValueError, AttributeError, json.JSONDecodeError) as exc:
         return _integration_error(exc)
+    capability = _mcp_capability_label(
+        enable_writes=enable_writes,
+        enable_central_writes=enable_central_writes,
+    )
     return ServiceResult(
         success=True,
-        message=f"wrote talamus MCP server to {config_path}",
+        message=f"wrote talamus MCP server to {config_path} (capability: {capability})",
         code="mcp_config_installed",
         data=McpInstallResult(
             config_path=str(config_path),
             server_name="talamus",
             command="talamus-mcp",
             args=args,
+            capability=capability,
         ),
     )
 

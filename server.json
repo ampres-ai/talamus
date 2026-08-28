@@ -40,6 +40,10 @@
         {
           "type": "positional",
           "value": "serve"
+        },
+        {
+          "type": "positional",
+          "value": "--read-only"
         }
       ],
       "transport": {

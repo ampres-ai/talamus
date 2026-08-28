@@ -38,6 +38,7 @@ class AgentPluginPackageTests(unittest.TestCase):
         args = config["mcpServers"]["talamus"]["args"]
 
         self.assertEqual(f"talamus[mcp]=={project['project']['version']}", args[1])
+        self.assertIn("--read-only", args)
 
     def test_cursor_marketplace_points_to_the_bundled_plugin(self) -> None:
         marketplace = json.loads(CURSOR_MARKETPLACE.read_text(encoding="utf-8"))
@@ -115,6 +116,7 @@ class AgentPluginPackageTests(unittest.TestCase):
                 "talamus-mcp",
                 "--root",
                 ".",
+                "--read-only",
             ],
             server["args"],
         )

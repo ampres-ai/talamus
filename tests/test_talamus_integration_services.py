@@ -34,7 +34,9 @@ class TalamusIntegrationServiceTests(unittest.TestCase):
         self.assertEqual(str(config_path), result.data.config_path)
         self.assertIn("other", data["mcpServers"])
         self.assertEqual("talamus-mcp", data["mcpServers"]["talamus"]["command"])
-        self.assertEqual(["--root", str(root)], data["mcpServers"]["talamus"]["args"])
+        self.assertEqual(
+            ["--root", str(root), "--read-only"], data["mcpServers"]["talamus"]["args"]
+        )
         self.assertTrue(status.success, status.message)
         self.assertIsNotNone(status.data)
         assert status.data is not None
