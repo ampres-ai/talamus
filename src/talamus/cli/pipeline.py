@@ -113,7 +113,14 @@ def _run_scan_job(root: Path, record: JobRecord) -> int:
     """Resume runner registered in JOB_RUNNERS for `talamus jobs resume`."""
     paths = TalamusPaths(root)
     plan = plan_from_record(record)
-    report = execute_plan(paths, plan, _router_for(root), job_record=record)
+    allow_secrets = record.payload.get("allow_secrets") is True
+    report = execute_plan(
+        paths,
+        plan,
+        _router_for(root),
+        job_record=record,
+        allow_secrets=allow_secrets,
+    )
     print(
         f"scan {report['state']}: {report['notes_written']} notes from "
         f"{report['files']} files (job {report['job_id']})"

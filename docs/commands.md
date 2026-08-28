@@ -43,7 +43,7 @@ instead of the whole shelf or (worse) its own memory of the training data.
 | Command | What it does |
 | --- | --- |
 | `talamus ingest <file\|dir\|url> [--yes]` | Turn a document, folder, or URL into source-grounded concept notes (PDF/DOCX/HTML/Markdown/text). Large multi-chunk ingests estimate first and require `--yes`. |
-| `talamus scan [dir] [--dry-run\|--yes\|--background]` | Compile an existing repository: plan first (zero cost), then execute as a resumable job. `--profile docs\|code\|all`, `--max-files N`, `--include GLOB`, `--exclude GLOB`, respects `.gitignore`, excludes vendor/caches/lockfiles/secret files, **redacts likely secrets** and stops for approval (`--allow-secrets`). Code becomes module/API digests, not prose. |
+| `talamus scan [dir] [--dry-run\|--yes\|--background]` | Compile an existing repository: plan first (zero cost), then execute as a resumable job. `--profile docs\|code\|all`, `--max-files N`, `--include GLOB`, `--exclude GLOB`, respects `.gitignore`, excludes vendor/caches/lockfiles/secret files, and scans locally extracted PDF/DOCX text too. It **stops before any LLM call** on likely secrets unless you pass `--allow-secrets`; approved content is redacted before the model. PDF scanning needs `talamus[pdf]`. Code becomes module/API digests, not prose. |
 | `talamus ask "<question>"` | Cited answer composed from your brain. |
 | `talamus overview [--rebuild]` | Show the hierarchical domain map induced from the graph. |
 | `talamus search "<query>" [--limit N]` | List relevant notes (token-cheap, instant). |

@@ -52,6 +52,14 @@ class SourcesTests(unittest.TestCase):
             with self.assertRaises(TalamusError):
                 extract_text(bad)
 
+    def test_docx_with_malformed_xml_raises_clear_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = Path(tmp) / "broken-xml.docx"
+            with zipfile.ZipFile(bad, "w") as archive:
+                archive.writestr("word/document.xml", "<not-closed>")
+            with self.assertRaisesRegex(TalamusError, "broken-xml.docx"):
+                extract_text(bad)
+
     def test_is_url(self) -> None:
         self.assertTrue(is_url("https://example.com"))
         self.assertFalse(is_url("notes.md"))

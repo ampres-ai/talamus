@@ -19,6 +19,10 @@ semantic versioning.
   after owner-only access is established and verified (`0600` on Linux/macOS,
   a protected current-user DACL on Windows); saves fail before secret bytes are
   written when the guarantee cannot be established.
+- Repository scans now inspect locally extracted PDF and DOCX text for likely
+  secrets during planning and immediately before execution. Unapproved scans
+  stop before any LLM call; approved content is redacted, and resumable jobs
+  retain an audit-safe `--allow-secrets` decision without storing matched values.
 
 ### Changed
 
