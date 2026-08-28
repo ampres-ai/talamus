@@ -43,8 +43,11 @@ cannot defend the machine from its owner's attacker.
   A missing central brain fails closed instead of falling back to the project.
 - **Zip-slip blocked** — brain archive import rejects path-traversal entries
   before extraction.
-- **Scan secrets gate** — repository scans detect likely secrets, redact them
-  before any LLM call, and stop for explicit approval (`--allow-secrets`).
+- **Scan secrets gate** — repository scans detect likely secrets in source code,
+  text, and locally extracted PDF/DOCX content before any LLM call. Scans stop
+  for explicit approval (`--allow-secrets`); approved content is redacted with
+  typed placeholders before it reaches the configured engine. Resumable jobs
+  persist and audit the approval decision without storing matched values.
 - **Owner-only credential store** — keys saved from Workbench Settings are
   written atomically only after owner-only permissions are established and
   verified: mode `0600` on Linux/macOS, or a protected DACL granting access
@@ -53,10 +56,8 @@ cannot defend the machine from its owner's attacker.
 
 ## Known debt (honest, tracked, non-blocking)
 
-These are real and scheduled for the first releases after launch:
+This is real and scheduled for the first releases after launch:
 
-- **Secret detection does not cover PDF/DOCX text** — secrets embedded in
-  binary-document text are not yet flagged or redacted during scans.
 - **YAML frontmatter escaping** — hostile characters in a note title can
   corrupt that note's frontmatter (no code execution; data-integrity only).
 

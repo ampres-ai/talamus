@@ -77,6 +77,21 @@ Also: `ingest_dir` (recursive, failures recorded), `ingest_url`, `ingest_text`
 (agent insights, scan digests), and `remember_session` (transcript + diff
 behind a worth-remembering gate, audited in `capture.log`).
 
+## Repository scan (`scan.py`)
+
+`build_plan` walks a repository without an LLM call, enforces containment and
+exclusion rules, and runs the deterministic secret detectors over source text.
+PDF text is extracted locally through the optional `pdf` extra; DOCX text uses
+the stdlib ZIP/XML extractor. A missing PDF dependency fails with the exact
+install command instead of silently skipping the document.
+
+Execution rechecks every planned source before the first LLM call so a stale or
+hand-built plan cannot bypass the gate. Without `--allow-secrets`, any finding
+stops the scan. With the explicit override, the same typed placeholders used for
+plain text redact extracted PDF/DOCX content before `ingest_text`; job records
+persist only the Boolean approval and logs contain paths/counts, never matched
+values. The extracted text—not binary bytes—is what the model receives.
+
 ## Retrieval (`indexes.py`, `textutil.py`)
 
 Three blended channels, **no embeddings**:

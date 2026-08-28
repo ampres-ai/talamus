@@ -52,8 +52,11 @@ def _pdf_text(path: Path) -> str:
         import pypdf
     except ImportError as exc:
         raise TalamusError("PDF support needs the 'pdf' extra: pip install talamus[pdf]") from exc
-    reader = pypdf.PdfReader(str(path))
-    return "\n\n".join((page.extract_text() or "") for page in reader.pages)
+    try:
+        reader = pypdf.PdfReader(str(path))
+        return "\n\n".join((page.extract_text() or "") for page in reader.pages)
+    except Exception as exc:
+        raise TalamusError(f"Not a readable .pdf file: {path.name}") from exc
 
 
 def _docx_text(path: Path) -> str:
@@ -61,9 +64,9 @@ def _docx_text(path: Path) -> str:
     try:
         with zipfile.ZipFile(path) as archive:
             document = archive.read("word/document.xml")
-    except (zipfile.BadZipFile, KeyError) as exc:
+        root = ElementTree.fromstring(document)
+    except (zipfile.BadZipFile, KeyError, ElementTree.ParseError) as exc:
         raise TalamusError(f"Not a readable .docx file: {path.name}") from exc
-    root = ElementTree.fromstring(document)
     paragraphs: list[str] = []
     for para in root.iter(f"{_W}p"):
         line = "".join(node.text or "" for node in para.iter(f"{_W}t")).strip()

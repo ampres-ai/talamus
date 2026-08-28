@@ -129,10 +129,12 @@ ingested content, prompt-injected agents using MCP writes, and same-machine
 users. Tests cover host and origin checks, traversal, symlink exfiltration,
 zip-slip, and secret redaction.
 
-The same document keeps unresolved debt public. Current work includes
-read-only MCP defaults, PDF/DOCX secret detection, YAML-safe frontmatter, and
-sub-100 ms search at 100k notes. These limitations matter because
-local-first software moves operational responsibility onto the user's machine.
+The same document keeps unresolved debt public. Recent hardening shipped
+read-only MCP defaults, owner-only credential persistence, and secret detection
+over locally extracted PDF/DOCX text. Remaining work includes YAML-safe
+frontmatter and sub-100 ms search at 100k notes. These limitations matter
+because local-first software moves operational responsibility onto the user's
+machine.
 
 A recent maintenance example was the MCP Python SDK 2.0 API change. Instead of
 excluding the new major version, the server resolves maintained 1.x and 2.x

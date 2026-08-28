@@ -21,11 +21,13 @@ import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path, PurePosixPath
 
+from talamus.errors import TalamusError
 from talamus.ingest import ingest_text
 from talamus.jobs import JobRecord, JobStore, run_items
 from talamus.paths import TalamusPaths
 from talamus.redact import find_secrets, is_secret_file, redact
 from talamus.routing import Router
+from talamus.sources import extract_text
 from talamus.vault_import import _safe_under
 
 DOC_EXTS = {".md", ".markdown", ".rst", ".txt", ".docx", ".pdf", ".html", ".htm"}
@@ -46,6 +48,7 @@ LOCKFILES = {
     "cargo.lock", "gemfile.lock", "composer.lock",
 }  # fmt: skip
 PER_FILE_MAX_BYTES = 1_000_000
+EXTRACTED_DOC_EXTS = {".docx", ".pdf"}
 
 CODE_PREAMBLE = (
     "ADDITIONAL INSTRUCTIONS FOR SOURCE CODE: the text is a digest of a code module "
@@ -132,6 +135,36 @@ def _looks_binary(path: Path) -> bool:
         return True
 
 
+class ScanSecretsDetected(TalamusError):
+    """A planned or runtime scan source contains likely secrets."""
+
+
+def _content_for_detection(path: Path, category: str) -> str:
+    if category == "docs":
+        return extract_text(path)
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _runtime_secret_files(root: Path, plan: ScanPlan) -> list[str]:
+    """Re-check planned inputs locally before the first model call.
+
+    Only paths are returned; matched values never leave the detector or enter a
+    job record/log.
+    """
+    flagged: list[str] = []
+    for entry in plan.included:
+        rel_path = str(entry["path"])
+        text = _content_for_detection(root / rel_path, str(entry["category"]))
+        if find_secrets(text):
+            flagged.append(rel_path)
+    return flagged
+
+
+def scan_job_payload(plan: ScanPlan, *, allow_secrets: bool) -> dict:
+    """Persist a resumable scan plan plus its explicit safety decision."""
+    return {**plan.to_dict(), "allow_secrets": allow_secrets}
+
+
 def _category(path: Path, profile: str) -> str | None:
     suffix = path.suffix.lower()
     name = path.name.lower()
@@ -208,7 +241,7 @@ def build_plan(
             if size > PER_FILE_MAX_BYTES:
                 plan.excluded.append({"path": rel_str, "reason": "over size threshold"})
                 continue
-            if _looks_binary(full):
+            if full.suffix.lower() not in EXTRACTED_DOC_EXTS and _looks_binary(full):
                 plan.excluded.append({"path": rel_str, "reason": "binary"})
                 continue
             if max_files is not None and len(plan.included) >= max_files:
@@ -216,13 +249,9 @@ def build_plan(
                 continue
             plan.included.append({"path": rel_str, "category": category, "bytes": size})
             plan.total_bytes += size
-            if full.suffix.lower() not in (".pdf", ".docx"):
-                try:
-                    text = full.read_text(encoding="utf-8", errors="replace")
-                except OSError:
-                    text = ""
-                for finding in find_secrets(text):
-                    plan.secret_flags.append({"path": rel_str, **finding})
+            text = _content_for_detection(full, category)
+            for finding in find_secrets(text):
+                plan.secret_flags.append({"path": rel_str, **finding})
     plan.est_tokens = plan.total_bytes // 4
     plan.est_llm_calls = len(plan.included)
     return plan
@@ -302,16 +331,48 @@ def execute_plan(
     plan: ScanPlan,
     router: Router,
     job_record: JobRecord | None = None,
+    *,
+    allow_secrets: bool = False,
 ) -> dict:
-    """Run the plan as a persistent, resumable job. Per-file failures are recorded,
-    never abort the batch; content is redacted before reaching the LLM."""
-    store = JobStore(paths)
-    record = job_record or store.create("scan", payload=plan.to_dict())
-    categories = {entry["path"]: entry["category"] for entry in plan.included}
+    """Run a persistent, resumable scan with a fail-closed secrets gate.
+
+    Ordinary per-file failures are recorded without aborting the batch. Safety
+    findings stop the job unless explicitly approved, and content is always
+    redacted before reaching the LLM.
+    """
+    planned_secret_files = sorted({str(flag["path"]) for flag in plan.secret_flags})
+    if planned_secret_files and not allow_secrets:
+        raise ScanSecretsDetected(
+            f"likely secrets detected in {len(planned_secret_files)} file(s); "
+            "review them and re-run with --allow-secrets"
+        )
+
     root = Path(plan.root)
+    runtime_secret_files = _runtime_secret_files(root, plan)
+    if runtime_secret_files and not allow_secrets:
+        raise ScanSecretsDetected(
+            f"likely secrets detected in {len(runtime_secret_files)} file(s); "
+            "review them and re-run with --allow-secrets"
+        )
+
+    store = JobStore(paths)
+    record = job_record or store.create(
+        "scan", payload=scan_job_payload(plan, allow_secrets=allow_secrets)
+    )
+    categories = {entry["path"]: entry["category"] for entry in plan.included}
     commit = plan.git.get("commit", "dirty") if plan.git else "no-git"
     failures: list[dict] = []
     notes_written = 0
+
+    audit_file_set = set(planned_secret_files) | set(runtime_secret_files)
+    audit_files = sorted(audit_file_set)
+    if allow_secrets and audit_files:
+        shown = ", ".join(audit_files[:5])
+        suffix = "" if len(audit_files) <= 5 else f" (+{len(audit_files) - 5} more)"
+        store.log(
+            record.job_id,
+            f"--allow-secrets accepted for {len(audit_files)} file(s): {shown}{suffix}",
+        )
 
     def handle(rel_path: str) -> None:
         nonlocal notes_written
@@ -322,16 +383,26 @@ def execute_plan(
                 preamble = CODE_PREAMBLE
             else:
                 header = f"[source: {rel_path} @ {commit}]\n\n"
-                text = header + full.read_text(encoding="utf-8", errors="replace")
+                text = header + extract_text(full)
                 preamble = ""
+            if find_secrets(text) and not allow_secrets:
+                raise ScanSecretsDetected(
+                    f"likely secrets detected in {rel_path}; "
+                    "review the file and re-run with --allow-secrets"
+                )
             redacted, n_secrets = redact(text)
             if n_secrets:
+                if allow_secrets and rel_path not in audit_file_set:
+                    store.log(record.job_id, f"--allow-secrets accepted for 1 file: {rel_path}")
+                    audit_file_set.add(rel_path)
                 store.log(record.job_id, f"{rel_path}: {n_secrets} redaction(s) applied")
             name = rel_path.replace("/", "-").replace("\\", "-")
             result = ingest_text(
                 paths, redacted, router, name=name, preamble=preamble, detect=False
             )
             notes_written += result["notes_written"]
+        except ScanSecretsDetected:
+            raise
         except Exception as exc:  # record, don't abort the batch
             failures.append({"path": rel_path, "error": str(exc)})
             store.log(record.job_id, f"{rel_path}: FAILED {exc}")

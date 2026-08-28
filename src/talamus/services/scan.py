@@ -8,7 +8,7 @@ from talamus.errors import TalamusError
 from talamus.jobs import JobStore
 from talamus.paths import TalamusPaths
 from talamus.routing import Router
-from talamus.scan import ScanPlan, build_plan, execute_plan
+from talamus.scan import ScanPlan, build_plan, execute_plan, scan_job_payload
 from talamus.services.result import ServiceResult
 
 T = TypeVar("T")
@@ -63,6 +63,12 @@ def preview_scan(
             include=include,
             exclude=exclude,
             max_files=max_files,
+        )
+    except TalamusError as exc:
+        return ServiceResult(
+            success=False,
+            message=f"Scan failed: {exc}",
+            code="scan_failed",
         )
     except (OSError, TypeError, ValueError, AttributeError) as exc:
         return _scan_error(exc)
@@ -130,7 +136,8 @@ def run_scan(
             )
         if background:
             record = JobStore(TalamusPaths(brain_path)).create(
-                "scan", payload=preview.plan.to_dict()
+                "scan",
+                payload=scan_job_payload(preview.plan, allow_secrets=allow_secrets),
             )
             return ServiceResult(
                 success=True,
@@ -150,7 +157,12 @@ def run_scan(
             )
         report = cast(
             dict[str, Any],
-            execute_plan(TalamusPaths(brain_path), preview.plan, router),
+            execute_plan(
+                TalamusPaths(brain_path),
+                preview.plan,
+                router,
+                allow_secrets=allow_secrets,
+            ),
         )
     except TalamusError as exc:
         return ServiceResult(

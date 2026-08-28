@@ -6,10 +6,11 @@ ships without measurements, and the free/local core is never weakened.
 
 ## Near term
 
-- **Security debt** — close the two remaining non-blocking items tracked in
-  [SECURITY.md](SECURITY.md): secret detection over PDF/DOCX text and YAML-safe
-  frontmatter. MCP read-only defaults with separate project/central write
-  capabilities and owner-only credential persistence are shipped.
+- **Security debt** — close the remaining non-blocking item tracked in
+  [SECURITY.md](SECURITY.md): YAML-safe frontmatter. Secret detection over
+  locally extracted PDF/DOCX text, MCP read-only defaults with separate
+  project/central write capabilities, and owner-only credential persistence
+  are shipped.
 - **Feedback-driven integrations** — use real install failures and client
   requests to prioritize the next MCP targets instead of adding speculative
   adapters.

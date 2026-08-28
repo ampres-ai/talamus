@@ -1,6 +1,8 @@
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from talamus.jobs import JobStore
 from talamus.paths import TalamusPaths
@@ -9,7 +11,7 @@ from talamus.scan import build_plan
 from talamus.services.scan import preview_scan, run_scan
 from talamus.store import load_notes
 from tests.support import FakeLLMProvider
-from tests.test_talamus_scan import _fixture_repo, _note_json
+from tests.test_talamus_scan import _fixture_repo, _note_json, _write_docx, _write_pdf
 
 
 class TalamusScanServiceTests(unittest.TestCase):
@@ -68,6 +70,60 @@ class TalamusScanServiceTests(unittest.TestCase):
         assert result.data is not None
         self.assertIn("config.md", result.data.secret_files)
 
+    def test_run_scan_blocks_secret_in_docx_without_llm_calls(self) -> None:
+        with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as brain:
+            _write_docx(
+                Path(repo) / "credentials.docx",
+                ["client_secret = docxSyntheticSecret12345"],
+            )
+            llm = FakeLLMProvider([])
+
+            result = run_scan(
+                brain,
+                repo,
+                StaticRouter(llm),
+                profile="docs",
+                confirmed=True,
+                allow_secrets=False,
+            )
+
+        self.assertFalse(result.success)
+        self.assertEqual("scan_secrets_blocked", result.code)
+        self.assertEqual([], llm.prompts)
+        self.assertIsNotNone(result.data)
+        assert result.data is not None
+        self.assertEqual(("credentials.docx",), result.data.secret_files)
+
+    def test_preview_pdf_without_extra_returns_actionable_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as brain:
+            _write_pdf(Path(repo) / "document.pdf", "Safe document")
+
+            with mock.patch.dict(sys.modules, {"pypdf": None}):
+                result = preview_scan(brain, repo, profile="docs")
+
+        self.assertFalse(result.success)
+        self.assertEqual("scan_failed", result.code)
+        self.assertIn("pip install talamus[pdf]", result.message)
+
+    def test_run_pdf_without_extra_fails_before_llm_call(self) -> None:
+        with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as brain:
+            _write_pdf(Path(repo) / "document.pdf", "Safe document")
+            llm = FakeLLMProvider([])
+
+            with mock.patch.dict(sys.modules, {"pypdf": None}):
+                result = run_scan(
+                    brain,
+                    repo,
+                    StaticRouter(llm),
+                    profile="docs",
+                    confirmed=True,
+                )
+
+        self.assertFalse(result.success)
+        self.assertEqual("scan_failed", result.code)
+        self.assertIn("pip install talamus[pdf]", result.message)
+        self.assertEqual([], llm.prompts)
+
     def test_run_scan_background_queues_job_without_llm_calls(self) -> None:
         with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as brain:
             _fixture_repo(Path(repo))
@@ -91,6 +147,7 @@ class TalamusScanServiceTests(unittest.TestCase):
         self.assertEqual([], llm.prompts)
         self.assertEqual(1, len(jobs))
         self.assertEqual("queued", jobs[0].state)
+        self.assertIs(jobs[0].payload.get("allow_secrets"), True)
         self.assertIsNotNone(result.data)
         assert result.data is not None
         self.assertEqual(jobs[0].job_id, result.data.job_id)
