@@ -142,6 +142,9 @@ class ScanSecretsDetected(TalamusError):
 def _content_for_detection(path: Path, category: str) -> str:
     if category == "docs":
         return extract_text(path)
+    # Runtime paths reach this helper only after _safe_under validation; persisted
+    # plan entries are also reconstructed from os.walk in _planned_sources.
+    # codeql[py/path-injection]
     return path.read_text(encoding="utf-8", errors="replace")
 
 
