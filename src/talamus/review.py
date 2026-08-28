@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
@@ -53,6 +54,11 @@ class ReviewQueue:
         self._dir = paths.cache / "review"
 
     def _path(self, item_id: str) -> Path:
+        if re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,127}", item_id) is None:
+            raise ValueError(
+                "review item id may contain only lowercase letters, digits, "
+                "underscores, and hyphens"
+            )
         return self._dir / f"{item_id}.json"
 
     def add(self, kind: str, title: str, detail: dict | None = None) -> ReviewItem:

@@ -116,7 +116,7 @@ class WorkbenchEndpointTests(unittest.TestCase):
 
             self.assertEqual(200, resp.status_code)
             config = json.loads((root / "opencode.json").read_text(encoding="utf-8"))
-            self.assertEqual(["talamus-mcp"], config["mcp"]["talamus"]["command"])
+            self.assertEqual(["talamus-mcp", "--read-only"], config["mcp"]["talamus"]["command"])
 
 
 if __name__ == "__main__":

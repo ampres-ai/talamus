@@ -180,17 +180,30 @@ def _cmd_demo(root: Path) -> int:
     return 0
 
 
-def _cmd_mcp_install(root: Path, agent: str = "auto") -> int:
+def _cmd_mcp_install(
+    root: Path,
+    agent: str = "auto",
+    *,
+    enable_writes: bool = False,
+    enable_central_writes: bool = False,
+) -> int:
     """One command, every agent (D7.2). auto = Claude Code always, Cursor when
     the project has a .cursor dir, and installed agent CLIs. An agent the user
     names explicitly must succeed; an auto-detected one may just report."""
+    if enable_central_writes and not enable_writes:
+        print("--enable-central-writes requires --enable-writes", file=sys.stderr)
+        return 1
+    capability = {
+        "enable_writes": enable_writes,
+        "enable_central_writes": enable_central_writes,
+    }
     if agent in ("claude", "cursor", "codex", "opencode", "openclaw"):
         result = {
-            "claude": lambda: install_mcp_config(root),
-            "cursor": lambda: install_mcp_config_cursor(root),
-            "codex": install_mcp_config_codex,
-            "opencode": lambda: install_mcp_config_opencode(root),
-            "openclaw": lambda: install_mcp_config_openclaw(root),
+            "claude": lambda: install_mcp_config(root, **capability),
+            "cursor": lambda: install_mcp_config_cursor(root, **capability),
+            "codex": lambda: install_mcp_config_codex(**capability),
+            "opencode": lambda: install_mcp_config_opencode(root, **capability),
+            "openclaw": lambda: install_mcp_config_openclaw(root, **capability),
         }[agent]()
         if not result.success:
             print(result.message, file=sys.stderr)
@@ -198,21 +211,21 @@ def _cmd_mcp_install(root: Path, agent: str = "auto") -> int:
         print(result.message)
         return 0
     code = 0
-    claude_result = install_mcp_config(root)
+    claude_result = install_mcp_config(root, **capability)
     if not claude_result.success:
         print(claude_result.message, file=sys.stderr)
         code = 1
     else:
         print(f"Claude Code: {claude_result.message}")
     if agent == "all" or (root / ".cursor").is_dir():
-        cursor_result = install_mcp_config_cursor(root)
+        cursor_result = install_mcp_config_cursor(root, **capability)
         if not cursor_result.success:
             print(cursor_result.message, file=sys.stderr)
             code = 1
         else:
             print(f"Cursor: {cursor_result.message}")
     if agent == "all" or shutil.which("codex") is not None:
-        codex_result = install_mcp_config_codex()
+        codex_result = install_mcp_config_codex(**capability)
         if not codex_result.success:
             # a MISSING codex is a skip even under "all"; a broken one is an error
             if codex_result.code == "codex_not_found":
@@ -223,14 +236,14 @@ def _cmd_mcp_install(root: Path, agent: str = "auto") -> int:
         else:
             print(f"codex: {codex_result.message}")
     if agent == "all" or shutil.which("opencode") is not None:
-        opencode_result = install_mcp_config_opencode(root)
+        opencode_result = install_mcp_config_opencode(root, **capability)
         if not opencode_result.success:
             print(opencode_result.message, file=sys.stderr)
             code = 1
         else:
             print(f"opencode: {opencode_result.message}")
     if agent == "all" or shutil.which("openclaw") is not None:
-        openclaw_result = install_mcp_config_openclaw(root)
+        openclaw_result = install_mcp_config_openclaw(root, **capability)
         if not openclaw_result.success:
             if openclaw_result.code == "openclaw_not_found":
                 print(f"openclaw: skipped ({openclaw_result.message})")

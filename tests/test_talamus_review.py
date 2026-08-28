@@ -43,6 +43,13 @@ class ReviewQueueTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 queue.add("nonsense", "x", {})
 
+    def test_item_id_cannot_escape_review_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            queue = ReviewQueue(TalamusPaths(Path(tmp)))
+            for item_id in ("../outside", "..\\outside", "nested/item", "UPPERCASE"):
+                with self.assertRaisesRegex(ValueError, "review item id"):
+                    queue.get(item_id)
+
 
 class CliReviewTests(unittest.TestCase):
     def test_review_flow_via_cli(self) -> None:

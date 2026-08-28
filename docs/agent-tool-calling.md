@@ -1,7 +1,8 @@
 # Talamus Agent Tool Calling Guide
 
 Agents should prefer the MCP server when available: it exposes read tools for
-grounded context and write tools that preserve review/provenance rules.
+grounded context. Write tools preserve review/provenance rules and are disabled
+unless the user grants an explicit capability when starting the server.
 
 ## MCP server
 
@@ -10,6 +11,21 @@ talamus mcp install
 talamus mcp serve --root .           # stdio
 talamus-mcp --http --host 127.0.0.1 --port 8000
 ```
+
+All three commands are read-only by default. Generated configurations include
+`--read-only` so the capability is visible during review. Opt in deliberately:
+
+```bash
+talamus mcp install --enable-writes
+talamus mcp serve --root . --enable-writes
+talamus-mcp --root . --enable-writes --enable-central-writes
+```
+
+`--enable-writes` permits project-brain mutations. Central-brain mutations need
+both flags; `--enable-central-writes` alone is rejected. Invalid scope aliases,
+missing central brains, and traversal-shaped review IDs fail before any
+mutation. Write-tool responses are structured objects with `ok`, `code`,
+`message`, and, for capability denials, `required_flags`.
 
 ## MCP tools
 
@@ -25,12 +41,12 @@ talamus-mcp --http --host 127.0.0.1 --port 8000
 | `history(title)` | List past versions of a note. |
 | `sources(title)` | Show recorded provenance for a note. |
 | `ontology_status()` | Report schema version, type counts, and typed-edge coverage. |
-| `remember(text, scope="project")` | Save an important session insight into the project or central brain. |
-| `ingest_text(text, name="insight", scope="project")` | Compile selected text into notes without the worth-remembering gate. |
-| `propose_note(text, reason="")` | Put uncertain knowledge into the review queue instead of writing it directly. |
+| `remember(text, scope="project")` | Save an important session insight; needs `--enable-writes`, plus `--enable-central-writes` for `scope="central"`. |
+| `ingest_text(text, name="insight", scope="project")` | Compile selected text into notes; uses the same capability split as `remember`. |
+| `propose_note(text, reason="")` | Put uncertain knowledge into the review queue; needs `--enable-writes`. |
 | `review_list()` | List pending review decisions. |
-| `review_apply(item_id)` | Apply a review item while preserving history. |
-| `review_reject(item_id, reason="")` | Reject a review item and keep the decision logged. |
+| `review_apply(item_id)` | Apply a review item while preserving history; needs `--enable-writes`. |
+| `review_reject(item_id, reason="")` | Reject a review item and keep the decision logged; needs `--enable-writes`. |
 
 Every runtime tool includes MCP `ToolAnnotations` for display title, read-only,
 destructive, idempotent, and open-world behavior. The hints are deliberately

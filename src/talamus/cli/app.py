@@ -144,12 +144,27 @@ def main(argv: list[str] | None = None, llm: LLMProvider | None = None) -> int:
         if command == "ui":
             return _cmd_ui(root, args.web, args.port)
         if command == "mcp":
+            if args.enable_central_writes and not args.enable_writes:
+                print("--enable-central-writes requires --enable-writes", file=sys.stderr)
+                return 1
             if args.action == "serve":
                 from talamus.mcp_server import main as mcp_main
 
-                mcp_main(["--root", str(root)])
+                mcp_args = ["--root", str(root)]
+                if args.enable_writes:
+                    mcp_args.append("--enable-writes")
+                else:
+                    mcp_args.append("--read-only")
+                if args.enable_central_writes:
+                    mcp_args.append("--enable-central-writes")
+                mcp_main(mcp_args)
                 return 0
-            return _cmd_mcp_install(root, args.agent)
+            return _cmd_mcp_install(
+                root,
+                args.agent,
+                enable_writes=args.enable_writes,
+                enable_central_writes=args.enable_central_writes,
+            )
         if command == "hook":
             if args.retry:
                 return _cmd_hook_retry(root)

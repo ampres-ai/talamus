@@ -25,7 +25,7 @@ class CursorInstallTests(unittest.TestCase):
 
         self.assertTrue(result.success, result.message)
         self.assertEqual("talamus-mcp", data["mcpServers"]["talamus"]["command"])
-        self.assertEqual(["--root", tmp], data["mcpServers"]["talamus"]["args"])
+        self.assertEqual(["--root", tmp, "--read-only"], data["mcpServers"]["talamus"]["args"])
 
     def test_merges_existing_cursor_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -59,7 +59,10 @@ class CodexInstallTests(unittest.TestCase):
 
         self.assertTrue(result.success, result.message)
         self.assertEqual([resolved, "mcp", "remove", "talamus"], calls[0])
-        self.assertEqual([resolved, "mcp", "add", "talamus", "--", "talamus-mcp"], calls[1])
+        self.assertEqual(
+            [resolved, "mcp", "add", "talamus", "--", "talamus-mcp", "--read-only"],
+            calls[1],
+        )
 
     def test_fails_actionably_when_codex_missing(self) -> None:
         with mock.patch("talamus.services.integrations.shutil.which", return_value=None):
@@ -100,13 +103,32 @@ class OpenClawInstallTests(unittest.TestCase):
         self.assertEqual([resolved, "mcp", "set", "talamus"], calls[0][:4])
         config = json.loads(calls[0][4])
         self.assertEqual("talamus-mcp", config["command"])
-        self.assertEqual(["--root", tmp], config["args"])
+        self.assertEqual(["--root", tmp, "--read-only"], config["args"])
         self.assertEqual("stdio", config["transport"])
         included = config["toolFilter"]["include"]
         self.assertIn("search", included)
         self.assertIn("review_list", included)
         self.assertNotIn("remember", included)
         self.assertNotIn("review_apply", included)
+
+    def test_explicit_write_capability_is_visible_in_config_and_tool_filter(self) -> None:
+        calls: list[list[str]] = []
+
+        def fake_run(cmd, **kwargs):
+            calls.append(list(cmd))
+            return mock.Mock(returncode=0, stdout="", stderr="")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch("talamus.services.integrations.shutil.which", return_value="openclaw"):
+                with mock.patch("talamus.services.integrations.subprocess.run", fake_run):
+                    result = install_mcp_config_openclaw(tmp, enable_writes=True)
+
+        self.assertTrue(result.success, result.message)
+        config = json.loads(calls[0][4])
+        self.assertIn("--enable-writes", config["args"])
+        self.assertNotIn("--read-only", config["args"])
+        self.assertIn("remember", config["toolFilter"]["include"])
+        self.assertEqual("project writes", result.data.capability if result.data else "")
 
     def test_fails_actionably_when_openclaw_missing(self) -> None:
         with mock.patch("talamus.services.integrations.shutil.which", return_value=None):
@@ -190,6 +212,15 @@ class McpInstallCliTests(unittest.TestCase):
 
             self.assertEqual(1, code)
             self.assertIn("openclaw", err.getvalue())
+
+    def test_central_write_install_requires_project_write_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            err = io.StringIO()
+            with redirect_stdout(io.StringIO()), redirect_stderr(err):
+                code = main(["mcp", "install", "--enable-central-writes", "--root", tmp])
+
+        self.assertEqual(1, code)
+        self.assertIn("requires --enable-writes", err.getvalue())
 
 
 if __name__ == "__main__":

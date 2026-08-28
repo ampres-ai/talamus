@@ -43,7 +43,13 @@ def _save_cache(paths: TalamusPaths, cache: dict[str, str]) -> None:
     _cache_path(paths).write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def expand_query(paths: TalamusPaths, question: str, router: Router) -> str:
+def expand_query(
+    paths: TalamusPaths,
+    question: str,
+    router: Router,
+    *,
+    persist_cache: bool = True,
+) -> str:
     """Return the question augmented with LLM-predicted terms, cached on disk.
 
     The expansion depends only on the question (not the brain), so caching by
@@ -62,8 +68,9 @@ def expand_query(paths: TalamusPaths, question: str, router: Router) -> str:
             expanded = llm.complete(_EXPAND_PROMPT.format(question=question)).strip()
         except (EngineFailed, EngineNotFound):
             return question
-        cache[key] = expanded
-        _save_cache(paths, cache)
+        if persist_cache:
+            cache[key] = expanded
+            _save_cache(paths, cache)
     return f"{question} {expanded}".strip() if expanded else question
 
 

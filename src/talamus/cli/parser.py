@@ -213,6 +213,16 @@ def build_parser() -> argparse.ArgumentParser:
         default="auto",
         help="which agent to configure (auto: Claude Code + whatever else is detected)",
     )
+    mcp.add_argument(
+        "--enable-writes",
+        action="store_true",
+        help="grant MCP tools permission to mutate this project brain",
+    )
+    mcp.add_argument(
+        "--enable-central-writes",
+        action="store_true",
+        help="also grant central-brain writes (requires --enable-writes)",
+    )
     hook = sub.add_parser(
         "hook", parents=[common], help="print or install the Claude Code capture-hook config"
     )

@@ -14,9 +14,11 @@ Talamus account or a publisher-operated backend.
 4. Review the tool permissions before enabling the server.
 
 The first launch uses UV to download the manifest's pinned `talamus[mcp]`
-release from PyPI into UV's isolated cache. Talamus then reads and writes only
-the selected brain folder unless a tool explicitly selects the separately
-configured central brain.
+release from PyPI into UV's isolated cache. The bundle starts with the explicit
+`--read-only` capability, so mutation tools return a structured denial before
+touching the selected folder. A user who deliberately edits the server command
+to add `--enable-writes` grants project-brain mutations; central writes require
+the additional `--enable-central-writes` flag.
 
 ## Try it
 
@@ -51,10 +53,10 @@ language model.
 
 > Remember that the team chose WAL mode after the concurrency test.
 
-Expected behavior: after the client obtains approval for a write-capable tool,
-`remember` sends the supplied text to the user's configured engine, then writes
-the resulting note and provenance into the chosen brain. It can update an
-existing note while preserving its history.
+Expected behavior: the default bundle returns `mcp_writes_disabled` and names
+the required `--enable-writes` flag. With that server capability explicitly
+granted, `remember` sends the supplied text to the user's configured engine,
+then writes the resulting note and provenance into the chosen project brain.
 
 ### Keep uncertainty in review
 
@@ -70,9 +72,13 @@ state-changing decisions.
   `history`, `sources`, `ontology_status`, and `review_list`.
 - Tools that may use the user-configured engine: `search` with smart mode,
   `ask`, `verify`, `remember`, and `ingest_text`.
-- Tools that modify local state: `search` in smart mode may update its query
-  cache; `remember` and `ingest_text` write or merge notes; `propose_note`
-  appends to the review queue; `review_apply` and `review_reject` resolve it.
+- Tools that modify local state when write capability is granted: `search` in
+  smart mode may update its query cache; `remember` and `ingest_text` write or
+  merge notes; `propose_note` appends to the review queue; `review_apply` and
+  `review_reject` resolve it. Smart search skips cache writes in read-only mode.
+- The latter five mutation tools are disabled by default at the server boundary;
+  per-call client approval cannot substitute for the server's explicit write
+  capability.
 - Talamus has no publisher-operated analytics, telemetry, account, or memory
   backend. Optional engine providers and PyPI/UV operate under their own terms.
 
