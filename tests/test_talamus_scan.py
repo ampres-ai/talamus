@@ -7,10 +7,12 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
+from talamus.errors import TalamusError
 from talamus.jobs import JobRecord, JobStore
 from talamus.paths import TalamusPaths
 from talamus.routing import StaticRouter
 from talamus.scan import (
+    ScanPlan,
     ScanSecretsDetected,
     build_plan,
     code_digest,
@@ -274,10 +276,10 @@ class ExecutePlanTests(unittest.TestCase):
         self.assertEqual([], llm.prompts)
 
     def test_execute_redacts_extracted_docx_and_audits_override_safely(self) -> None:
-        secret = "docxSyntheticSecret12345"
+        synthetic_value = "docxSyntheticSecret12345"
         with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as brain:
             root = Path(repo)
-            _write_docx(root / "credentials.docx", [f"api_key = {secret}"])
+            _write_docx(root / "credentials.docx", [f"api_key = {synthetic_value}"])
             plan = build_plan(root, profile="docs")
             paths = TalamusPaths(Path(brain))
             paths.ensure_directories()
@@ -294,17 +296,17 @@ class ExecutePlanTests(unittest.TestCase):
         self.assertEqual("completed", report["state"])
         self.assertEqual(1, len(llm.prompts))
         self.assertIn("[REDACTED:generic-assignment]", llm.prompts[0])
-        self.assertNotIn(secret, llm.prompts[0])
+        self.assertNotIn(synthetic_value, llm.prompts[0])
         self.assertIn("--allow-secrets", log)
         self.assertIn("credentials.docx", log)
-        self.assertNotIn(secret, log)
+        self.assertNotIn(synthetic_value, log)
 
     @unittest.skipUnless(HAS_PYPDF, "pypdf optional extra is not installed")
     def test_execute_redacts_extracted_pdf_text(self) -> None:
-        secret = "pdfSyntheticSecret123456"
+        synthetic_value = "pdfSyntheticSecret123456"
         with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as brain:
             root = Path(repo)
-            _write_pdf(root / "credentials.pdf", f"token = {secret}")
+            _write_pdf(root / "credentials.pdf", f"token = {synthetic_value}")
             plan = build_plan(root, profile="docs")
             paths = TalamusPaths(Path(brain))
             paths.ensure_directories()
@@ -319,17 +321,38 @@ class ExecutePlanTests(unittest.TestCase):
 
         self.assertEqual("completed", report["state"])
         self.assertIn("[REDACTED:generic-assignment]", llm.prompts[0])
-        self.assertNotIn(secret, llm.prompts[0])
+        self.assertNotIn(synthetic_value, llm.prompts[0])
+
+    def test_execute_rejects_traversal_in_persisted_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as parent, tempfile.TemporaryDirectory() as brain:
+            parent_path = Path(parent)
+            root = parent_path / "repo"
+            root.mkdir()
+            outside = parent_path / "outside.md"
+            outside.write_text("private material outside the repository", encoding="utf-8")
+            plan = ScanPlan(
+                root=str(root),
+                profile="docs",
+                included=[{"path": "../outside.md", "category": "docs", "bytes": 39}],
+            )
+            paths = TalamusPaths(Path(brain))
+            paths.ensure_directories()
+            llm = FakeLLMProvider([])
+
+            with self.assertRaisesRegex(TalamusError, "missing or unsafe"):
+                execute_plan(paths, plan, StaticRouter(llm))
+
+        self.assertEqual([], llm.prompts)
 
     def test_scan_plan_excludes_a_symlinked_file(self) -> None:
         import os
 
         with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as outside:
             (Path(repo) / "readme.md").write_text("# Real\ncontent", encoding="utf-8")
-            secret = Path(outside) / "secret.md"
-            secret.write_text("SECRET OUTSIDE THE REPO", encoding="utf-8")
+            outside_file = Path(outside) / "secret.md"
+            outside_file.write_text("SECRET OUTSIDE THE REPO", encoding="utf-8")
             try:
-                os.symlink(secret, Path(repo) / "evil.md")
+                os.symlink(outside_file, Path(repo) / "evil.md")
             except (OSError, NotImplementedError):
                 self.skipTest("symlinks need privilege on this OS")
 

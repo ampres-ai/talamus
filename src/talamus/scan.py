@@ -145,7 +145,28 @@ def _content_for_detection(path: Path, category: str) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
-def _runtime_secret_files(root: Path, plan: ScanPlan) -> list[str]:
+def _planned_sources(root: Path, plan: ScanPlan) -> dict[str, Path]:
+    """Resolve persisted plan entries only through a fresh, contained tree walk."""
+    requested = {str(entry["path"]) for entry in plan.included}
+    sources: dict[str, Path] = {}
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [name for name in dirnames if not (Path(dirpath) / name).is_symlink()]
+        for filename in filenames:
+            full = Path(dirpath) / filename
+            if not _safe_under(root, full):
+                continue
+            rel_path = full.relative_to(root).as_posix()
+            if rel_path in requested:
+                sources[rel_path] = full
+    if requested - sources.keys():
+        raise TalamusError(
+            "one or more planned scan sources are missing or unsafe; "
+            "re-run `talamus scan` to rebuild the plan"
+        )
+    return sources
+
+
+def _runtime_secret_files(root: Path, sources: dict[str, Path], plan: ScanPlan) -> list[str]:
     """Re-check planned inputs locally before the first model call.
 
     Only paths are returned; matched values never leave the detector or enter a
@@ -154,7 +175,12 @@ def _runtime_secret_files(root: Path, plan: ScanPlan) -> list[str]:
     flagged: list[str] = []
     for entry in plan.included:
         rel_path = str(entry["path"])
-        text = _content_for_detection(root / rel_path, str(entry["category"]))
+        full = sources[rel_path]
+        if not _safe_under(root, full):
+            raise TalamusError(
+                "a planned scan source became unsafe; re-run `talamus scan` to rebuild the plan"
+            )
+        text = _content_for_detection(full, str(entry["category"]))
         if find_secrets(text):
             flagged.append(rel_path)
     return flagged
@@ -347,8 +373,9 @@ def execute_plan(
             "review them and re-run with --allow-secrets"
         )
 
-    root = Path(plan.root)
-    runtime_secret_files = _runtime_secret_files(root, plan)
+    root = Path(plan.root).resolve()
+    sources = _planned_sources(root, plan)
+    runtime_secret_files = _runtime_secret_files(root, sources, plan)
     if runtime_secret_files and not allow_secrets:
         raise ScanSecretsDetected(
             f"likely secrets detected in {len(runtime_secret_files)} file(s); "
@@ -376,8 +403,12 @@ def execute_plan(
 
     def handle(rel_path: str) -> None:
         nonlocal notes_written
-        full = root / rel_path
+        full = sources[rel_path]
         try:
+            if not _safe_under(root, full):
+                raise TalamusError(
+                    "a planned scan source became unsafe; re-run `talamus scan` to rebuild the plan"
+                )
             if categories.get(rel_path) == "code":
                 text = code_digest(full, rel_path)
                 preamble = CODE_PREAMBLE
